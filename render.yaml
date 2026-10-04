@@ -1,0 +1,38 @@
+services:
+  - type: web
+    name: smap-platform
+    env: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        generateValue: true
+      - key: ADMIN_EMAILS
+        value: sahilking17341734@gmail.com
+      - key: UPI_MERCHANT_ID
+        value: sahil-stp@ybl
+      - key: UPI_MERCHANT_NAME
+        value: SMAP
+      - key: PAYMENT_PROVIDER
+        value: razorpay
+      - key: PAYMENT_ENV
+        value: production
+      - key: PAYMENT_KEY_ID
+        sync: false
+      - key: PAYMENT_KEY_SECRET
+        sync: false
+      - key: PAYMENT_WEBHOOK_SECRET
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: GOOGLE_REDIRECT_URI
+        sync: false
+      - key: META_APP_ID
+        sync: false
+      - key: META_APP_SECRET
+        sync: false

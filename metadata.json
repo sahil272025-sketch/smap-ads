@@ -1,0 +1,6 @@
+{
+  "name": "SMAP - Facebook & Instagram Advertising Platform",
+  "description": "Create, launch and manage your advertising campaigns on Facebook and Instagram with SMAP (Sahil Marketing Ads Powerful).",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

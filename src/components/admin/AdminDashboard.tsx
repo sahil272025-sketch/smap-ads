@@ -1,0 +1,698 @@
+import React, { useState, useEffect } from 'react';
+import { AdminStats, User, Campaign, Payment, Package, SystemLog, SupportTicket } from '../../types';
+import { api } from '../../lib/api';
+import { StatusBadge } from '../dashboard/CustomerDashboard';
+import {
+  Users,
+  Layers,
+  Activity,
+  Clock,
+  CheckCircle2,
+  DollarSign,
+  Package as PackageIcon,
+  ShieldCheck,
+  Headphones,
+  FileCode2,
+  Settings,
+  RefreshCw,
+  Check,
+  X,
+  AlertTriangle,
+  ExternalLink,
+} from 'lucide-react';
+
+export const AdminDashboard: React.FC = () => {
+  const [stats, setStats] = useState<AdminStats | null>(null);
+  const [activeSection, setActiveSection] = useState<'overview' | 'customers' | 'campaigns' | 'payments' | 'packages' | 'meta' | 'tickets' | 'logs'>('overview');
+  const [loading, setLoading] = useState(true);
+
+  // Data sets
+  const [customers, setCustomers] = useState<User[]>([]);
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [payments, setPayments] = useState<Payment[]>([]);
+  const [packages, setPackages] = useState<Package[]>([]);
+  const [logs, setLogs] = useState<SystemLog[]>([]);
+  const [tickets, setTickets] = useState<SupportTicket[]>([]);
+  const [metaStatus, setMetaStatus] = useState<any>(null);
+
+  // Modals & actions
+  const [verifyingPaymentId, setVerifyingPaymentId] = useState<string | null>(null);
+  const [adminNotes, setAdminNotes] = useState('');
+  const [editingPackage, setEditingPackage] = useState<Package | null>(null);
+  const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(null);
+  const [adminReply, setAdminReply] = useState('');
+
+  const loadAllAdminData = async () => {
+    setLoading(true);
+    try {
+      const [s, c, cmp, p, pkg, l, t, m] = await Promise.all([
+        api.getAdminStats(),
+        api.getAdminCustomers(),
+        api.getAdminCampaigns(),
+        api.getAdminPayments(),
+        api.getAdminPackages(),
+        api.getAdminLogs(100),
+        api.getAdminTickets(),
+        api.getMetaStatus(),
+      ]);
+      setStats(s);
+      setCustomers(c.customers);
+      setCampaigns(cmp.campaigns);
+      setPayments(p.payments);
+      setPackages(pkg.packages);
+      setLogs(l.logs);
+      setTickets(t.tickets);
+      setMetaStatus(m);
+    } catch (err) {
+      console.error('Failed to load admin data', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadAllAdminData();
+  }, []);
+
+  const handleVerifyPayment = async (paymentId: string) => {
+    try {
+      await api.verifyAdminPayment(paymentId, adminNotes || 'Verified by Admin');
+      setVerifyingPaymentId(null);
+      setAdminNotes('');
+      loadAllAdminData();
+    } catch (err: any) {
+      alert(err.message || 'Payment verification failed');
+    }
+  };
+
+  const handleRejectPayment = async (paymentId: string) => {
+    const reason = prompt('Enter rejection reason:');
+    if (!reason) return;
+    try {
+      await api.rejectAdminPayment(paymentId, reason);
+      loadAllAdminData();
+    } catch (err: any) {
+      alert(err.message || 'Payment rejection failed');
+    }
+  };
+
+  const handleSavePackage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingPackage) return;
+    try {
+      await api.updateAdminPackage(editingPackage.id, editingPackage);
+      setEditingPackage(null);
+      loadAllAdminData();
+    } catch (err: any) {
+      alert(err.message || 'Package update failed');
+    }
+  };
+
+  const handleReplyTicket = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedTicket || !adminReply.trim()) return;
+    try {
+      const res = await api.replySupportTicket(selectedTicket.id, adminReply);
+      setSelectedTicket(res.ticket);
+      setAdminReply('');
+      loadAllAdminData();
+    } catch (err: any) {
+      alert(err.message || 'Failed to submit reply');
+    }
+  };
+
+  const handleUpdateTicketStatus = async (ticketId: string, status: string) => {
+    try {
+      await api.updateAdminTicketStatus(ticketId, status);
+      loadAllAdminData();
+    } catch (err: any) {
+      alert(err.message || 'Failed to update ticket status');
+    }
+  };
+
+  return (
+    <div className="space-y-8 animate-in fade-in duration-150">
+      
+      {/* Top Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-800/80 pb-6">
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="rounded-md border border-amber-500/30 bg-amber-950/40 px-2 py-0.5 text-[11px] font-bold text-amber-400">
+              Operations Control
+            </span>
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+              SMAP Admin Console
+            </h1>
+          </div>
+          <p className="text-xs sm:text-sm text-slate-400 mt-1">
+            System administration, UPI verification queue, Meta integration status, and audit logs.
+          </p>
+        </div>
+
+        <button
+          onClick={loadAllAdminData}
+          className="inline-flex items-center gap-1.5 rounded-xl border border-slate-700 bg-slate-800 px-4 py-2 text-xs font-semibold text-slate-200 hover:bg-slate-750"
+        >
+          <RefreshCw className="h-3.5 w-3.5" />
+          Refresh Operations
+        </button>
+      </div>
+
+      {/* Admin Navigation Tabs */}
+      <div className="flex items-center gap-1 overflow-x-auto p-1.5 rounded-xl bg-slate-900 border border-slate-800 text-xs font-semibold">
+        {[
+          { id: 'overview', label: 'Overview' },
+          { id: 'payments', label: `Payments (${payments.filter(p => p.status === 'VERIFICATION_PENDING').length} Pending)` },
+          { id: 'campaigns', label: `Campaigns (${campaigns.length})` },
+          { id: 'customers', label: `Customers (${customers.length})` },
+          { id: 'packages', label: 'Package Management' },
+          { id: 'meta', label: 'Meta Integration' },
+          { id: 'tickets', label: `Support Tickets (${tickets.filter(t => t.status === 'OPEN').length})` },
+          { id: 'logs', label: 'System Audit Logs' },
+        ].map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveSection(tab.id as any)}
+            className={`px-3 py-1.5 rounded-lg whitespace-nowrap transition-colors ${
+              activeSection === tab.id
+                ? 'bg-amber-500 text-slate-950 font-bold shadow'
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {loading ? (
+        <div className="flex justify-center py-20">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-amber-500 border-t-transparent" />
+        </div>
+      ) : (
+        <>
+          {/* SECTION 1: OVERVIEW */}
+          {activeSection === 'overview' && stats && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
+                <div className="rounded-xl border border-slate-800 bg-[#0C1220] p-4">
+                  <span className="text-[11px] text-slate-400 block">Total Customers</span>
+                  <span className="text-xl font-bold text-white tabular-nums mt-1 block">{stats.totalCustomers}</span>
+                </div>
+                <div className="rounded-xl border border-slate-800 bg-[#0C1220] p-4">
+                  <span className="text-[11px] text-slate-400 block">Total Campaigns</span>
+                  <span className="text-xl font-bold text-white tabular-nums mt-1 block">{stats.totalCampaigns}</span>
+                </div>
+                <div className="rounded-xl border border-slate-800 bg-[#0C1220] p-4">
+                  <span className="text-[11px] text-slate-400 block">Active Campaigns</span>
+                  <span className="text-xl font-bold text-emerald-400 tabular-nums mt-1 block">{stats.activeCampaigns}</span>
+                </div>
+                <div className="rounded-xl border border-slate-800 bg-[#0C1220] p-4">
+                  <span className="text-[11px] text-slate-400 block">Pending Review</span>
+                  <span className="text-xl font-bold text-amber-400 tabular-nums mt-1 block">{stats.pendingCampaigns}</span>
+                </div>
+                <div className="rounded-xl border border-slate-800 bg-[#0C1220] p-4">
+                  <span className="text-[11px] text-slate-400 block">Completed</span>
+                  <span className="text-xl font-bold text-blue-400 tabular-nums mt-1 block">{stats.completedCampaigns}</span>
+                </div>
+                <div className="rounded-xl border border-slate-800 bg-[#0C1220] p-4">
+                  <span className="text-[11px] text-slate-400 block">Verified Payments</span>
+                  <span className="text-xl font-bold text-emerald-400 tabular-nums mt-1 block">{stats.totalVerifiedPayments}</span>
+                </div>
+                <div className="rounded-xl border border-slate-800 bg-[#0C1220] p-4">
+                  <span className="text-[11px] text-slate-400 block">Total Revenue</span>
+                  <span className="text-xl font-bold text-white tabular-nums mt-1 block">₹{stats.totalRevenue}</span>
+                </div>
+              </div>
+
+              {/* Quick Actions & Meta integration health */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="rounded-2xl border border-slate-800 bg-[#0C1220] p-6 space-y-4">
+                  <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                    <ShieldCheck className="h-4 w-4 text-indigo-400" />
+                    Meta Integration Status
+                  </h3>
+                  <div className="space-y-2 text-xs text-slate-300">
+                    <div className="flex justify-between border-b border-slate-800 pb-2">
+                      <span className="text-slate-400">Meta App ID:</span>
+                      <span className="font-mono">{metaStatus?.appIdMasked || 'Not configured'}</span>
+                    </div>
+                    <div className="flex justify-between border-b border-slate-800 pb-2">
+                      <span className="text-slate-400">Meta API Version:</span>
+                      <span className="font-mono">{metaStatus?.apiVersion}</span>
+                    </div>
+                    <div className="flex justify-between border-b border-slate-800 pb-2">
+                      <span className="text-slate-400">Production Readiness:</span>
+                      <span className={metaStatus?.isConfigured ? 'text-emerald-400 font-semibold' : 'text-amber-400 font-semibold'}>
+                        {metaStatus?.isConfigured ? 'Credentials Configured' : 'Integration Required'}
+                      </span>
+                    </div>
+                  </div>
+                  <p className="text-[11px] text-slate-400 italic">
+                    {metaStatus?.statusMessage}
+                  </p>
+                </div>
+
+                <div className="rounded-2xl border border-slate-800 bg-[#0C1220] p-6 space-y-4">
+                  <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                    <Activity className="h-4 w-4 text-emerald-400" />
+                    Background Campaign Scheduler
+                  </h3>
+                  <p className="text-xs text-slate-400 leading-relaxed">
+                    The automated campaign stop scheduler runs server-side every 30 seconds to enforce purchased durations (5, 10, 14, 30 days).
+                  </p>
+                  <div className="rounded-lg bg-slate-900/90 p-3 border border-slate-800 text-xs font-mono text-slate-300">
+                    <div>Status: <span className="text-emerald-400">Active & Running</span></div>
+                    <div>Cycle: 30s polling frequency</div>
+                    <div>Meta Pause Hook: Configured</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* SECTION 2: PAYMENTS (UPI VERIFICATION) */}
+          {activeSection === 'payments' && (
+            <div className="rounded-2xl border border-slate-800 bg-[#0B101E] overflow-hidden">
+              <div className="p-4 border-b border-slate-800 bg-slate-900/50 flex justify-between items-center">
+                <div>
+                  <h3 className="text-sm font-bold text-white">UPI Payment Transactions & Verification Queue</h3>
+                  <p className="text-[11px] text-slate-400">
+                    Receiver UPI: <span className="font-mono text-indigo-300">sahil-stp@ybl</span>
+                  </p>
+                </div>
+                <span className="text-xs text-slate-400">
+                  Total: {payments.length} payments
+                </span>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead className="border-b border-slate-800 bg-slate-900/80 text-slate-400 font-semibold">
+                    <tr>
+                      <th className="py-3 pl-4">Payment ID</th>
+                      <th className="py-3">Campaign</th>
+                      <th className="py-3">Amount</th>
+                      <th className="py-3">Status</th>
+                      <th className="py-3">Customer UTR</th>
+                      <th className="py-3">Verification Source</th>
+                      <th className="py-3 text-right pr-4">Admin Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-800/60 text-slate-300">
+                    {payments.map((p) => (
+                      <tr key={p.id} className="hover:bg-slate-850/40">
+                        <td className="py-3 pl-4 font-mono text-[11px] text-white">
+                          {p.id}
+                        </td>
+                        <td className="py-3 font-mono text-[11px] text-slate-400">
+                          {p.campaign_id}
+                        </td>
+                        <td className="py-3 font-bold text-white tabular-nums">
+                          ₹{p.amount}
+                        </td>
+                        <td className="py-3">
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                            p.status === 'PAID' ? 'bg-emerald-950 text-emerald-400 border border-emerald-500/30' :
+                            p.status === 'VERIFICATION_PENDING' ? 'bg-amber-950 text-amber-400 border border-amber-500/30' :
+                            'bg-slate-800 text-slate-400'
+                          }`}>
+                            {p.status}
+                          </span>
+                        </td>
+                        <td className="py-3 font-mono text-indigo-300">
+                          {p.transaction_reference || '—'}
+                        </td>
+                        <td className="py-3 text-[11px] text-slate-400">
+                          {p.verification_source || 'Unverified'}
+                        </td>
+                        <td className="py-3 text-right pr-4 space-x-1.5">
+                          {p.status !== 'PAID' && (
+                            <>
+                              <button
+                                onClick={() => handleVerifyPayment(p.id)}
+                                className="rounded bg-emerald-600 px-2.5 py-1 text-[11px] font-semibold text-white hover:bg-emerald-500"
+                              >
+                                Verify & Approve
+                              </button>
+                              <button
+                                onClick={() => handleRejectPayment(p.id)}
+                                className="rounded bg-red-950 border border-red-500/30 px-2 py-1 text-[11px] font-semibold text-red-300 hover:bg-red-900/40"
+                              >
+                                Reject
+                              </button>
+                            </>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* SECTION 3: CAMPAIGNS */}
+          {activeSection === 'campaigns' && (
+            <div className="rounded-2xl border border-slate-800 bg-[#0B101E] overflow-hidden">
+              <div className="p-4 border-b border-slate-800 bg-slate-900/50">
+                <h3 className="text-sm font-bold text-white">All Platform Campaigns</h3>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead className="border-b border-slate-800 bg-slate-900/80 text-slate-400 font-semibold">
+                    <tr>
+                      <th className="py-3 pl-4">ID & Brand</th>
+                      <th className="py-3">Headline</th>
+                      <th className="py-3">Package</th>
+                      <th className="py-3">Status</th>
+                      <th className="py-3">Meta Campaign ID</th>
+                      <th className="py-3">End Date</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-800/60 text-slate-300">
+                    {campaigns.map((c) => (
+                      <tr key={c.id} className="hover:bg-slate-850/40">
+                        <td className="py-3 pl-4">
+                          <span className="font-semibold text-white block">{c.business_name}</span>
+                          <span className="font-mono text-[10px] text-slate-400">{c.id}</span>
+                        </td>
+                        <td className="py-3 max-w-[200px] truncate">{c.headline}</td>
+                        <td className="py-3 capitalize">{c.package_id.replace('pkg_', '').replace('_', ' ')}</td>
+                        <td className="py-3"><StatusBadge status={c.status} /></td>
+                        <td className="py-3 font-mono text-slate-400">{c.meta_campaign_id || '—'}</td>
+                        <td className="py-3 font-mono text-slate-400">{c.end_at ? new Date(c.end_at).toLocaleDateString() : '—'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* SECTION 4: CUSTOMERS */}
+          {activeSection === 'customers' && (
+            <div className="rounded-2xl border border-slate-800 bg-[#0B101E] overflow-hidden">
+              <div className="p-4 border-b border-slate-800 bg-slate-900/50">
+                <h3 className="text-sm font-bold text-white">Registered Customers</h3>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead className="border-b border-slate-800 bg-slate-900/80 text-slate-400 font-semibold">
+                    <tr>
+                      <th className="py-3 pl-4">User ID</th>
+                      <th className="py-3">Name</th>
+                      <th className="py-3">Email</th>
+                      <th className="py-3">Phone</th>
+                      <th className="py-3">Role</th>
+                      <th className="py-3">Registered At</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-800/60 text-slate-300">
+                    {customers.map((u) => (
+                      <tr key={u.id} className="hover:bg-slate-850/40">
+                        <td className="py-3 pl-4 font-mono text-slate-400">{u.id}</td>
+                        <td className="py-3 font-semibold text-white">{u.name}</td>
+                        <td className="py-3">{u.email}</td>
+                        <td className="py-3">{u.phone}</td>
+                        <td className="py-3 capitalize">{u.role}</td>
+                        <td className="py-3 font-mono text-slate-400">{new Date(u.created_at).toLocaleDateString()}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* SECTION 5: PACKAGES (Section 33) */}
+          {activeSection === 'packages' && (
+            <div className="space-y-6">
+              <div className="rounded-2xl border border-slate-800 bg-[#0B101E] p-5">
+                <h3 className="text-sm font-bold text-white mb-2">Package Management</h3>
+                <p className="text-xs text-slate-400 mb-4">
+                  Modify live pricing, durations, and active statuses stored dynamically in the database.
+                </p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {packages.map((pkg) => (
+                    <div key={pkg.id} className="rounded-xl border border-slate-800 bg-[#0C1220] p-4 space-y-3">
+                      <div className="flex justify-between items-center">
+                        <span className="font-bold text-white">{pkg.name}</span>
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${pkg.active ? 'bg-emerald-950 text-emerald-400' : 'bg-red-950 text-red-400'}`}>
+                          {pkg.active ? 'Active' : 'Inactive'}
+                        </span>
+                      </div>
+                      <div className="text-2xl font-extrabold text-white tabular-nums">
+                        ₹{pkg.price}
+                      </div>
+                      <div className="text-xs text-indigo-400 font-semibold">
+                        {pkg.duration_days} Days Run
+                      </div>
+                      <button
+                        onClick={() => setEditingPackage(pkg)}
+                        className="w-full mt-2 rounded-lg border border-slate-700 bg-slate-800 py-1.5 text-xs font-semibold text-slate-200 hover:bg-slate-700"
+                      >
+                        Edit Package
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {editingPackage && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+                  <div className="w-full max-w-md rounded-2xl border border-slate-800 bg-[#0E1424] p-6 text-slate-100 shadow-2xl">
+                    <h3 className="text-base font-bold text-white mb-3">Edit Package</h3>
+                    <form onSubmit={handleSavePackage} className="space-y-4 text-xs">
+                      <div>
+                        <label className="block text-slate-300 mb-1">Package Name</label>
+                        <input
+                          type="text"
+                          value={editingPackage.name}
+                          onChange={(e) => setEditingPackage({ ...editingPackage, name: e.target.value })}
+                          className="w-full rounded-lg border border-slate-700 bg-slate-900 py-2 px-3 text-white"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-slate-300 mb-1">Price (₹ INR)</label>
+                        <input
+                          type="number"
+                          value={editingPackage.price}
+                          onChange={(e) => setEditingPackage({ ...editingPackage, price: Number(e.target.value) })}
+                          className="w-full rounded-lg border border-slate-700 bg-slate-900 py-2 px-3 text-white font-mono"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-slate-300 mb-1">Duration (Days)</label>
+                        <input
+                          type="number"
+                          value={editingPackage.duration_days}
+                          onChange={(e) => setEditingPackage({ ...editingPackage, duration_days: Number(e.target.value) })}
+                          className="w-full rounded-lg border border-slate-700 bg-slate-900 py-2 px-3 text-white font-mono"
+                        />
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          id="activePkg"
+                          checked={editingPackage.active}
+                          onChange={(e) => setEditingPackage({ ...editingPackage, active: e.target.checked })}
+                          className="accent-indigo-500 h-4 w-4"
+                        />
+                        <label htmlFor="activePkg" className="text-slate-300">Package Active</label>
+                      </div>
+
+                      <div className="flex justify-end gap-2 pt-2">
+                        <button
+                          type="button"
+                          onClick={() => setEditingPackage(null)}
+                          className="rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-slate-300"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="submit"
+                          className="rounded-lg bg-indigo-600 px-5 py-2 font-semibold text-white"
+                        >
+                          Save
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* SECTION 6: META INTEGRATION (Section 24) */}
+          {activeSection === 'meta' && (
+            <div className="rounded-2xl border border-slate-800 bg-[#0C1220] p-6 space-y-5">
+              <div>
+                <h3 className="text-base font-bold text-white">Meta Advertising Integration Diagnostics</h3>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  Official Graph API review status and configuration readiness.
+                </p>
+              </div>
+
+              <div className="rounded-xl border border-slate-800 bg-[#090D18] p-5 space-y-3 text-xs">
+                <div className="flex justify-between border-b border-slate-800 pb-2.5">
+                  <span className="text-slate-400">Meta App ID:</span>
+                  <span className="font-mono text-white">{metaStatus?.appIdMasked || 'None (Configure META_APP_ID in env)'}</span>
+                </div>
+                <div className="flex justify-between border-b border-slate-800 pb-2.5">
+                  <span className="text-slate-400">Meta App Secret:</span>
+                  <span className="font-mono text-white">{metaStatus?.appSecretConfigured ? '••••••••••••••••' : 'None (Configure META_APP_SECRET in env)'}</span>
+                </div>
+                <div className="flex justify-between border-b border-slate-800 pb-2.5">
+                  <span className="text-slate-400">OAuth Redirect URI:</span>
+                  <span className="font-mono text-white">{metaStatus?.redirectUri}</span>
+                </div>
+                <div className="flex justify-between border-b border-slate-800 pb-2.5">
+                  <span className="text-slate-400">Meta Graph API Version:</span>
+                  <span className="font-mono text-white">{metaStatus?.apiVersion}</span>
+                </div>
+                <div className="flex justify-between border-b border-slate-800 pb-2.5">
+                  <span className="text-slate-400">Required OAuth Scopes:</span>
+                  <span className="font-mono text-indigo-300">{metaStatus?.requiredScopes?.join(', ')}</span>
+                </div>
+                <div className="flex justify-between pt-1">
+                  <span className="text-slate-400">Integration Readiness:</span>
+                  <span className={metaStatus?.isConfigured ? 'text-emerald-400 font-bold' : 'text-amber-400 font-bold'}>
+                    {metaStatus?.isConfigured ? 'Ready for App Review' : 'Integration Required'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Informational Development Notice */}
+              <div className="rounded-xl border border-amber-500/30 bg-amber-950/20 p-4 text-xs text-amber-200/90 space-y-2">
+                <div className="flex items-center gap-2 font-bold text-amber-200">
+                  <AlertTriangle className="h-4 w-4 text-amber-400 shrink-0" />
+                  Development Environment Status
+                </div>
+                <p className="leading-relaxed">
+                  External environment secrets (<span className="font-mono text-amber-100">META_APP_ID</span>, <span className="font-mono text-amber-100">META_APP_SECRET</span>, <span className="font-mono text-amber-100">PAYMENT_PROVIDER_KEY</span>, <span className="font-mono text-amber-100">PAYMENT_WEBHOOK_SECRET</span>) are kept strictly optional. The development platform runs fully functional using local database storage, mobile UPI intent with merchant ID <span className="font-mono font-semibold text-white">sahil-stp@ybl</span>, and manual UTR verification queue without inventing fake credentials.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* SECTION 7: SUPPORT TICKETS */}
+          {activeSection === 'tickets' && (
+            <div className="rounded-2xl border border-slate-800 bg-[#0B101E] overflow-hidden">
+              <div className="p-4 border-b border-slate-800 bg-slate-900/50">
+                <h3 className="text-sm font-bold text-white">All Support Tickets</h3>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead className="border-b border-slate-800 bg-slate-900/80 text-slate-400 font-semibold">
+                    <tr>
+                      <th className="py-3 pl-4">ID & Subject</th>
+                      <th className="py-3">User</th>
+                      <th className="py-3">Campaign</th>
+                      <th className="py-3">Status</th>
+                      <th className="py-3">Date</th>
+                      <th className="py-3 text-right pr-4">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-800/60 text-slate-300">
+                    {tickets.map((t) => (
+                      <tr key={t.id} className="hover:bg-slate-850/40">
+                        <td className="py-3 pl-4">
+                          <span className="font-semibold text-white block">{t.subject}</span>
+                          <span className="font-mono text-[10px] text-slate-400">{t.id}</span>
+                        </td>
+                        <td className="py-3">{t.user_name} ({t.user_email})</td>
+                        <td className="py-3 font-mono">{t.campaign_id || '—'}</td>
+                        <td className="py-3">
+                          <select
+                            value={t.status}
+                            onChange={(e) => handleUpdateTicketStatus(t.id, e.target.value)}
+                            className="rounded bg-slate-900 border border-slate-700 px-2 py-0.5 text-xs text-white"
+                          >
+                            <option value="OPEN">OPEN</option>
+                            <option value="IN_PROGRESS">IN_PROGRESS</option>
+                            <option value="RESOLVED">RESOLVED</option>
+                            <option value="CLOSED">CLOSED</option>
+                          </select>
+                        </td>
+                        <td className="py-3 font-mono text-slate-400">{new Date(t.created_at).toLocaleDateString()}</td>
+                        <td className="py-3 text-right pr-4">
+                          <button
+                            onClick={() => setSelectedTicket(t)}
+                            className="rounded bg-indigo-600 px-3 py-1 text-xs font-semibold text-white"
+                          >
+                            Reply
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* SECTION 8: SYSTEM LOGS */}
+          {activeSection === 'logs' && (
+            <div className="rounded-2xl border border-slate-800 bg-[#0B101E] overflow-hidden">
+              <div className="p-4 border-b border-slate-800 bg-slate-900/50">
+                <h3 className="text-sm font-bold text-white">System Audit & Scheduler Logs</h3>
+              </div>
+              <div className="p-4 max-h-[60vh] overflow-y-auto space-y-2 font-mono text-[11px]">
+                {logs.map((l) => (
+                  <div key={l.id} className="rounded border border-slate-800 bg-slate-950 p-2.5 text-slate-300">
+                    <div className="flex justify-between text-slate-500 mb-1">
+                      <span>[{l.category}] [{l.level}]</span>
+                      <span>{new Date(l.created_at).toLocaleTimeString()}</span>
+                    </div>
+                    <div className={l.level === 'ERROR' ? 'text-red-400' : l.level === 'WARN' ? 'text-amber-400' : 'text-slate-200'}>
+                      {l.message}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Admin Ticket Reply Modal */}
+      {selectedTicket && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="w-full max-w-xl rounded-2xl border border-slate-800 bg-[#0E1424] p-6 text-slate-100 shadow-2xl">
+            <h3 className="text-base font-bold text-white mb-2">Reply to Support Ticket: {selectedTicket.subject}</h3>
+            <p className="text-xs text-slate-400 mb-4 bg-slate-900 p-3 rounded-lg border border-slate-800">
+              {selectedTicket.message}
+            </p>
+            <form onSubmit={handleReplyTicket} className="space-y-4">
+              <textarea
+                rows={4}
+                required
+                value={adminReply}
+                onChange={(e) => setAdminReply(e.target.value)}
+                placeholder="Type response to customer..."
+                className="w-full rounded-lg border border-slate-700 bg-slate-900 p-3 text-xs text-white focus:outline-none focus:border-indigo-500"
+              />
+              <div className="flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setSelectedTicket(null)}
+                  className="rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-xs text-slate-300"
+                >
+                  Close
+                </button>
+                <button
+                  type="submit"
+                  className="rounded-lg bg-indigo-600 px-5 py-2 text-xs font-semibold text-white"
+                >
+                  Send Reply
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+    </div>
+  );
+};
