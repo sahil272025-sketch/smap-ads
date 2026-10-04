@@ -46,7 +46,9 @@ Render offers a free tier for Node.js Web Services with free custom domains and 
    - `PAYMENT_KEY_SECRET`: Your Razorpay Key Secret
    - `PAYMENT_WEBHOOK_SECRET`: Your Razorpay Webhook Secret (if configured)
    - `GOOGLE_CLIENT_ID`: `989765718508-t8crqu5je34utcjeblsmt33nfkqj4iol.apps.googleusercontent.com`
-   - `GOOGLE_CLIENT_SECRET`: Your Google OAuth Client Secret
+   - `GOOGLE_CLIENT_SECRET`: Your Google OAuth Client Secret (from Google Cloud Console)
+   - `GOOGLE_REDIRECT_URI`: `https://smap-ads.onrender.com/api/auth/google/callback`
+   - `APP_URL`: `https://smap-ads.onrender.com`
    - `META_APP_ID`: Your Meta App ID (if using Facebook Ads API)
    - `META_APP_SECRET`: Your Meta App Secret (if using Facebook Ads API)
 6. Click **Create Web Service**.

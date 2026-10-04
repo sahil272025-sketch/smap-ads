@@ -6,7 +6,7 @@ import dotenv from 'dotenv';
 import { apiRouter, handleGoogleOAuthCallback } from './src/server/routes.js';
 import { SchedulerService } from './src/server/schedulerService.js';
 import { renderPolicyHtml } from './src/server/policyPages.js';
-import { PRODUCTION_REDIRECT_URI } from './src/server/authService.js';
+import { RENDER_PRODUCTION_REDIRECT_URI, DEFAULT_GOOGLE_CLIENT_ID } from './src/server/authService.js';
 
 dotenv.config({ override: true });
 
@@ -29,10 +29,14 @@ for (const loc of devEnvLocations) {
   }
 }
 
-// Requirement 7 & 8: Verify and ensure the production Google OAuth callback is strictly:
-// https://ais-pre-o3n2fq6vm22j6e33dq2i7j-911759115865.asia-southeast1.run.app/api/auth/google/callback
+// Default to existing SMAP Google Client ID if not provided
+if (!process.env.GOOGLE_CLIENT_ID || process.env.GOOGLE_CLIENT_ID.trim().length === 0) {
+  process.env.GOOGLE_CLIENT_ID = DEFAULT_GOOGLE_CLIENT_ID;
+}
+
+// Verify and ensure production Google OAuth redirect URI is configured
 if (!process.env.GOOGLE_REDIRECT_URI || process.env.GOOGLE_REDIRECT_URI.includes('ais-dev')) {
-  process.env.GOOGLE_REDIRECT_URI = PRODUCTION_REDIRECT_URI;
+  process.env.GOOGLE_REDIRECT_URI = RENDER_PRODUCTION_REDIRECT_URI;
 }
 
 const app = express();

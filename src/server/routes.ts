@@ -77,12 +77,12 @@ export function getRequestOrigin(req: Request): string {
     return `${forwardedProto}://${forwardedHost}`;
   }
 
-  // 4. Default to published AIS-PRE URL or configured APP_URL
+  // 4. Default to configured APP_URL or production Render URL
   if (process.env.APP_URL && !process.env.APP_URL.includes('ais-dev')) {
     return process.env.APP_URL.trim().replace(/\/$/, '');
   }
 
-  return 'https://ais-pre-o3n2fq6vm22j6e33dq2i7j-911759115865.asia-southeast1.run.app';
+  return 'https://smap-ads.onrender.com';
 }
 
 export const requireAuth = (req: AuthenticatedRequest, res: Response, next: NextFunction) => {

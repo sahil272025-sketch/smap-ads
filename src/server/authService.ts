@@ -21,6 +21,11 @@ export const PRODUCTION_REDIRECT_URI = `${PRODUCTION_ORIGIN}/api/auth/google/cal
 export const CUSTOM_PRODUCTION_ORIGIN = 'https://smap-ads.ai.studio';
 export const CUSTOM_PRODUCTION_REDIRECT_URI = `${CUSTOM_PRODUCTION_ORIGIN}/api/auth/google/callback`;
 
+export const RENDER_PRODUCTION_ORIGIN = 'https://smap-ads.onrender.com';
+export const RENDER_PRODUCTION_REDIRECT_URI = `${RENDER_PRODUCTION_ORIGIN}/api/auth/google/callback`;
+
+export const DEFAULT_GOOGLE_CLIENT_ID = '989765718508-t8crqu5je34utcjeblsmt33nfkqj4iol.apps.googleusercontent.com';
+
 export interface GoogleConfigStatus {
   isConfigured: boolean;
   clientId: string | null;
@@ -41,9 +46,13 @@ export interface GoogleUserProfile {
 }
 
 export class AuthService {
+  public static readonly DEFAULT_GOOGLE_CLIENT_ID = DEFAULT_GOOGLE_CLIENT_ID;
+
   private static getClientId(): string | null {
     const val = process.env.GOOGLE_CLIENT_ID?.trim();
-    return val && val.length > 0 ? val : null;
+    if (val && val.length > 0) return val;
+    // Default to existing SMAP Google OAuth Web Client ID
+    return DEFAULT_GOOGLE_CLIENT_ID;
   }
 
   private static getClientSecret(): string | null {
@@ -81,25 +90,42 @@ export class AuthService {
   }
 
   public static getProductionRedirectUri(): string {
-    return PRODUCTION_REDIRECT_URI;
+    return RENDER_PRODUCTION_REDIRECT_URI;
   }
 
   public static getRedirectUri(origin?: string): string {
+    // 0. If explicit GOOGLE_REDIRECT_URI is provided in environment and not pointing to DEV
+    const envRedirect = process.env.GOOGLE_REDIRECT_URI?.trim();
+    if (envRedirect && !this.isDevEnvironment(origin) && !envRedirect.includes('ais-dev')) {
+      return envRedirect;
+    }
+
     // 1. If in DEV/preview environment, DEV must not accidentally use the production callback
     if (this.isDevEnvironment(origin)) {
       const cleanOrigin = (origin || '').replace(/\/$/, '');
       return cleanOrigin ? `${cleanOrigin}/api/auth/google/callback` : '';
     }
 
-    // 2. If running on custom production domain (e.g. smap-ads.ai.studio or any *.ai.studio), use custom domain callback
+    // 2. If running on Render domain
+    if (origin && origin.includes('onrender.com')) {
+      const cleanOrigin = origin.replace(/\/$/, '');
+      return `${cleanOrigin}/api/auth/google/callback`;
+    }
+
+    // 3. If running on custom production domain (e.g. smap-ads.ai.studio or any *.ai.studio)
     if (origin && (origin.includes('.ai.studio') || origin.includes('smap-ads'))) {
       const cleanOrigin = origin.replace(/\/$/, '');
       return `${cleanOrigin}/api/auth/google/callback`;
     }
 
-    // 3. Fallback to existing AIS-PRE production callback:
-    // https://ais-pre-o3n2fq6vm22j6e33dq2i7j-911759115865.asia-southeast1.run.app/api/auth/google/callback
-    return PRODUCTION_REDIRECT_URI;
+    // 4. If APP_URL is configured (e.g. https://smap-ads.onrender.com)
+    if (process.env.APP_URL && !process.env.APP_URL.includes('ais-dev')) {
+      const cleanOrigin = process.env.APP_URL.trim().replace(/\/$/, '');
+      return `${cleanOrigin}/api/auth/google/callback`;
+    }
+
+    // 5. Default production callback for Render deployment
+    return RENDER_PRODUCTION_REDIRECT_URI;
   }
 
   public static generateOAuthState(): string {
@@ -177,7 +203,7 @@ export class AuthService {
         hasClientSecret,
         hasRedirectWarning: false,
         isDevEnvironment: true,
-        statusMessage: 'Google Sign-In is configured exclusively for the production SMAP URL (ais-pre). In this DEV preview, please sign in with Email & Password.',
+        statusMessage: 'Google Sign-In is configured exclusively for the production SMAP URL. In this DEV preview, please sign in with Email & Password.',
       };
     }
 

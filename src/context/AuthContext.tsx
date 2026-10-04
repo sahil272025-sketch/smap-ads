@@ -57,7 +57,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         origin.endsWith('.run.app') ||
         origin.includes('.ai.studio') ||
         origin.includes('localhost') ||
-        origin.includes('127.0.0.1');
+        origin.includes('127.0.0.1') ||
+        origin.includes('onrender.com');
 
       if (!isTrustedOrigin) return;
 
@@ -77,8 +78,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const loginWithGoogle = async (): Promise<void> => {
-    // Disabled: OAuth Popup flow has been removed in favor of official Google Identity Services (GIS)
-    console.warn('OAuth Popup flow is disabled. Use the official Continue with Google button.');
+    try {
+      setIsLoading(true);
+      const res = await api.getGoogleAuthUrl();
+      if (res && res.url) {
+        const width = 500;
+        const height = 620;
+        const left = Math.max(0, window.screenX + (window.outerWidth - width) / 2);
+        const top = Math.max(0, window.screenY + (window.outerHeight - height) / 2);
+        const popup = window.open(
+          res.url,
+          'google_oauth_popup',
+          `width=${width},height=${height},left=${left},top=${top},status=0,menubar=0,toolbar=0,location=1`
+        );
+        if (!popup || popup.closed || typeof popup.closed === 'undefined') {
+          window.location.href = res.url;
+        }
+      } else {
+        throw new Error('Could not obtain Google authentication URL. Please verify server environment variables.');
+      }
+    } catch (e: any) {
+      console.error('Failed to initiate Google OAuth:', e);
+      throw e;
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleGoogleCredential = async (idToken: string): Promise<void> => {

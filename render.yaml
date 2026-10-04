@@ -26,12 +26,14 @@ services:
         sync: false
       - key: PAYMENT_WEBHOOK_SECRET
         sync: false
+      - key: APP_URL
+        value: https://smap-ads.onrender.com
       - key: GOOGLE_CLIENT_ID
-        sync: false
+        value: 989765718508-t8crqu5je34utcjeblsmt33nfkqj4iol.apps.googleusercontent.com
       - key: GOOGLE_CLIENT_SECRET
         sync: false
       - key: GOOGLE_REDIRECT_URI
-        sync: false
+        value: https://smap-ads.onrender.com/api/auth/google/callback
       - key: META_APP_ID
         sync: false
       - key: META_APP_SECRET
