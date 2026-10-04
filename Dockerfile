@@ -4,7 +4,7 @@ FROM node:22-alpine AS builder
 WORKDIR /app
 
 # Install build dependencies
-COPY package.json ./
+COPY package*.json .npmrc* ./
 RUN npm install
 
 # Copy source files
@@ -22,7 +22,7 @@ ENV NODE_ENV=production
 ENV PORT=3000
 
 # Copy node modules and built assets
-COPY package.json ./
+COPY package*.json .npmrc* ./
 RUN npm install --omit=dev
 
 COPY --from=builder /app/dist ./dist
