@@ -698,14 +698,23 @@ apiRouter.post('/payments/:id/verify', requireAuth, async (req: AuthenticatedReq
   }
 });
 
-// Sandbox Payment Simulation Endpoint (for testing sandbox flows)
+// Sandbox Payment Simulation Endpoint (strictly for development sandbox flows)
 apiRouter.post('/payments/:id/sandbox-simulate', requireAuth, async (req: AuthenticatedRequest, res) => {
   try {
+    if (process.env.NODE_ENV === 'production') {
+      return res.status(403).json({ error: 'Sandbox simulation endpoints are strictly disabled in production.' });
+    }
+
     const { status, failureReason } = req.body;
     const payment = db.findPaymentById(req.params.id);
     if (!payment) return res.status(404).json({ error: 'Payment not found' });
     if (payment.user_id !== req.user!.id && req.user!.role !== 'admin') {
       return res.status(403).json({ error: 'Unauthorized' });
+    }
+
+    // Never allow wallet balance credits via simulation
+    if (payment.campaign_id === 'WALLET_TOPUP' || payment.package_id === 'wallet_topup') {
+      return res.status(403).json({ error: 'Wallet funds cannot be credited through simulation endpoints.' });
     }
 
     if (status === 'PAID') {
@@ -766,10 +775,19 @@ apiRouter.post('/payments/webhook', (req, res) => {
 
 // Sandbox Webhook Simulator (Programmatic test runner for sandbox webhooks & idempotency)
 apiRouter.post('/payments/sandbox/simulate-webhook', (req, res) => {
+  if (process.env.NODE_ENV === 'production') {
+    return res.status(403).json({ error: 'Sandbox webhook simulation is strictly disabled in production.' });
+  }
+
   const { paymentId, event, amount, failureReason, invalidSignature } = req.body;
   const payment = db.findPaymentById(paymentId);
   if (!payment) {
     return res.status(404).json({ error: `Payment ${paymentId} not found` });
+  }
+
+  // Never allow wallet balance credits via simulated webhook
+  if (payment.campaign_id === 'WALLET_TOPUP' || payment.package_id === 'wallet_topup') {
+    return res.status(403).json({ error: 'Wallet funds cannot be credited through simulated webhooks. Genuine Razorpay webhook required.' });
   }
 
   const gatewayPaymentId = `pay_sandbox_wh_${Date.now()}`;
@@ -898,6 +916,21 @@ apiRouter.post('/wallet/pay-campaign', requireAuth, async (req: AuthenticatedReq
   }
 });
 
+// Reset unverified or test wallet balance to ₹0 (Customer Self-Reset for unverified test funds)
+apiRouter.post('/wallet/reset-test-balance', requireAuth, (req: AuthenticatedRequest, res) => {
+  try {
+    const result = WalletService.resetTestBalance(req.user!.id);
+    res.json({
+      success: true,
+      message: `Wallet balance successfully reset from ₹${result.previousBalance.toFixed(2)} to ₹0.00`,
+      balance: 0,
+      transaction: result.transaction,
+    });
+  } catch (err: any) {
+    res.status(400).json({ error: err.message || 'Failed to reset wallet balance' });
+  }
+});
+
 // Admin endpoint: Get full customer wallets overview and transaction ledger
 apiRouter.get('/admin/wallets', requireAdmin, (_req, res) => {
   try {
@@ -905,6 +938,21 @@ apiRouter.get('/admin/wallets', requireAdmin, (_req, res) => {
     res.json(data);
   } catch (err: any) {
     res.status(500).json({ error: err.message || 'Failed to fetch admin wallet overview' });
+  }
+});
+
+// Admin endpoint: Reset customer unverified or test balance to ₹0
+apiRouter.post('/admin/wallets/:userId/reset', requireAdmin, (req, res) => {
+  try {
+    const result = WalletService.resetTestBalance(req.params.userId, req.body?.reason || 'Admin reset unverified test balance');
+    res.json({
+      success: true,
+      message: `Customer balance successfully reset from ₹${result.previousBalance.toFixed(2)} to ₹0.00`,
+      balance: 0,
+      transaction: result.transaction,
+    });
+  } catch (err: any) {
+    res.status(400).json({ error: err.message || 'Failed to reset customer wallet balance' });
   }
 });
 

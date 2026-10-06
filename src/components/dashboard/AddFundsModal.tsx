@@ -97,80 +97,77 @@ export const AddFundsModal: React.FC<AddFundsModalProps> = ({
       // 2. Ensure Razorpay SDK is ready
       const sdkReady = await loadRazorpaySdk();
 
-      // Check if real Razorpay or fallback
-      if (sdkReady && keyId && !keyId.includes('sandbox')) {
-        const options: any = {
-          key: keyId,
-          amount: Math.round(payment.amount * 100),
-          currency: 'INR',
-          name: 'SMAP Advertising',
-          description: `Add ₹${payment.amount} to SMAP Wallet Balance`,
-          order_id: payment.gateway_order_id && !payment.gateway_order_id.startsWith('order_sandbox_')
-            ? payment.gateway_order_id
-            : undefined,
-          prefill: {
-            name: user?.name || '',
-            email: user?.email || '',
-            contact: user?.phone || '',
-          },
-          theme: {
-            color: '#7C3AED',
-          },
-          modal: {
-            ondismiss: () => {
-              setLoading(false);
-              setError('Payment checkout was closed. No funds were added.');
-            },
-          },
-          handler: async (response: any) => {
-            setLoading(false);
-            setVerifying(true);
-            try {
-              const verifyRes = await api.verifyWalletPayment({
-                paymentId: payment.id,
-                gatewayPaymentId: response.razorpay_payment_id,
-                gatewayOrderId: response.razorpay_order_id,
-                gatewaySignature: response.razorpay_signature,
-              });
-
-              setSuccessMsg(`₹${amountToAdd} successfully added to your SMAP wallet!`);
-              onSuccess(verifyRes.balance);
-              setTimeout(() => {
-                onClose();
-              }, 1600);
-            } catch (vErr: any) {
-              setError(vErr.message || 'Payment verification failed at server.');
-            } finally {
-              setVerifying(false);
-            }
-          },
-        };
-
-        const rzp = new (window as any).Razorpay(options);
-
-        rzp.on('payment.failed', (resp: any) => {
-          setLoading(false);
-          setVerifying(false);
-          const reason = resp.error?.description || resp.error?.reason || 'Payment declined by gateway.';
-          setError(`Payment failed: ${reason}`);
-        });
-
-        rzp.open();
-      } else {
-        // Local sandbox simulation fallback for non-blocking local test runs
-        const simRes = await api.simulateSandboxWebhook({
-          paymentId: payment.id,
-          event: 'payment.captured',
-          amount: payment.amount,
-        });
-
-        const newBal = (await api.getWalletBalance()).balance;
-        setSuccessMsg(`₹${amountToAdd} credited to your wallet in verified sandbox mode.`);
-        onSuccess(newBal);
-        setTimeout(() => {
-          onClose();
-        }, 1500);
+      if (!sdkReady || !keyId) {
+        setLoading(false);
+        setError(
+          keyId
+            ? 'Failed to load Razorpay checkout SDK. Please refresh the page and try again.'
+            : 'Payment gateway is not currently configured on the server. Please contact support.'
+        );
+        return;
       }
+
+      const options: any = {
+        key: keyId,
+        amount: Math.round(payment.amount * 100),
+        currency: 'INR',
+        name: 'SMAP Advertising',
+        description: `Add ₹${payment.amount} to SMAP Wallet Balance`,
+        order_id: payment.gateway_order_id && !payment.gateway_order_id.startsWith('order_sandbox_')
+          ? payment.gateway_order_id
+          : undefined,
+        prefill: {
+          name: user?.name || '',
+          email: user?.email || '',
+          contact: user?.phone || '',
+        },
+        theme: {
+          color: '#7C3AED',
+        },
+        modal: {
+          ondismiss: () => {
+            // User cancelled or closed the Razorpay popup without paying - WALLET BALANCE REMAINS UNCHANGED
+            setLoading(false);
+            setVerifying(false);
+            setError('Payment was cancelled. No funds were added to your wallet.');
+          },
+        },
+        handler: async (response: any) => {
+          // Razorpay returned payment confirmation and cryptographic signature
+          setLoading(false);
+          setVerifying(true);
+          try {
+            const verifyRes = await api.verifyWalletPayment({
+              paymentId: payment.id,
+              gatewayPaymentId: response.razorpay_payment_id,
+              gatewayOrderId: response.razorpay_order_id,
+              gatewaySignature: response.razorpay_signature,
+            });
+
+            setSuccessMsg(`₹${amountToAdd} successfully added to your SMAP wallet!`);
+            onSuccess(verifyRes.balance);
+            setTimeout(() => {
+              onClose();
+            }, 1600);
+          } catch (vErr: any) {
+            setError(vErr.message || 'Payment verification failed at server. No funds added.');
+          } finally {
+            setVerifying(false);
+          }
+        },
+      };
+
+      const rzp = new (window as any).Razorpay(options);
+
+      rzp.on('payment.failed', (resp: any) => {
+        // Payment failed or declined by bank/gateway - WALLET BALANCE REMAINS UNCHANGED
+        setLoading(false);
+        setVerifying(false);
+        const reason = resp.error?.description || resp.error?.reason || 'Payment declined by gateway.';
+        setError(`Payment failed: ${reason}. No funds were added to your wallet.`);
+      });
+
+      rzp.open();
     } catch (err: any) {
       setError(err.message || 'Failed to initiate payment.');
       setLoading(false);
@@ -221,7 +218,7 @@ export const AddFundsModal: React.FC<AddFundsModalProps> = ({
           </div>
           <div className="border-l border-purple-500/20 pl-3">
             <span className="text-[11px] font-medium text-purple-600 dark:text-purple-300 block">
-              Projected Balance
+              Projected (After Payment)
             </span>
             <span className="text-lg sm:text-xl font-extrabold text-purple-600 dark:text-purple-400 tabular-nums">
               ₹{projectedBalance.toFixed(2)}

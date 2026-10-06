@@ -187,11 +187,30 @@ export class WalletService {
       };
     }
 
-    // 2. Verify signature if credentials configured
+    // 2. Strict Verification: Enforce cryptographic signature & gateway authentication
     const keySecret = PaymentService.getKeySecret();
+    const keyId = PaymentService.getKeyId();
     const orderIdToVerify = params.gatewayOrderId || payment.gateway_order_id;
 
-    if (keySecret && params.gatewaySignature && orderIdToVerify && !orderIdToVerify.startsWith('order_sandbox_')) {
+    if (!params.gatewayPaymentId || typeof params.gatewayPaymentId !== 'string' || !params.gatewayPaymentId.trim()) {
+      throw new Error('Valid gateway payment ID is required for wallet verification');
+    }
+
+    if (!orderIdToVerify) {
+      throw new Error('Missing gateway order ID for wallet payment verification');
+    }
+
+    // Never credit in production without configured gateway secrets
+    if (process.env.NODE_ENV === 'production' && !keySecret) {
+      throw new Error('Payment gateway credentials are not configured on production server. Cannot verify payment.');
+    }
+
+    // Cryptographic signature is strictly mandatory whenever secret exists or in production
+    if (keySecret || process.env.NODE_ENV === 'production') {
+      if (!params.gatewaySignature) {
+        throw new Error('Razorpay cryptographic payment signature is missing. Verification rejected.');
+      }
+
       const isValid = PaymentService.verifyClientSignature({
         gatewayOrderId: orderIdToVerify,
         gatewayPaymentId: params.gatewayPaymentId,
@@ -216,7 +235,38 @@ export class WalletService {
           failureReason: 'Cryptographic signature mismatch',
         });
 
-        throw new Error('Cryptographic signature verification failed.');
+        throw new Error('Cryptographic signature verification failed. Untrusted payment assertion.');
+      }
+    }
+
+    // Verify against Razorpay REST API if live keys are configured
+    if (keyId && keySecret && !orderIdToVerify.startsWith('order_sandbox_')) {
+      try {
+        const authHeader = `Basic ${Buffer.from(`${keyId}:${keySecret}`).toString('base64')}`;
+        const fetchRes = await fetch(`https://api.razorpay.com/v1/payments/${params.gatewayPaymentId}`, {
+          headers: { Authorization: authHeader },
+        });
+        const paymentData: any = await fetchRes.json();
+
+        if (!fetchRes.ok || !paymentData.id) {
+          throw new Error(paymentData.error?.description || 'Gateway payment verification failed');
+        }
+
+        const expectedPaise = Math.round(payment.amount * 100);
+        if (paymentData.amount !== expectedPaise) {
+          throw new Error(`Amount mismatch: expected ₹${payment.amount}, received ₹${paymentData.amount / 100}`);
+        }
+
+        if (paymentData.currency !== 'INR') {
+          throw new Error(`Invalid currency: ${paymentData.currency}`);
+        }
+
+        if (paymentData.status !== 'captured' && paymentData.status !== 'authorized') {
+          throw new Error(`Payment not captured at gateway. Current status: ${paymentData.status}`);
+        }
+      } catch (err: any) {
+        db.log('PAYMENT', 'ERROR', `Razorpay REST verification failure: ${err.message}`);
+        throw new Error(`Payment verification failed at gateway: ${err.message}`);
       }
     }
 
@@ -245,6 +295,13 @@ export class WalletService {
       balance: creditRes.newBalance,
       transaction: creditRes.transaction,
     };
+  }
+
+  /**
+   * Reset/reconcile unverified or test wallet balance to ₹0.
+   */
+  public static resetTestBalance(userId: string, reason?: string) {
+    return db.resetWalletBalance(userId, reason);
   }
 
   /**

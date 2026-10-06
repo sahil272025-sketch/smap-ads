@@ -332,8 +332,31 @@ class ApiClient {
     });
   }
 
+  public resetTestBalance() {
+    return this.request<{
+      success: boolean;
+      message: string;
+      balance: number;
+      transaction: WalletTransaction;
+    }>('/wallet/reset-test-balance', {
+      method: 'POST',
+    });
+  }
+
   public getAdminWallets() {
     return this.request<AdminWalletData>('/admin/wallets');
+  }
+
+  public adminResetCustomerBalance(userId: string, reason?: string) {
+    return this.request<{
+      success: boolean;
+      message: string;
+      balance: number;
+      transaction: WalletTransaction;
+    }>(`/admin/wallets/${userId}/reset`, {
+      method: 'POST',
+      body: JSON.stringify({ reason }),
+    });
   }
 
   // Meta Integration

@@ -137,6 +137,18 @@ export const AdminDashboard: React.FC = () => {
     }
   };
 
+  const handleResetCustomerBalance = async (userId: string, name: string, currentBalance: number) => {
+    if (!window.confirm(`Reset balance of ₹${currentBalance.toFixed(2)} for ${name} to ₹0.00?`)) {
+      return;
+    }
+    try {
+      await api.adminResetCustomerBalance(userId, 'Admin reset unverified test balance');
+      await loadAllAdminData();
+    } catch (err: any) {
+      alert(err.message || 'Failed to reset customer balance');
+    }
+  };
+
   return (
     <div className="space-y-8 animate-in fade-in duration-150">
       
@@ -352,7 +364,8 @@ export const AdminDashboard: React.FC = () => {
                         <th className="py-3 text-right">Total Added</th>
                         <th className="py-3 text-right">Total Used</th>
                         <th className="py-3 text-center">Transactions</th>
-                        <th className="py-3 pr-4 text-right">Last Activity</th>
+                        <th className="py-3 text-right">Last Activity</th>
+                        <th className="py-3 pr-4 text-center">Actions</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-800/60 text-slate-300">
@@ -380,12 +393,24 @@ export const AdminDashboard: React.FC = () => {
                               {c.transactionsCount}
                             </span>
                           </td>
-                          <td className="py-3 pr-4 text-right font-mono text-[11px] text-slate-400">
+                          <td className="py-3 text-right font-mono text-[11px] text-slate-400">
                             {new Date(c.lastActivityAt || '').toLocaleDateString('en-IN', {
                               day: 'numeric',
                               month: 'short',
                               year: 'numeric',
                             })}
+                          </td>
+                          <td className="py-3 pr-4 text-center">
+                            {c.currentBalance > 0 ? (
+                              <button
+                                onClick={() => handleResetCustomerBalance(c.userId, c.name, c.currentBalance)}
+                                className="px-2 py-1 rounded bg-amber-950/60 hover:bg-amber-900 border border-amber-600/50 text-[10px] font-bold text-amber-300 transition-colors"
+                              >
+                                Reset to ₹0
+                              </button>
+                            ) : (
+                              <span className="text-[10px] text-slate-500">Reconciled</span>
+                            )}
                           </td>
                         </tr>
                       ))}

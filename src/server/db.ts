@@ -619,6 +619,31 @@ class DatabaseService {
     const currentBalance = typeof user.wallet_balance === 'number' && !isNaN(user.wallet_balance)
       ? user.wallet_balance
       : 0;
+
+    // Strict Double-Layer Database Idempotency Guard: Never credit duplicate payment or gateway payment ID
+    if (meta.paymentId) {
+      const existingByPayment = this.findWalletTransactionByPaymentId(meta.paymentId);
+      if (existingByPayment && existingByPayment.status === 'SUCCESS') {
+        this.log('PAYMENT', 'INFO', `Idempotency guard prevented double-credit for payment ${meta.paymentId}`, {
+          userId,
+          paymentId: meta.paymentId,
+          existingTxId: existingByPayment.id,
+        });
+        return { newBalance: currentBalance, transaction: existingByPayment };
+      }
+    }
+    if (meta.gatewayPaymentId) {
+      const existingByGateway = this.findWalletTransactionByGatewayPaymentId(meta.gatewayPaymentId);
+      if (existingByGateway && existingByGateway.status === 'SUCCESS') {
+        this.log('PAYMENT', 'INFO', `Idempotency guard prevented double-credit for gateway payment ${meta.gatewayPaymentId}`, {
+          userId,
+          gatewayPaymentId: meta.gatewayPaymentId,
+          existingTxId: existingByGateway.id,
+        });
+        return { newBalance: currentBalance, transaction: existingByGateway };
+      }
+    }
+
     const roundedAmount = Math.max(0, Math.round(amount * 100) / 100);
     const newBalance = Math.round((currentBalance + roundedAmount) * 100) / 100;
 
@@ -653,6 +678,53 @@ class DatabaseService {
     });
 
     return { newBalance, transaction: tx };
+  }
+
+  /**
+   * Reset/reconcile unverified or test wallet balance back to ₹0 with an audit ledger entry.
+   */
+  public resetWalletBalance(userId: string, reason?: string): {
+    previousBalance: number;
+    newBalance: number;
+    transaction: WalletTransaction;
+  } {
+    const user = this.findUserById(userId);
+    if (!user) {
+      throw new Error(`User ${userId} not found`);
+    }
+
+    const currentBalance = typeof user.wallet_balance === 'number' && !isNaN(user.wallet_balance)
+      ? user.wallet_balance
+      : 0;
+
+    const tx: WalletTransaction = {
+      id: `wtx_adj_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
+      user_id: userId,
+      type: 'REFUND',
+      amount: currentBalance,
+      balance_before: currentBalance,
+      balance_after: 0,
+      description: reason || `Audit Adjustment: Reset test balance of ₹${currentBalance.toFixed(2)} to ₹0.00`,
+      payment_id: null,
+      gateway_payment_id: null,
+      gateway_order_id: null,
+      campaign_id: null,
+      status: 'SUCCESS',
+      created_at: new Date().toISOString(),
+    };
+
+    user.wallet_balance = 0;
+    user.updated_at = new Date().toISOString();
+    this.createWalletTransaction(tx);
+    this.save();
+
+    this.log('PAYMENT', 'WARN', `Reset wallet balance for user ${userId} from ₹${currentBalance} to ₹0.00`, {
+      userId,
+      previousBalance: currentBalance,
+      reason,
+    });
+
+    return { previousBalance: currentBalance, newBalance: 0, transaction: tx };
   }
 
   /**

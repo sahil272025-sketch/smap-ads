@@ -24,8 +24,11 @@ export const WalletView: React.FC = () => {
   const [transactions, setTransactions] = useState<WalletTransaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddFundsModal, setShowAddFundsModal] = useState(false);
+  const [selectedTopupAmount, setSelectedTopupAmount] = useState<number>(500);
   const [filterType, setFilterType] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
+  const [resetting, setResetting] = useState(false);
+  const [resetMessage, setResetMessage] = useState<string | null>(null);
 
   const loadWalletData = async () => {
     setLoading(true);
@@ -43,6 +46,28 @@ export const WalletView: React.FC = () => {
   useEffect(() => {
     loadWalletData();
   }, []);
+
+  const handleOpenAddFunds = (amt = 500) => {
+    setSelectedTopupAmount(amt);
+    setShowAddFundsModal(true);
+  };
+
+  const handleResetTestBalance = async () => {
+    if (!window.confirm('Are you sure you want to reset your unverified/test balance to ₹0.00? This cannot be undone.')) {
+      return;
+    }
+    setResetting(true);
+    setResetMessage(null);
+    try {
+      const res = await api.resetTestBalance();
+      setResetMessage(res.message);
+      await loadWalletData();
+    } catch (err: any) {
+      alert(err.message || 'Failed to reset balance');
+    } finally {
+      setResetting(false);
+    }
+  };
 
   const handleFundsAdded = (newBal: number) => {
     setBalance(newBal);
@@ -182,18 +207,34 @@ export const WalletView: React.FC = () => {
               {[100, 200, 500, 1000].map((amt) => (
                 <button
                   key={amt}
-                  onClick={() => setShowAddFundsModal(true)}
+                  onClick={() => handleOpenAddFunds(amt)}
                   className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-white/10 hover:bg-purple-600 text-white border border-white/10 transition-colors"
                 >
                   +₹{amt}
                 </button>
               ))}
+
+              {balance > 0 && (
+                <button
+                  onClick={handleResetTestBalance}
+                  disabled={resetting}
+                  className="ml-auto text-[11px] text-amber-400 hover:text-amber-300 underline font-medium"
+                >
+                  {resetting ? 'Resetting...' : 'Reset Test Balance (₹0)'}
+                </button>
+              )}
             </div>
+
+            {resetMessage && (
+              <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs">
+                {resetMessage}
+              </div>
+            )}
           </div>
 
           <div className="flex flex-col sm:flex-row md:flex-col gap-3 shrink-0">
             <button
-              onClick={() => setShowAddFundsModal(true)}
+              onClick={() => handleOpenAddFunds(500)}
               className="inline-flex items-center justify-center gap-2 rounded-2xl bg-purple-600 px-6 py-3.5 text-sm font-extrabold text-white shadow-xl shadow-purple-600/40 hover:bg-purple-500 active:scale-95 transition-all"
             >
               <Plus className="h-4 w-4" />
@@ -355,6 +396,7 @@ export const WalletView: React.FC = () => {
         isOpen={showAddFundsModal}
         onClose={() => setShowAddFundsModal(false)}
         currentBalance={balance}
+        recommendedAmount={selectedTopupAmount}
         onSuccess={handleFundsAdded}
       />
     </div>
