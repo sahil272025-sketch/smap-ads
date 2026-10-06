@@ -1,9 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { api } from '../../lib/api';
 import { ThemeToggle } from '../ThemeToggle';
 import {
   Search,
   Bell,
+  Wallet,
   ChevronDown,
   User as UserIcon,
   LogOut,
@@ -28,9 +30,23 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
   const [profileOpen, setProfileOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [walletBalance, setWalletBalance] = useState<number | null>(null);
 
   const profileRef = useRef<HTMLDivElement>(null);
   const notifRef = useRef<HTMLDivElement>(null);
+
+  const loadBalance = () => {
+    api
+      .getWalletBalance()
+      .then((res) => setWalletBalance(res.balance))
+      .catch(() => {});
+  };
+
+  useEffect(() => {
+    loadBalance();
+    const interval = setInterval(loadBalance, 10000);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -86,8 +102,24 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
           </div>
         </div>
 
-        {/* Right: Notification, Theme, Profile */}
+        {/* Right: Wallet Balance, Notification, Theme, Profile */}
         <div className="flex items-center gap-2 sm:gap-3">
+          {/* Quick Wallet Balance Pill */}
+          {walletBalance !== null && (
+            <button
+              onClick={() => onNavigate('wallet')}
+              className="flex items-center gap-2 px-2.5 sm:px-3 py-1.5 rounded-xl border border-purple-500/25 bg-purple-50 dark:bg-purple-950/40 hover:border-purple-500/60 text-slate-800 dark:text-slate-200 transition-all text-xs font-bold shadow-sm active:scale-95"
+              title="Click to view Wallet & Add Funds"
+            >
+              <div className="flex h-5 w-5 items-center justify-center rounded-lg bg-purple-600 text-white">
+                <Wallet className="h-3 w-3" />
+              </div>
+              <span className="tabular-nums font-black text-purple-600 dark:text-purple-400">
+                ₹{walletBalance.toFixed(2)}
+              </span>
+            </button>
+          )}
+
           {/* Notification Bell */}
           <div className="relative" ref={notifRef}>
             <button

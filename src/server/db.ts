@@ -14,7 +14,32 @@ export interface User {
   last_login_at: string;
   phone?: string;
   password_hash?: string | null;
+  wallet_balance?: number; // In INR (default 0)
   updated_at?: string;
+}
+
+export type WalletTransactionType =
+  | 'ADD_FUNDS'
+  | 'CAMPAIGN_PAYMENT'
+  | 'REFUND'
+  | 'FAILED_PAYMENT';
+
+export type WalletTransactionStatus = 'SUCCESS' | 'FAILED' | 'PENDING';
+
+export interface WalletTransaction {
+  id: string;
+  user_id: string;
+  type: WalletTransactionType;
+  amount: number;
+  balance_before: number;
+  balance_after: number;
+  description: string;
+  payment_id?: string | null;
+  gateway_payment_id?: string | null;
+  gateway_order_id?: string | null;
+  campaign_id?: string | null;
+  status: WalletTransactionStatus;
+  created_at: string;
 }
 
 export interface Package {
@@ -174,6 +199,7 @@ interface DatabaseSchema {
   meta_connections: MetaConnection[];
   support_tickets: SupportTicket[];
   system_logs: SystemLog[];
+  wallet_transactions: WalletTransaction[];
 }
 
 const DATA_DIR = path.resolve(process.cwd(), 'data');
@@ -188,6 +214,7 @@ class DatabaseService {
     meta_connections: [],
     support_tickets: [],
     system_logs: [],
+    wallet_transactions: [],
   };
 
   constructor() {
@@ -207,9 +234,16 @@ class DatabaseService {
       try {
         const raw = fs.readFileSync(DB_FILE, 'utf-8');
         this.db = JSON.parse(raw);
-        // Ensure valid users array
+        // Ensure valid users array and initialize wallet_balance
         if (Array.isArray(this.db.users)) {
-          this.db.users = this.db.users.filter(u => u && u.id && u.email);
+          this.db.users = this.db.users.filter(u => u && u.id && u.email).map(u => ({
+            ...u,
+            wallet_balance: typeof u.wallet_balance === 'number' && !isNaN(u.wallet_balance) ? u.wallet_balance : 0,
+          }));
+        }
+        // Ensure wallet_transactions array exists
+        if (!Array.isArray(this.db.wallet_transactions)) {
+          this.db.wallet_transactions = [];
         }
       } catch (err) {
         console.error('Failed to parse existing DB file, reinitializing', err);
@@ -520,6 +554,256 @@ class DatabaseService {
   // System Logs getter
   public getLogs(limit = 100) {
     return this.db.system_logs.slice(0, limit);
+  }
+
+  // --- Customer Wallet & Transactions ---
+  public getWalletBalance(userId: string): number {
+    const user = this.findUserById(userId);
+    if (!user) return 0;
+    return typeof user.wallet_balance === 'number' && !isNaN(user.wallet_balance)
+      ? Math.max(0, Math.round(user.wallet_balance * 100) / 100)
+      : 0;
+  }
+
+  public getWalletTransactions(userId?: string): WalletTransaction[] {
+    if (!Array.isArray(this.db.wallet_transactions)) {
+      this.db.wallet_transactions = [];
+    }
+    if (userId) {
+      return this.db.wallet_transactions.filter((tx) => tx.user_id === userId);
+    }
+    return this.db.wallet_transactions;
+  }
+
+  public findWalletTransactionById(id: string): WalletTransaction | undefined {
+    return this.db.wallet_transactions.find((tx) => tx.id === id);
+  }
+
+  public findWalletTransactionByPaymentId(paymentId: string): WalletTransaction | undefined {
+    return this.db.wallet_transactions.find((tx) => tx.payment_id === paymentId && tx.status === 'SUCCESS');
+  }
+
+  public findWalletTransactionByGatewayPaymentId(gatewayPaymentId: string): WalletTransaction | undefined {
+    return this.db.wallet_transactions.find((tx) => tx.gateway_payment_id === gatewayPaymentId && tx.status === 'SUCCESS');
+  }
+
+  public createWalletTransaction(tx: WalletTransaction): WalletTransaction {
+    if (!Array.isArray(this.db.wallet_transactions)) {
+      this.db.wallet_transactions = [];
+    }
+    this.db.wallet_transactions.unshift(tx);
+    this.save();
+    return tx;
+  }
+
+  /**
+   * Credit customer wallet atomically and record an ADD_FUNDS transaction.
+   * Guarantees that wallet balance is updated strictly in the backend database.
+   */
+  public creditWallet(
+    userId: string,
+    amount: number,
+    meta: {
+      description: string;
+      paymentId?: string;
+      gatewayPaymentId?: string;
+      gatewayOrderId?: string;
+      status?: WalletTransactionStatus;
+    }
+  ): { newBalance: number; transaction: WalletTransaction } {
+    const user = this.findUserById(userId);
+    if (!user) {
+      throw new Error(`User ${userId} not found`);
+    }
+
+    const currentBalance = typeof user.wallet_balance === 'number' && !isNaN(user.wallet_balance)
+      ? user.wallet_balance
+      : 0;
+    const roundedAmount = Math.max(0, Math.round(amount * 100) / 100);
+    const newBalance = Math.round((currentBalance + roundedAmount) * 100) / 100;
+
+    const tx: WalletTransaction = {
+      id: `wtx_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
+      user_id: userId,
+      type: 'ADD_FUNDS',
+      amount: roundedAmount,
+      balance_before: currentBalance,
+      balance_after: newBalance,
+      description: meta.description,
+      payment_id: meta.paymentId || null,
+      gateway_payment_id: meta.gatewayPaymentId || null,
+      gateway_order_id: meta.gatewayOrderId || null,
+      campaign_id: null,
+      status: meta.status || 'SUCCESS',
+      created_at: new Date().toISOString(),
+    };
+
+    user.wallet_balance = newBalance;
+    user.updated_at = new Date().toISOString();
+    this.createWalletTransaction(tx);
+    this.save();
+
+    this.log('PAYMENT', 'INFO', `Credited ₹${roundedAmount} to wallet for user ${userId}. New balance: ₹${newBalance}`, {
+      userId,
+      amount: roundedAmount,
+      balanceBefore: currentBalance,
+      balanceAfter: newBalance,
+      txId: tx.id,
+      paymentId: meta.paymentId,
+    });
+
+    return { newBalance, transaction: tx };
+  }
+
+  /**
+   * Deduct funds atomically from customer wallet for a campaign launch/payment.
+   * Never trusts client-side assertions. Verifies sufficient funds in database.
+   */
+  public deductWallet(
+    userId: string,
+    amount: number,
+    meta: {
+      description: string;
+      campaignId?: string;
+    }
+  ): { newBalance: number; transaction: WalletTransaction } {
+    const user = this.findUserById(userId);
+    if (!user) {
+      throw new Error(`User ${userId} not found`);
+    }
+
+    const currentBalance = typeof user.wallet_balance === 'number' && !isNaN(user.wallet_balance)
+      ? user.wallet_balance
+      : 0;
+    const roundedAmount = Math.max(0, Math.round(amount * 100) / 100);
+
+    if (currentBalance < roundedAmount) {
+      throw new Error(`Insufficient balance. Please Add Funds to continue. Current balance: ₹${currentBalance}, Required: ₹${roundedAmount}`);
+    }
+
+    const newBalance = Math.round((currentBalance - roundedAmount) * 100) / 100;
+
+    const tx: WalletTransaction = {
+      id: `wtx_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
+      user_id: userId,
+      type: 'CAMPAIGN_PAYMENT',
+      amount: roundedAmount,
+      balance_before: currentBalance,
+      balance_after: newBalance,
+      description: meta.description,
+      payment_id: null,
+      gateway_payment_id: null,
+      gateway_order_id: null,
+      campaign_id: meta.campaignId || null,
+      status: 'SUCCESS',
+      created_at: new Date().toISOString(),
+    };
+
+    user.wallet_balance = newBalance;
+    user.updated_at = new Date().toISOString();
+    this.createWalletTransaction(tx);
+    this.save();
+
+    this.log('PAYMENT', 'INFO', `Deducted ₹${roundedAmount} from wallet for user ${userId}. New balance: ₹${newBalance}`, {
+      userId,
+      amount: roundedAmount,
+      balanceBefore: currentBalance,
+      balanceAfter: newBalance,
+      campaignId: meta.campaignId,
+      txId: tx.id,
+    });
+
+    return { newBalance, transaction: tx };
+  }
+
+  /**
+   * Record a failed or cancelled payment attempt in transaction ledger for transparency,
+   * without affecting the customer's wallet balance.
+   */
+  public recordFailedWalletTransaction(
+    userId: string,
+    amount: number,
+    meta: {
+      description: string;
+      paymentId?: string;
+      gatewayPaymentId?: string;
+      failureReason?: string;
+    }
+  ): WalletTransaction {
+    const currentBalance = this.getWalletBalance(userId);
+    const tx: WalletTransaction = {
+      id: `wtx_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
+      user_id: userId,
+      type: 'FAILED_PAYMENT',
+      amount: Math.max(0, Math.round(amount * 100) / 100),
+      balance_before: currentBalance,
+      balance_after: currentBalance,
+      description: meta.failureReason
+        ? `${meta.description} (Reason: ${meta.failureReason})`
+        : meta.description,
+      payment_id: meta.paymentId || null,
+      gateway_payment_id: meta.gatewayPaymentId || null,
+      gateway_order_id: null,
+      campaign_id: null,
+      status: 'FAILED',
+      created_at: new Date().toISOString(),
+    };
+
+    this.createWalletTransaction(tx);
+    return tx;
+  }
+
+  /**
+   * Aggregates platform wallet statistics and customer ledgers for Admin overview.
+   */
+  public getAdminWalletOverview() {
+    const users = this.getUsers().filter((u) => u && u.role !== 'admin');
+    const transactions = this.getWalletTransactions();
+
+    let totalPlatformBalance = 0;
+    let totalFundsAdded = 0;
+    let totalFundsUsed = 0;
+
+    const customers = users.map((u) => {
+      const balance = typeof u.wallet_balance === 'number' && !isNaN(u.wallet_balance) ? u.wallet_balance : 0;
+      totalPlatformBalance += balance;
+
+      const userTxs = transactions.filter((tx) => tx.user_id === u.id);
+      const added = userTxs
+        .filter((tx) => tx.type === 'ADD_FUNDS' && tx.status === 'SUCCESS')
+        .reduce((sum, tx) => sum + tx.amount, 0);
+      const used = userTxs
+        .filter((tx) => tx.type === 'CAMPAIGN_PAYMENT' && tx.status === 'SUCCESS')
+        .reduce((sum, tx) => sum + tx.amount, 0);
+
+      totalFundsAdded += added;
+      totalFundsUsed += used;
+
+      const lastTx = userTxs[0];
+
+      return {
+        userId: u.id,
+        name: u.name,
+        email: u.email,
+        phone: u.phone,
+        currentBalance: Math.round(balance * 100) / 100,
+        totalFundsAdded: Math.round(added * 100) / 100,
+        totalFundsUsed: Math.round(used * 100) / 100,
+        transactionsCount: userTxs.length,
+        lastActivityAt: lastTx ? lastTx.created_at : u.created_at,
+      };
+    });
+
+    return {
+      summary: {
+        totalPlatformBalance: Math.round(totalPlatformBalance * 100) / 100,
+        totalFundsAdded: Math.round(totalFundsAdded * 100) / 100,
+        totalFundsUsed: Math.round(totalFundsUsed * 100) / 100,
+        totalTransactions: transactions.length,
+      },
+      customers,
+      transactions,
+    };
   }
 }
 

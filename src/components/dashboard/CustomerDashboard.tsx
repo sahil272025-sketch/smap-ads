@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { Campaign, Payment } from '../../types';
 import { api } from '../../lib/api';
+import { AddFundsModal } from './AddFundsModal';
 import {
   Plus,
   ArrowRight,
@@ -38,14 +39,18 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
   const { user, metaConnection } = useAuth();
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
+  const [walletBalance, setWalletBalance] = useState<number>(0);
+  const [showAddFundsModal, setShowAddFundsModal] = useState(false);
+  const [selectedQuickAmount, setSelectedQuickAmount] = useState<number | undefined>(undefined);
   const [loading, setLoading] = useState(true);
   const [analyticsPeriod, setAnalyticsPeriod] = useState<'7d' | '30d' | 'all'>('7d');
 
   useEffect(() => {
-    Promise.all([api.getCampaigns(), api.getPayments()])
-      .then(([cmpRes, payRes]) => {
+    Promise.all([api.getCampaigns(), api.getPayments(), api.getWalletBalance()])
+      .then(([cmpRes, payRes, walRes]) => {
         setCampaigns(cmpRes.campaigns || []);
         setPayments(payRes.payments || []);
+        setWalletBalance(walRes.balance || 0);
       })
       .catch((err) => console.error('Dashboard load error', err))
       .finally(() => setLoading(false));
@@ -200,6 +205,81 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
             <span>Create New Ad</span>
             <ArrowRight className="h-4 w-4" />
           </button>
+        </div>
+      </div>
+
+      {/* Prominent Available Fund Balance Box (Requirements 1, 2, 7) */}
+      <div className="relative overflow-hidden rounded-3xl border border-purple-500/30 bg-gradient-to-br from-[#120D26] via-[#0E1324] to-[#0A0D18] p-5 sm:p-7 shadow-xl shadow-purple-950/20">
+        <div className="absolute top-0 right-0 -mt-12 -mr-12 w-56 h-56 bg-purple-600/20 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-1/3 -mb-12 w-40 h-40 bg-pink-600/10 rounded-full blur-2xl pointer-events-none" />
+
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-purple-600/20 text-purple-400 border border-purple-500/30">
+                <Wallet className="h-4 w-4" />
+              </span>
+              <span className="text-xs font-bold uppercase tracking-wider text-purple-300">
+                Available Fund Balance
+              </span>
+              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-[10px] font-bold text-emerald-400 border border-emerald-500/20">
+                <ShieldCheck className="h-3 w-3" />
+                Live Wallet
+              </span>
+            </div>
+
+            <div className="flex items-baseline gap-2.5">
+              <span className="text-3xl sm:text-5xl font-black tracking-tight text-white tabular-nums">
+                ₹{walletBalance.toFixed(2)}
+              </span>
+              <span className="text-xs font-bold text-purple-300 uppercase tracking-widest">
+                INR
+              </span>
+            </div>
+
+            <p className="text-xs text-slate-400 max-w-lg leading-relaxed">
+              Add funds anytime before creating or launching advertising campaigns. Your balance is instantly available for campaign checkouts.
+            </p>
+
+            {/* Quick top-up chips */}
+            <div className="flex items-center gap-2 pt-1 flex-wrap">
+              <span className="text-[11px] font-semibold text-slate-400">Quick Add:</span>
+              {[100, 200, 500, 1000].map((amt) => (
+                <button
+                  key={amt}
+                  type="button"
+                  onClick={() => {
+                    setSelectedQuickAmount(amt);
+                    setShowAddFundsModal(true);
+                  }}
+                  className="px-2.5 py-1 rounded-lg text-xs font-bold bg-white/10 hover:bg-purple-600 text-white border border-white/10 hover:border-purple-500 transition-all active:scale-95"
+                >
+                  +₹{amt}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row md:flex-col gap-3 shrink-0">
+            <button
+              onClick={() => {
+                setSelectedQuickAmount(undefined);
+                setShowAddFundsModal(true);
+              }}
+              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-purple-600 px-6 py-3.5 text-xs sm:text-sm font-extrabold text-white shadow-xl shadow-purple-600/35 hover:bg-purple-500 active:scale-95 transition-all whitespace-nowrap"
+            >
+              <Plus className="h-4 w-4" />
+              <span>Add Funds</span>
+            </button>
+
+            <button
+              onClick={() => onNavigate('wallet')}
+              className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 px-4 py-2 text-xs font-semibold text-slate-300 hover:text-white transition-colors"
+            >
+              <Clock className="h-3.5 w-3.5 text-purple-400" />
+              <span>Wallet History</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -628,6 +708,15 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
           </div>
         )}
       </div>
+
+      {/* Add Funds Modal */}
+      <AddFundsModal
+        isOpen={showAddFundsModal}
+        onClose={() => setShowAddFundsModal(false)}
+        currentBalance={walletBalance}
+        recommendedAmount={selectedQuickAmount}
+        onSuccess={(newBal) => setWalletBalance(newBal)}
+      />
 
     </div>
   );

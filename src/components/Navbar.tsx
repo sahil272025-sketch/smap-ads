@@ -6,7 +6,7 @@ import { Menu, X, ArrowRight, ShieldCheck, User as UserIcon } from 'lucide-react
 interface NavbarProps {
   currentTab: string;
   setCurrentTab: (tab: string) => void;
-  openAuthModal: () => void;
+  openAuthModal: (mode?: 'login' | 'register') => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, openAuthModal }) => {
@@ -147,13 +147,13 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, openA
           ) : (
             <div className="flex items-center gap-2">
               <button
-                onClick={() => openAuthModal()}
+                onClick={() => openAuthModal('login')}
                 className="px-3.5 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:text-purple-600 dark:hover:text-white transition-colors"
               >
                 Login
               </button>
               <button
-                onClick={() => openAuthModal()}
+                onClick={() => openAuthModal('register')}
                 className="inline-flex items-center gap-1.5 rounded-xl bg-purple-600 px-4 py-2 text-xs font-semibold text-white shadow-md shadow-purple-600/25 hover:bg-purple-500 active:scale-95 transition-all"
               >
                 <span>Get Started</span>

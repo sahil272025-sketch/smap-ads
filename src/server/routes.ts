@@ -9,6 +9,7 @@ import { PaymentService } from './paymentService.js';
 import { MetaService } from './metaService.js';
 import { CampaignService } from './campaignService.js';
 import { SupportService } from './supportService.js';
+import { WalletService } from './walletService.js';
 
 export const apiRouter = express.Router();
 
@@ -664,6 +665,22 @@ apiRouter.get('/payments/:id', requireAuth, (req: AuthenticatedRequest, res) => 
   res.json({ payment });
 });
 
+// Prepare or refresh Razorpay live order before opening checkout
+apiRouter.post('/payments/:id/prepare-order', requireAuth, async (req: AuthenticatedRequest, res) => {
+  try {
+    const payment = db.findPaymentById(req.params.id);
+    if (!payment) return res.status(404).json({ error: 'Payment not found' });
+    if (req.user!.role !== 'admin' && payment.user_id !== req.user!.id) {
+      return res.status(403).json({ error: 'Unauthorized' });
+    }
+
+    const updated = await PaymentService.ensureGatewayOrder(req.params.id);
+    res.json({ payment: updated });
+  } catch (err: any) {
+    res.status(400).json({ error: err.message || 'Failed to prepare payment order' });
+  }
+});
+
 // Independent Backend Payment Verification
 apiRouter.post('/payments/:id/verify', requireAuth, async (req: AuthenticatedRequest, res) => {
   try {
@@ -799,6 +816,95 @@ apiRouter.post('/payments/sandbox/simulate-webhook', (req, res) => {
       success: false,
       error: err.message,
     });
+  }
+});
+
+// ==========================================
+// 4B. CUSTOMER WALLET & ADD FUNDS API
+// ==========================================
+
+// Get customer wallet data (balance and transaction history)
+apiRouter.get('/wallet', requireAuth, (req: AuthenticatedRequest, res) => {
+  try {
+    const data = WalletService.getWalletData(req.user!.id);
+    res.json(data);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || 'Failed to fetch wallet data' });
+  }
+});
+
+// Get customer wallet balance only
+apiRouter.get('/wallet/balance', requireAuth, (req: AuthenticatedRequest, res) => {
+  try {
+    const balance = db.getWalletBalance(req.user!.id);
+    res.json({ balance, currency: 'INR' });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || 'Failed to fetch wallet balance' });
+  }
+});
+
+// Get customer wallet transaction history
+apiRouter.get('/wallet/transactions', requireAuth, (req: AuthenticatedRequest, res) => {
+  try {
+    const transactions = db.getWalletTransactions(req.user!.id);
+    const balance = db.getWalletBalance(req.user!.id);
+    res.json({ transactions, balance, currency: 'INR' });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || 'Failed to fetch wallet transactions' });
+  }
+});
+
+// Create Add Funds order for Razorpay checkout
+apiRouter.post('/wallet/add-funds', requireAuth, async (req: AuthenticatedRequest, res) => {
+  try {
+    const { amount } = req.body;
+    const result = await WalletService.createAddFundsOrder(req.user!.id, amount);
+    res.json(result);
+  } catch (err: any) {
+    res.status(400).json({ error: err.message || 'Failed to initiate Add Funds order' });
+  }
+});
+
+// Verify Add Funds payment and credit customer wallet
+apiRouter.post('/wallet/verify-payment', requireAuth, async (req: AuthenticatedRequest, res) => {
+  try {
+    const { paymentId, gatewayPaymentId, gatewayOrderId, gatewaySignature } = req.body;
+    if (!paymentId || !gatewayPaymentId) {
+      return res.status(400).json({ error: 'paymentId and gatewayPaymentId are required' });
+    }
+    const result = await WalletService.verifyPaymentAndCreditWallet(req.user!.id, {
+      paymentId,
+      gatewayPaymentId,
+      gatewayOrderId,
+      gatewaySignature,
+    });
+    res.json(result);
+  } catch (err: any) {
+    res.status(400).json({ error: err.message || 'Payment verification failed' });
+  }
+});
+
+// Pay campaign using wallet balance (deducts funds atomically and marks campaign paid)
+apiRouter.post('/wallet/pay-campaign', requireAuth, async (req: AuthenticatedRequest, res) => {
+  try {
+    const { campaignId } = req.body;
+    if (!campaignId) {
+      return res.status(400).json({ error: 'campaignId is required' });
+    }
+    const result = await WalletService.payCampaignWithWallet(req.user!.id, campaignId);
+    res.json(result);
+  } catch (err: any) {
+    res.status(400).json({ error: err.message || 'Failed to pay with wallet' });
+  }
+});
+
+// Admin endpoint: Get full customer wallets overview and transaction ledger
+apiRouter.get('/admin/wallets', requireAdmin, (_req, res) => {
+  try {
+    const data = WalletService.getAdminWalletData();
+    res.json(data);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || 'Failed to fetch admin wallet overview' });
   }
 });
 

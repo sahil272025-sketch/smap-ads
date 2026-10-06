@@ -6,6 +6,7 @@ export interface User {
   email_verified: boolean;
   profile_picture: string | null;
   phone?: string;
+  wallet_balance?: number;
   role: 'customer' | 'admin';
   status: 'ACTIVE' | 'SUSPENDED';
   created_at: string;
@@ -185,4 +186,57 @@ export interface AdminStats {
   completedCampaigns: number;
   totalVerifiedPayments: number;
   totalRevenue: number;
+}
+
+export type WalletTransactionType =
+  | 'ADD_FUNDS'
+  | 'CAMPAIGN_PAYMENT'
+  | 'REFUND'
+  | 'FAILED_PAYMENT';
+
+export type WalletTransactionStatus = 'SUCCESS' | 'FAILED' | 'PENDING';
+
+export interface WalletTransaction {
+  id: string;
+  user_id: string;
+  type: WalletTransactionType;
+  amount: number;
+  balance_before: number;
+  balance_after: number;
+  description: string;
+  payment_id?: string | null;
+  gateway_payment_id?: string | null;
+  gateway_order_id?: string | null;
+  campaign_id?: string | null;
+  status: WalletTransactionStatus;
+  created_at: string;
+}
+
+export interface WalletData {
+  balance: number;
+  currency: 'INR';
+  transactions: WalletTransaction[];
+}
+
+export interface AdminWalletCustomer {
+  userId: string;
+  name: string;
+  email: string;
+  phone?: string;
+  currentBalance: number;
+  totalFundsAdded: number;
+  totalFundsUsed: number;
+  transactionsCount: number;
+  lastActivityAt?: string;
+}
+
+export interface AdminWalletData {
+  summary: {
+    totalPlatformBalance: number;
+    totalFundsAdded: number;
+    totalFundsUsed: number;
+    totalTransactions: number;
+  };
+  customers: AdminWalletCustomer[];
+  transactions: WalletTransaction[];
 }

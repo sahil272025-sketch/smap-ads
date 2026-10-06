@@ -27,7 +27,10 @@ import {
   Clock,
   Zap,
   Lock,
+  Wallet,
+  Plus,
 } from 'lucide-react';
+import { AddFundsModal } from './AddFundsModal';
 
 const ALL_28_INDIAN_STATES = [
   'Andhra Pradesh',
@@ -118,8 +121,22 @@ export const CreateAdFlow: React.FC<CreateAdFlowProps> = ({
   const [metaSubmitSuccess, setMetaSubmitSuccess] = useState(false);
   const [copiedUpi, setCopiedUpi] = useState(false);
 
-  // Load packages & gateway config
+  // Customer Wallet State (Requirements 8, 9)
+  const [walletBalance, setWalletBalance] = useState<number>(0);
+  const [isPayingWithWallet, setIsPayingWithWallet] = useState(false);
+  const [showAddFundsModal, setShowAddFundsModal] = useState(false);
+  const [walletError, setWalletError] = useState<string | null>(null);
+
+  const refreshWalletBalance = () => {
+    api
+      .getWalletBalance()
+      .then((w) => setWalletBalance(w.balance || 0))
+      .catch(() => {});
+  };
+
+  // Load packages, gateway config & wallet balance
   useEffect(() => {
+    refreshWalletBalance();
     api
       .getPackages()
       .then((res) => {
@@ -137,6 +154,24 @@ export const CreateAdFlow: React.FC<CreateAdFlowProps> = ({
       .then((status) => setGatewayStatus(status))
       .catch(() => {});
   }, []);
+
+  const handlePayWithWallet = async () => {
+    if (!createdCampaign || !activePayment) return;
+    setWalletError(null);
+    setPaymentError(null);
+    setIsPayingWithWallet(true);
+
+    try {
+      const res = await api.payCampaignWithWallet(createdCampaign.id);
+      setWalletBalance(res.balance);
+      setActivePayment(res.payment);
+      setCreatedCampaign(res.campaign);
+    } catch (err: any) {
+      setWalletError(err.message || 'Failed to pay with wallet balance.');
+    } finally {
+      setIsPayingWithWallet(false);
+    }
+  };
 
   // Live polling for payment status when in Step 6 and awaiting verification
   useEffect(() => {
@@ -327,6 +362,26 @@ export const CreateAdFlow: React.FC<CreateAdFlowProps> = ({
     }
   };
 
+const loadRazorpaySdk = (): Promise<boolean> => {
+  return new Promise((resolve) => {
+    if (typeof (window as any).Razorpay !== 'undefined') {
+      return resolve(true);
+    }
+    const existing = document.querySelector('script[src*="checkout.razorpay.com"]');
+    if (existing) {
+      existing.addEventListener('load', () => resolve(true));
+      setTimeout(() => resolve(typeof (window as any).Razorpay !== 'undefined'), 1500);
+      return;
+    }
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.async = true;
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+};
+
   // Launch Real UPI Gateway Checkout Flow
   const handleLaunchUpiCheckout = async () => {
     if (!activePayment) return;
@@ -334,19 +389,32 @@ export const CreateAdFlow: React.FC<CreateAdFlowProps> = ({
     setSandboxActionMsg(null);
     setIsLaunchingCheckout(true);
 
-    const keyId = activePayment.gateway_key_id;
-    const isRazorpayReady = typeof (window as any).Razorpay !== 'undefined';
-
-    // If Razorpay SDK is loaded and we have a key ID or sandbox configuration:
-    if (isRazorpayReady && keyId) {
+    try {
+      // 1. Ensure backend has generated a valid Razorpay Order
+      let currentPayment = activePayment;
       try {
-        const rzp = new (window as any).Razorpay({
+        const orderRes = await api.preparePaymentOrder(activePayment.id);
+        if (orderRes.payment) {
+          currentPayment = orderRes.payment;
+          setActivePayment(orderRes.payment);
+        }
+      } catch (err: any) {
+        console.warn('Order preparation notice, proceeding with active payment:', err);
+      }
+
+      // 2. Resolve Key ID from payment or gatewayStatus
+      const keyId = currentPayment.gateway_key_id || gatewayStatus?.keyId;
+
+      // 3. Ensure Razorpay Checkout SDK is ready
+      const sdkReady = await loadRazorpaySdk();
+
+      if (sdkReady && keyId && !keyId.includes('sandbox')) {
+        const rzpOptions: any = {
           key: keyId,
-          amount: Math.round(activePayment.amount * 100),
+          amount: Math.round(currentPayment.amount * 100),
           currency: 'INR',
           name: 'SMAP',
           description: `${selectedPkg?.name || 'Advertising Package'} (${selectedPkg?.duration_days || 5} Days)`,
-          order_id: activePayment.gateway_order_id,
           prefill: {
             name: user?.name || 'SMAP Advertiser',
             email: user?.email || '',
@@ -355,38 +423,19 @@ export const CreateAdFlow: React.FC<CreateAdFlowProps> = ({
           theme: {
             color: '#7C3AED',
           },
-          config: {
-            display: {
-              blocks: {
-                upi: {
-                  name: 'Pay via UPI',
-                  instruments: [{ method: 'upi' }],
-                },
-              },
-              sequence: ['block.upi'],
-              preferences: {
-                show_default_blocks: false,
-              },
-            },
-          },
-          method: {
-            upi: true,
-            card: false,
-            netbanking: false,
-            wallet: false,
-            emi: false,
-          },
           handler: async (response: any) => {
-            // DO NOT fake success. Submit to backend for independent verification!
             setIsVerifyingPayment(true);
             try {
-              const verifyRes = await api.verifyPayment(activePayment.id, {
+              const verifyRes = await api.verifyPayment(currentPayment.id, {
                 gatewayPaymentId: response.razorpay_payment_id,
                 gatewayOrderId: response.razorpay_order_id,
                 gatewaySignature: response.razorpay_signature,
               });
               if (verifyRes.payment) {
                 setActivePayment(verifyRes.payment);
+              }
+              if (verifyRes.campaign) {
+                setCreatedCampaign(verifyRes.campaign);
               }
             } catch (err: any) {
               setPaymentError(err.message || 'Payment verification failed at server.');
@@ -397,20 +446,36 @@ export const CreateAdFlow: React.FC<CreateAdFlowProps> = ({
           modal: {
             ondismiss: () => {
               setIsLaunchingCheckout(false);
+              setPaymentError('Payment window was closed. You can retry when you are ready.');
             },
           },
+        };
+
+        if (currentPayment.gateway_order_id && !currentPayment.gateway_order_id.startsWith('order_sandbox_')) {
+          rzpOptions.order_id = currentPayment.gateway_order_id;
+        }
+
+        const rzp = new (window as any).Razorpay(rzpOptions);
+
+        rzp.on('payment.failed', (response: any) => {
+          setIsLaunchingCheckout(false);
+          setIsVerifyingPayment(false);
+          const reason = response.error?.description || response.error?.reason || 'Payment failed or declined at gateway.';
+          setPaymentError(`Payment failed: ${reason}`);
         });
 
         rzp.open();
         setIsLaunchingCheckout(false);
         return;
-      } catch (err) {
-        console.warn('Razorpay checkout init notice, using native intent fallback', err);
       }
+    } catch (err: any) {
+      console.warn('Razorpay checkout init notice, using native intent fallback', err);
     }
 
     // Direct NPCI Mobile UPI Intent Fallback
-    window.location.href = activePayment.upi_intent_url;
+    if (activePayment.upi_intent_url) {
+      window.location.href = activePayment.upi_intent_url;
+    }
     setIsLaunchingCheckout(false);
   };
 
@@ -1433,24 +1498,125 @@ export const CreateAdFlow: React.FC<CreateAdFlowProps> = ({
             </div>
           )}
 
-          {/* Primary Action Button: [ Pay via UPI ] */}
+          {/* Customer Wallet & Instant Balance Checkout Box (Requirements 8, 9) */}
           {activePayment.status !== 'PAID' && (
-            <div className="space-y-3">
+            <div className="rounded-2xl border-2 border-purple-500/30 bg-purple-50/40 dark:bg-purple-950/20 p-5 space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-purple-600 text-white shadow-md shadow-purple-600/30">
+                    <Wallet className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-extrabold text-slate-900 dark:text-white">
+                      SMAP Wallet Balance
+                    </h4>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                      Instant 1-click campaign payment with zero gateway latency
+                    </p>
+                  </div>
+                </div>
+
+                <div className="text-right">
+                  <span className="block text-[10px] uppercase font-bold text-slate-400">
+                    Available Balance
+                  </span>
+                  <span
+                    className={`text-lg sm:text-xl font-black tabular-nums ${
+                      walletBalance >= activePayment.amount ? 'text-emerald-500' : 'text-red-500'
+                    }`}
+                  >
+                    ₹{walletBalance.toFixed(2)}
+                  </span>
+                </div>
+              </div>
+
+              {/* Insufficient Balance Alert (Requirement 9) */}
+              {walletBalance < activePayment.amount ? (
+                <div className="rounded-xl border border-amber-500/40 bg-amber-50 dark:bg-amber-950/40 p-4 space-y-3">
+                  <div className="flex items-start gap-2.5">
+                    <AlertCircle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
+                    <div>
+                      <h5 className="text-xs font-bold text-amber-700 dark:text-amber-300">
+                        Insufficient balance. Please Add Funds to continue.
+                      </h5>
+                      <p className="text-[11px] text-amber-600 dark:text-amber-400 mt-0.5">
+                        You have <span className="font-bold">₹{walletBalance.toFixed(2)}</span> available, but this campaign requires{' '}
+                        <span className="font-bold">₹{activePayment.amount}</span> (Shortfall: ₹
+                        {(activePayment.amount - walletBalance).toFixed(2)}).
+                      </p>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setShowAddFundsModal(true)}
+                    className="w-full flex items-center justify-center gap-2 rounded-xl bg-purple-600 hover:bg-purple-500 py-3 text-xs font-bold text-white shadow-lg shadow-purple-600/30 transition-all active:scale-98"
+                  >
+                    <Plus className="h-4 w-4" />
+                    <span>Add Funds Now (₹{Math.ceil(activePayment.amount - walletBalance)})</span>
+                  </button>
+                </div>
+              ) : (
+                /* Sufficient Balance: 1-Click Pay & Launch (Requirement 8) */
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-300 px-1">
+                    <span>Balance after campaign payment:</span>
+                    <span className="font-bold text-emerald-500 tabular-nums">
+                      ₹{(walletBalance - activePayment.amount).toFixed(2)}
+                    </span>
+                  </div>
+
+                  <button
+                    type="button"
+                    disabled={isPayingWithWallet}
+                    onClick={handlePayWithWallet}
+                    className="w-full flex items-center justify-center gap-2 rounded-xl bg-purple-600 hover:bg-purple-500 py-4 text-base font-extrabold text-white shadow-xl shadow-purple-600/35 transition-all active:scale-95 disabled:opacity-50"
+                  >
+                    {isPayingWithWallet ? (
+                      <>
+                        <RefreshCw className="h-5 w-5 animate-spin" />
+                        <span>Verifying & Paying from Wallet...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Wallet className="h-5 w-5" />
+                        <span>Pay ₹{activePayment.amount} from Wallet & Launch</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
+
+              {walletError && (
+                <div className="flex items-center gap-2 rounded-xl border border-red-500/30 bg-red-50 dark:bg-red-950/40 p-3 text-xs text-red-600 dark:text-red-300">
+                  <AlertCircle className="h-4 w-4 shrink-0 text-red-500" />
+                  <span>{walletError}</span>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Alternative: Direct Payment via UPI / Razorpay */}
+          {activePayment.status !== 'PAID' && (
+            <div className="space-y-3 pt-2 border-t border-slate-200 dark:border-slate-800">
+              <div className="text-center text-xs text-slate-400 font-semibold uppercase tracking-wider">
+                Or Pay Directly with Razorpay / UPI
+              </div>
               <button
                 type="button"
                 disabled={isLaunchingCheckout || isVerifyingPayment}
                 onClick={handleLaunchUpiCheckout}
-                className="w-full flex items-center justify-center gap-2 rounded-xl bg-violet-600 hover:bg-violet-500 py-4 text-base font-bold text-white shadow-xl shadow-violet-600/30 transition-all active:scale-95 disabled:opacity-50"
+                className="w-full flex items-center justify-center gap-2 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 py-3.5 text-sm font-bold text-white shadow transition-all active:scale-95 disabled:opacity-50"
               >
                 {isLaunchingCheckout || isVerifyingPayment ? (
                   <>
-                    <RefreshCw className="h-5 w-5 animate-spin" />
-                    Connecting to UPI Gateway...
+                    <RefreshCw className="h-4 w-4 animate-spin" />
+                    Connecting to Razorpay...
                   </>
                 ) : (
                   <>
-                    <Smartphone className="h-5 w-5" />
-                    Pay via UPI (₹{activePayment.amount})
+                    <Smartphone className="h-4 w-4" />
+                    Direct Razorpay UPI Checkout (₹{activePayment.amount})
                   </>
                 )}
               </button>
@@ -1736,6 +1902,22 @@ export const CreateAdFlow: React.FC<CreateAdFlowProps> = ({
           </div>
         </div>
       )}
+
+      {/* Add Funds Modal for instant top-up before or during campaign launch */}
+      <AddFundsModal
+        isOpen={showAddFundsModal}
+        onClose={() => setShowAddFundsModal(false)}
+        currentBalance={walletBalance}
+        recommendedAmount={
+          activePayment && walletBalance < activePayment.amount
+            ? Math.ceil(activePayment.amount - walletBalance)
+            : 500
+        }
+        onSuccess={(newBal) => {
+          setWalletBalance(newBal);
+          setWalletError(null);
+        }}
+      />
     </div>
   );
 };

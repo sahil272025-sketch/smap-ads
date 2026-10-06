@@ -1,4 +1,4 @@
-import { User, Package, Campaign, Payment, MetaConnectionState, MetaInsights, SupportTicket, AdminStats, SystemLog, GoogleConfigStatus } from '../types';
+import { User, Package, Campaign, Payment, MetaConnectionState, MetaInsights, SupportTicket, AdminStats, SystemLog, GoogleConfigStatus, WalletTransaction, WalletData, AdminWalletData } from '../types';
 
 class ApiClient {
   private inMemoryToken: string | null = null;
@@ -207,11 +207,18 @@ class ApiClient {
       keyIdConfigured: boolean;
       keySecretConfigured: boolean;
       webhookSecretConfigured: boolean;
+      keyId: string | null;
       keyIdMasked: string | null;
       merchantUpi: string;
       merchantName: string;
       statusMessage: string;
     }>('/payments/status');
+  }
+
+  public preparePaymentOrder(paymentId: string) {
+    return this.request<{ payment: Payment }>(`/payments/${paymentId}/prepare-order`, {
+      method: 'POST',
+    });
   }
 
   public verifyPayment(paymentId: string, payload: {
@@ -268,6 +275,65 @@ class ApiClient {
       method: 'POST',
       body: JSON.stringify({ transactionReference }),
     });
+  }
+
+  // --- Customer Wallet & Add Funds ---
+  public getWallet() {
+    return this.request<WalletData>('/wallet');
+  }
+
+  public getWalletBalance() {
+    return this.request<{ balance: number; currency: 'INR' }>('/wallet/balance');
+  }
+
+  public getWalletTransactions() {
+    return this.request<{ transactions: WalletTransaction[]; balance: number; currency: 'INR' }>('/wallet/transactions');
+  }
+
+  public createAddFundsOrder(amount: number) {
+    return this.request<{
+      payment: Payment;
+      keyId: string | null;
+      amount: number;
+      gatewayOrderId: string | null;
+    }>('/wallet/add-funds', {
+      method: 'POST',
+      body: JSON.stringify({ amount }),
+    });
+  }
+
+  public verifyWalletPayment(payload: {
+    paymentId: string;
+    gatewayPaymentId: string;
+    gatewayOrderId?: string;
+    gatewaySignature?: string;
+  }) {
+    return this.request<{
+      success: boolean;
+      balance: number;
+      transaction?: WalletTransaction;
+      alreadyProcessed?: boolean;
+    }>('/wallet/verify-payment', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  }
+
+  public payCampaignWithWallet(campaignId: string) {
+    return this.request<{
+      success: boolean;
+      balance: number;
+      transaction: WalletTransaction;
+      campaign: Campaign;
+      payment: Payment;
+    }>('/wallet/pay-campaign', {
+      method: 'POST',
+      body: JSON.stringify({ campaignId }),
+    });
+  }
+
+  public getAdminWallets() {
+    return this.request<AdminWalletData>('/admin/wallets');
   }
 
   // Meta Integration

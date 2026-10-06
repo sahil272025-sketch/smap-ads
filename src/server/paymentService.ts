@@ -15,6 +15,7 @@ export interface PaymentGatewayStatus {
   keyIdConfigured: boolean;
   keySecretConfigured: boolean;
   webhookSecretConfigured: boolean;
+  keyId: string | null;
   keyIdMasked: string | null;
   merchantUpi: string;
   merchantName: string;
@@ -29,19 +30,32 @@ export class PaymentService {
   }
 
   public static getEnvironment(): PaymentEnvironment {
-    return (process.env.PAYMENT_ENV || 'sandbox').toLowerCase() === 'production'
-      ? 'production'
-      : 'sandbox';
+    const envVar = (process.env.PAYMENT_ENV || '').toLowerCase();
+    if (envVar === 'production') return 'production';
+    if (envVar === 'sandbox' || envVar === 'test') return 'sandbox';
+    const key = this.getKeyId();
+    if (key && key.startsWith('rzp_live_')) return 'production';
+    if (process.env.NODE_ENV === 'production') return 'production';
+    return 'production';
   }
 
   public static getKeyId(): string | null {
-    const key = process.env.PAYMENT_KEY_ID || process.env.PAYMENT_PROVIDER_KEY || '';
-    return key.trim().length > 0 ? key.trim() : null;
+    let key = (process.env.PAYMENT_KEY_ID || process.env.PAYMENT_PROVIDER_KEY || '').trim();
+    if (!key) return null;
+    // Sanitize in case "Live" or extra words were accidentally pasted with the key
+    const match = key.match(/(rzp_(?:live|test)_[a-zA-Z0-9]+)/i);
+    if (match) {
+      return match[1];
+    }
+    key = key.split(/\s+/)[0];
+    return key.length > 0 ? key : null;
   }
 
   public static getKeySecret(): string | null {
-    const secret = process.env.PAYMENT_KEY_SECRET || '';
-    return secret.trim().length > 0 ? secret.trim() : null;
+    let secret = (process.env.PAYMENT_KEY_SECRET || '').trim();
+    if (!secret) return null;
+    secret = secret.split(/\s+/)[0];
+    return secret.length > 0 ? secret : null;
   }
 
   public static getWebhookSecret(): string | null {
@@ -59,14 +73,15 @@ export class PaymentService {
     const keyIdConfigured = !!keyId;
     const keySecretConfigured = !!keySecret;
     const webhookSecretConfigured = !!webhookSecret;
-    const isConfigured = keyIdConfigured && keySecretConfigured && webhookSecretConfigured;
+    // Checkout requires KEY_ID and KEY_SECRET; webhook secret is optional
+    const isConfigured = keyIdConfigured && keySecretConfigured;
     const productionReady = isConfigured && environment === 'production';
 
     let statusMessage = '';
     if (isConfigured) {
-      statusMessage = `Payment Gateway (${provider.toUpperCase()}) configured in ${environment.toUpperCase()} mode. Webhook signature & API verification active.`;
+      statusMessage = `Payment Gateway (${provider.toUpperCase()}) configured in ${environment.toUpperCase()} mode. Verified server-side checkout active.`;
     } else {
-      statusMessage = `Gateway in ${environment.toUpperCase()} mode. Server-side verification ready. To connect live gateway, set PAYMENT_KEY_ID, PAYMENT_KEY_SECRET, and PAYMENT_WEBHOOK_SECRET.`;
+      statusMessage = `Gateway in ${environment.toUpperCase()} mode. To connect live gateway, set PAYMENT_KEY_ID and PAYMENT_KEY_SECRET.`;
     }
 
     const keyIdMasked = keyId
@@ -81,6 +96,7 @@ export class PaymentService {
       keyIdConfigured,
       keySecretConfigured,
       webhookSecretConfigured,
+      keyId,
       keyIdMasked,
       merchantUpi: MERCHANT_UPI_ID,
       merchantName: MERCHANT_NAME,
@@ -213,6 +229,64 @@ export class PaymentService {
   }
 
   /**
+   * Ensures that a payment record has a live Razorpay order ID before checkout opens.
+   */
+  public static async ensureGatewayOrder(paymentId: string): Promise<Payment> {
+    const payment = db.findPaymentById(paymentId);
+    if (!payment) {
+      throw new Error(`Payment ${paymentId} not found`);
+    }
+
+    const keyId = this.getKeyId();
+    const keySecret = this.getKeySecret();
+    const isSandboxOrder = !payment.gateway_order_id || payment.gateway_order_id.startsWith('order_sandbox_');
+
+    if (keyId && keySecret && isSandboxOrder) {
+      try {
+        const authHeader = `Basic ${Buffer.from(`${keyId}:${keySecret}`).toString('base64')}`;
+        const orderRes = await fetch('https://api.razorpay.com/v1/orders', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: authHeader,
+          },
+          body: JSON.stringify({
+            amount: Math.round(payment.amount * 100),
+            currency: 'INR',
+            receipt: payment.id,
+            notes: {
+              campaign_id: payment.campaign_id,
+              user_id: payment.user_id,
+              payment_id: payment.id,
+            },
+          }),
+        });
+
+        const orderData = await orderRes.json();
+        if (orderRes.ok && orderData.id) {
+          const updated = db.updatePayment(payment.id, {
+            gateway_order_id: orderData.id,
+            gateway_key_id: keyId,
+          })!;
+          db.log('PAYMENT', 'INFO', `Generated live Razorpay Order ${orderData.id} for payment ${payment.id}`);
+          return updated;
+        } else {
+          db.log('PAYMENT', 'WARN', `Razorpay order creation returned: ${orderData.error?.description || 'unknown'}`);
+        }
+      } catch (err: any) {
+        db.log('PAYMENT', 'ERROR', `Failed to generate live Razorpay order: ${err.message}`);
+      }
+    }
+
+    // Ensure gateway_key_id is populated if keys are now configured
+    if (keyId && !payment.gateway_key_id) {
+      return db.updatePayment(payment.id, { gateway_key_id: keyId })!;
+    }
+
+    return payment;
+  }
+
+  /**
    * Verify HMAC-SHA256 signature for client checkout completion
    */
   public static verifyClientSignature(params: {
@@ -323,16 +397,7 @@ export class PaymentService {
           throw new Error(`Invalid currency: ${paymentData.currency}`);
         }
 
-        // Verify payment method strictly UPI
-        if (paymentData.method && paymentData.method !== 'upi') {
-          db.updatePayment(paymentId, {
-            status: 'FAILED',
-            failure_reason: `Non-UPI payment method used: ${paymentData.method}. Only UPI is authorized.`,
-          });
-          throw new Error('Payment method must be strictly UPI');
-        }
-
-        // Verify status
+        // Verify status is captured or authorized
         if (paymentData.status !== 'captured' && paymentData.status !== 'authorized') {
           db.updatePayment(paymentId, {
             status: 'FAILED',
@@ -341,7 +406,7 @@ export class PaymentService {
           throw new Error(`Payment not captured. Current gateway status: ${paymentData.status}`);
         }
 
-        verifiedBankRef = paymentData.acquirer_data?.rrn || paymentData.acquirer_data?.upi_transaction_id || paymentData.vpa || null;
+        verifiedBankRef = paymentData.acquirer_data?.rrn || paymentData.acquirer_data?.upi_transaction_id || paymentData.vpa || paymentData.id || null;
       } catch (err: any) {
         db.log('PAYMENT', 'ERROR', `Error during gateway verification: ${err.message}`);
         throw new Error(err.message || 'Payment verification failed at gateway');
@@ -480,6 +545,17 @@ export class PaymentService {
       });
 
       db.log('PAYMENT', 'WARN', `Webhook marked payment ${payment.id} as FAILED: ${failureReason}`);
+
+      // Record failed transaction in customer's wallet ledger without altering balance
+      if (payment.campaign_id === 'WALLET_TOPUP' || payment.package_id === 'wallet_topup') {
+        db.recordFailedWalletTransaction(payment.user_id, payment.amount, {
+          description: 'Add Funds failed at gateway',
+          paymentId: payment.id,
+          gatewayPaymentId: gatewayPaymentId || undefined,
+          failureReason: failureReason || 'Payment failed or cancelled at gateway',
+        });
+      }
+
       return { success: true, payment_id: payment.id, status: 'FAILED' };
     }
 
@@ -521,7 +597,28 @@ export class PaymentService {
       transactionReference: meta.transaction_reference,
     });
 
-    // Advance campaign status to PAYMENT_CONFIRMED
+    // Handle Wallet Top-Up credit with strict idempotency guard
+    if (payment.campaign_id === 'WALLET_TOPUP' || payment.package_id === 'wallet_topup') {
+      const alreadyCredited =
+        db.findWalletTransactionByPaymentId(payment.id) ||
+        (meta.gateway_payment_id ? db.findWalletTransactionByGatewayPaymentId(meta.gateway_payment_id) : undefined);
+
+      if (!alreadyCredited) {
+        db.creditWallet(payment.user_id, payment.amount, {
+          description: `Added funds via ${meta.source === 'GATEWAY_WEBHOOK' ? 'Razorpay Webhook' : 'Razorpay'} (${meta.gateway_payment_id || payment.id})`,
+          paymentId: payment.id,
+          gatewayPaymentId: meta.gateway_payment_id || payment.gateway_payment_id || undefined,
+          gatewayOrderId: meta.gateway_order_id || payment.gateway_order_id || undefined,
+        });
+      } else {
+        db.log('PAYMENT', 'INFO', `Wallet already credited for payment ${payment.id}. Skipping credit for idempotency.`, {
+          paymentId: payment.id,
+          txId: alreadyCredited.id,
+        });
+      }
+    }
+
+    // Advance campaign status to PAYMENT_CONFIRMED if tied to a campaign
     const campaign = db.findCampaignById(payment.campaign_id);
     if (campaign && (campaign.status === 'PAYMENT_PENDING' || campaign.status === 'DRAFT')) {
       const metaConn = db.findMetaConnectionByUserId(campaign.user_id);

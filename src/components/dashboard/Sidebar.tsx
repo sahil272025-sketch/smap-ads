@@ -5,6 +5,7 @@ import {
   Megaphone,
   Layers,
   CreditCard,
+  Wallet,
   BarChart3,
   User,
   Settings,
@@ -34,6 +35,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard className="h-4 w-4" /> },
+    { id: 'wallet', label: 'Wallet & Funds', icon: <Wallet className="h-4 w-4" /> },
     { id: 'create-ad', label: 'Create Ad', icon: <Plus className="h-4 w-4" /> },
     { id: 'my-campaigns', label: 'Campaigns', icon: <Megaphone className="h-4 w-4" /> },
     { id: 'ad-library', label: 'Ad Library', icon: <Layers className="h-4 w-4" /> },

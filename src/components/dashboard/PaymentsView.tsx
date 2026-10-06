@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Payment } from '../../types';
 import { api } from '../../lib/api';
-import { CreditCard, Smartphone, CheckCircle2, Clock, AlertCircle, RefreshCw } from 'lucide-react';
+import { AddFundsModal } from './AddFundsModal';
+import { CreditCard, Smartphone, CheckCircle2, Clock, AlertCircle, RefreshCw, Wallet, Plus, ShieldCheck } from 'lucide-react';
 
 export const PaymentsView: React.FC = () => {
   const [payments, setPayments] = useState<Payment[]>([]);
+  const [walletBalance, setWalletBalance] = useState<number>(0);
+  const [showAddFunds, setShowAddFunds] = useState(false);
   const [loading, setLoading] = useState(true);
   const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
   const [utrInput, setUtrInput] = useState('');
@@ -14,8 +17,11 @@ export const PaymentsView: React.FC = () => {
 
   const loadPayments = () => {
     setLoading(true);
-    api.getPayments()
-      .then((res) => setPayments(res.payments || []))
+    Promise.all([api.getPayments(), api.getWalletBalance()])
+      .then(([payRes, walRes]) => {
+        setPayments(payRes.payments || []);
+        setWalletBalance(walRes.balance || 0);
+      })
       .catch((err) => console.error('Failed to load payments', err))
       .finally(() => setLoading(false));
   };
@@ -82,6 +88,34 @@ export const PaymentsView: React.FC = () => {
         >
           <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
           <span>Refresh</span>
+        </button>
+      </div>
+
+      {/* Wallet Balance Card */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-2xl border border-purple-500/25 bg-gradient-to-r from-purple-950/30 via-slate-900/40 to-slate-900/40 shadow-sm">
+        <div className="flex items-center gap-3.5">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-purple-600 text-white shadow-md shadow-purple-600/30">
+            <Wallet className="h-6 w-6" />
+          </div>
+          <div>
+            <span className="block text-[11px] font-bold uppercase text-purple-400">
+              SMAP Wallet Available Balance
+            </span>
+            <div className="flex items-baseline gap-2">
+              <span className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tabular-nums">
+                ₹{walletBalance.toFixed(2)}
+              </span>
+              <span className="text-xs text-slate-400 font-semibold">INR</span>
+            </div>
+          </div>
+        </div>
+
+        <button
+          onClick={() => setShowAddFunds(true)}
+          className="inline-flex items-center justify-center gap-2 rounded-xl bg-purple-600 px-5 py-2.5 text-xs font-bold text-white shadow-md shadow-purple-600/30 hover:bg-purple-500 active:scale-95 transition-all self-start sm:self-center"
+        >
+          <Plus className="h-4 w-4" />
+          <span>Add Funds</span>
         </button>
       </div>
 
@@ -222,6 +256,17 @@ export const PaymentsView: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Add Funds Modal */}
+      <AddFundsModal
+        isOpen={showAddFunds}
+        onClose={() => setShowAddFunds(false)}
+        currentBalance={walletBalance}
+        onSuccess={(newBal) => {
+          setWalletBalance(newBal);
+          loadPayments();
+        }}
+      />
 
     </div>
   );

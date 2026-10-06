@@ -18,6 +18,7 @@ import { CustomerDashboard } from './components/dashboard/CustomerDashboard';
 import { CreateAdFlow } from './components/dashboard/CreateAdFlow';
 import { MyCampaigns } from './components/dashboard/MyCampaigns';
 import { PaymentsView } from './components/dashboard/PaymentsView';
+import { WalletView } from './components/dashboard/WalletView';
 import { ProfileView } from './components/dashboard/ProfileView';
 import { SupportView } from './components/dashboard/SupportView';
 import { SettingsView } from './components/dashboard/SettingsView';
@@ -99,8 +100,9 @@ const MainAppContent: React.FC = () => {
     }
   }, [user]);
 
-  const openAuth = () => {
+  const openAuth = (mode: 'login' | 'register' = 'login') => {
     setAuthErrorMessage(null);
+    setAuthModalMode(mode);
     setAuthModalOpen(true);
   };
 
@@ -108,7 +110,7 @@ const MainAppContent: React.FC = () => {
     if (user) {
       setCurrentTab('create-ad');
     } else {
-      openAuth();
+      openAuth('register');
     }
   };
 
@@ -117,7 +119,7 @@ const MainAppContent: React.FC = () => {
     if (user) {
       setCurrentTab('create-ad');
     } else {
-      openAuth();
+      openAuth('register');
     }
   };
 
@@ -144,6 +146,7 @@ const MainAppContent: React.FC = () => {
   // Dashboard & Authenticated Tabs
   const dashboardTabs = [
     'dashboard',
+    'wallet',
     'create-ad',
     'my-campaigns',
     'ad-library',
@@ -212,6 +215,10 @@ const MainAppContent: React.FC = () => {
 
               {currentTab === 'ad-library' && (
                 <AdLibraryView onNavigate={setCurrentTab} />
+              )}
+
+              {currentTab === 'wallet' && (
+                <WalletView />
               )}
 
               {currentTab === 'payments' && (
@@ -373,7 +380,7 @@ const MainAppContent: React.FC = () => {
                 </p>
                 <div className="pt-2">
                   <button
-                    onClick={openAuth}
+                    onClick={() => openAuth('login')}
                     className="rounded-xl bg-purple-600 px-6 py-2.5 text-xs font-semibold text-white hover:bg-purple-500 shadow-md shadow-purple-600/25 transition-all"
                   >
                     Continue with Google
@@ -401,6 +408,7 @@ const MainAppContent: React.FC = () => {
         onSuccess={() => setCurrentTab('dashboard')}
         onOpenLegal={(type) => setLegalModalType(type)}
         initialError={authErrorMessage}
+        initialMode={authModalMode}
       />
 
       <LegalModal

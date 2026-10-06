@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { AdminStats, User, Campaign, Payment, Package, SystemLog, SupportTicket } from '../../types';
+import { AdminStats, User, Campaign, Payment, Package, SystemLog, SupportTicket, AdminWalletData } from '../../types';
 import { api } from '../../lib/api';
 import { StatusBadge } from '../dashboard/CustomerDashboard';
 import {
@@ -19,11 +19,15 @@ import {
   X,
   AlertTriangle,
   ExternalLink,
+  Wallet,
+  ArrowDownRight,
+  ArrowUpRight,
+  RotateCcw,
 } from 'lucide-react';
 
 export const AdminDashboard: React.FC = () => {
   const [stats, setStats] = useState<AdminStats | null>(null);
-  const [activeSection, setActiveSection] = useState<'overview' | 'customers' | 'campaigns' | 'payments' | 'packages' | 'meta' | 'tickets' | 'logs'>('overview');
+  const [activeSection, setActiveSection] = useState<'overview' | 'wallets' | 'customers' | 'campaigns' | 'payments' | 'packages' | 'meta' | 'tickets' | 'logs'>('overview');
   const [loading, setLoading] = useState(true);
 
   // Data sets
@@ -34,6 +38,7 @@ export const AdminDashboard: React.FC = () => {
   const [logs, setLogs] = useState<SystemLog[]>([]);
   const [tickets, setTickets] = useState<SupportTicket[]>([]);
   const [metaStatus, setMetaStatus] = useState<any>(null);
+  const [walletData, setWalletData] = useState<AdminWalletData | null>(null);
 
   // Modals & actions
   const [verifyingPaymentId, setVerifyingPaymentId] = useState<string | null>(null);
@@ -45,7 +50,7 @@ export const AdminDashboard: React.FC = () => {
   const loadAllAdminData = async () => {
     setLoading(true);
     try {
-      const [s, c, cmp, p, pkg, l, t, m] = await Promise.all([
+      const [s, c, cmp, p, pkg, l, t, m, w] = await Promise.all([
         api.getAdminStats(),
         api.getAdminCustomers(),
         api.getAdminCampaigns(),
@@ -54,6 +59,7 @@ export const AdminDashboard: React.FC = () => {
         api.getAdminLogs(100),
         api.getAdminTickets(),
         api.getMetaStatus(),
+        api.getAdminWallets(),
       ]);
       setStats(s);
       setCustomers(c.customers);
@@ -63,6 +69,7 @@ export const AdminDashboard: React.FC = () => {
       setLogs(l.logs);
       setTickets(t.tickets);
       setMetaStatus(m);
+      setWalletData(w);
     } catch (err) {
       console.error('Failed to load admin data', err);
     } finally {
@@ -162,6 +169,7 @@ export const AdminDashboard: React.FC = () => {
       <div className="flex items-center gap-1 overflow-x-auto p-1.5 rounded-xl bg-slate-900 border border-slate-800 text-xs font-semibold">
         {[
           { id: 'overview', label: 'Overview' },
+          { id: 'wallets', label: `Customer Wallets (₹${walletData?.summary?.totalPlatformBalance ?? 0})` },
           { id: 'payments', label: `Payments (${payments.filter(p => p.status === 'VERIFICATION_PENDING').length} Pending)` },
           { id: 'campaigns', label: `Campaigns (${campaigns.length})` },
           { id: 'customers', label: `Customers (${customers.length})` },
@@ -265,6 +273,205 @@ export const AdminDashboard: React.FC = () => {
                     <div>Cycle: 30s polling frequency</div>
                     <div>Meta Pause Hook: Configured</div>
                   </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* SECTION 1B: CUSTOMER WALLETS (Requirement 17) */}
+          {activeSection === 'wallets' && (
+            <div className="space-y-6">
+              {/* Wallet Summary Metrics */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <div className="rounded-2xl border border-purple-500/30 bg-[#0C1220] p-5 space-y-1">
+                  <div className="flex items-center justify-between text-purple-400">
+                    <span className="text-xs font-bold uppercase tracking-wider">Total Platform Balance</span>
+                    <Wallet className="h-4 w-4" />
+                  </div>
+                  <div className="text-2xl sm:text-3xl font-black text-white tabular-nums">
+                    ₹{walletData?.summary.totalPlatformBalance.toFixed(2) || '0.00'}
+                  </div>
+                  <span className="text-[11px] text-slate-400 block">Funds currently in customer wallets</span>
+                </div>
+
+                <div className="rounded-2xl border border-emerald-500/30 bg-[#0C1220] p-5 space-y-1">
+                  <div className="flex items-center justify-between text-emerald-400">
+                    <span className="text-xs font-bold uppercase tracking-wider">Total Funds Added</span>
+                    <ArrowDownRight className="h-4 w-4" />
+                  </div>
+                  <div className="text-2xl sm:text-3xl font-black text-emerald-400 tabular-nums">
+                    ₹{walletData?.summary.totalFundsAdded.toFixed(2) || '0.00'}
+                  </div>
+                  <span className="text-[11px] text-slate-400 block">Cumulative verified Razorpay top-ups</span>
+                </div>
+
+                <div className="rounded-2xl border border-blue-500/30 bg-[#0C1220] p-5 space-y-1">
+                  <div className="flex items-center justify-between text-blue-400">
+                    <span className="text-xs font-bold uppercase tracking-wider">Total Funds Used</span>
+                    <ArrowUpRight className="h-4 w-4" />
+                  </div>
+                  <div className="text-2xl sm:text-3xl font-black text-blue-400 tabular-nums">
+                    ₹{walletData?.summary.totalFundsUsed.toFixed(2) || '0.00'}
+                  </div>
+                  <span className="text-[11px] text-slate-400 block">Spent on advertising campaigns</span>
+                </div>
+
+                <div className="rounded-2xl border border-slate-800 bg-[#0C1220] p-5 space-y-1">
+                  <div className="flex items-center justify-between text-slate-400">
+                    <span className="text-xs font-bold uppercase tracking-wider">Total Transactions</span>
+                    <Activity className="h-4 w-4" />
+                  </div>
+                  <div className="text-2xl sm:text-3xl font-black text-white tabular-nums">
+                    {walletData?.summary.totalTransactions || 0}
+                  </div>
+                  <span className="text-[11px] text-slate-400 block">Audited ledger entries</span>
+                </div>
+              </div>
+
+              {/* Customer Wallet Balances Table */}
+              <div className="rounded-2xl border border-slate-800 bg-[#0B101E] overflow-hidden">
+                <div className="p-4 border-b border-slate-800 bg-slate-900/50 flex justify-between items-center">
+                  <div>
+                    <h3 className="text-sm font-bold text-white">Customer Wallet Accounts</h3>
+                    <p className="text-xs text-slate-400">
+                      Overview of customer balances, total funds deposited, and total funds spent on campaigns.
+                    </p>
+                  </div>
+                  <span className="text-xs font-bold text-slate-400">
+                    {walletData?.customers.length || 0} Customers
+                  </span>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs">
+                    <thead className="border-b border-slate-800 bg-slate-900/80 text-slate-400 font-semibold">
+                      <tr>
+                        <th className="py-3 pl-4">Customer</th>
+                        <th className="py-3">Contact Email</th>
+                        <th className="py-3 text-right">Current Balance</th>
+                        <th className="py-3 text-right">Total Added</th>
+                        <th className="py-3 text-right">Total Used</th>
+                        <th className="py-3 text-center">Transactions</th>
+                        <th className="py-3 pr-4 text-right">Last Activity</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-800/60 text-slate-300">
+                      {walletData?.customers.map((c) => (
+                        <tr key={c.userId} className="hover:bg-slate-850/40">
+                          <td className="py-3 pl-4">
+                            <span className="font-semibold text-white block">{c.name}</span>
+                            <span className="font-mono text-[10px] text-slate-400">{c.userId}</span>
+                          </td>
+                          <td className="py-3 text-slate-300">
+                            <div>{c.email}</div>
+                            {c.phone && <div className="text-[10px] text-slate-500">{c.phone}</div>}
+                          </td>
+                          <td className="py-3 text-right font-black text-emerald-400 tabular-nums">
+                            ₹{c.currentBalance.toFixed(2)}
+                          </td>
+                          <td className="py-3 text-right font-medium text-slate-300 tabular-nums">
+                            ₹{c.totalFundsAdded.toFixed(2)}
+                          </td>
+                          <td className="py-3 text-right font-medium text-slate-300 tabular-nums">
+                            ₹{c.totalFundsUsed.toFixed(2)}
+                          </td>
+                          <td className="py-3 text-center">
+                            <span className="px-2 py-0.5 rounded-full bg-slate-800 font-bold text-[10px]">
+                              {c.transactionsCount}
+                            </span>
+                          </td>
+                          <td className="py-3 pr-4 text-right font-mono text-[11px] text-slate-400">
+                            {new Date(c.lastActivityAt || '').toLocaleDateString('en-IN', {
+                              day: 'numeric',
+                              month: 'short',
+                              year: 'numeric',
+                            })}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Complete Platform Wallet Transaction History */}
+              <div className="rounded-2xl border border-slate-800 bg-[#0B101E] overflow-hidden">
+                <div className="p-4 border-b border-slate-800 bg-slate-900/50">
+                  <h3 className="text-sm font-bold text-white">Full Wallet Transaction Ledger</h3>
+                  <p className="text-xs text-slate-400">
+                    Live system audit trail of all Add Funds top-ups, Campaign Deductions, and Failures.
+                  </p>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs">
+                    <thead className="border-b border-slate-800 bg-slate-900/80 text-slate-400 font-semibold">
+                      <tr>
+                        <th className="py-3 pl-4">Type</th>
+                        <th className="py-3">User ID</th>
+                        <th className="py-3">Description</th>
+                        <th className="py-3">Transaction / Gateway ID</th>
+                        <th className="py-3">Date</th>
+                        <th className="py-3 text-right">Amount</th>
+                        <th className="py-3 pr-4 text-right">Balance After</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-800/60 text-slate-300">
+                      {walletData?.transactions.length === 0 ? (
+                        <tr>
+                          <td colSpan={7} className="py-8 text-center text-slate-500">
+                            No wallet transactions on platform yet.
+                          </td>
+                        </tr>
+                      ) : (
+                        walletData?.transactions.map((tx) => {
+                          const isCredit = tx.type === 'ADD_FUNDS' || tx.type === 'REFUND';
+                          const isFailed = tx.status === 'FAILED' || tx.type === 'FAILED_PAYMENT';
+                          return (
+                            <tr key={tx.id} className="hover:bg-slate-850/40">
+                              <td className="py-3 pl-4">
+                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold ${
+                                  isFailed
+                                    ? 'bg-red-950 text-red-400 border border-red-800'
+                                    : tx.type === 'ADD_FUNDS'
+                                    ? 'bg-emerald-950 text-emerald-400 border border-emerald-800'
+                                    : 'bg-purple-950 text-purple-400 border border-purple-800'
+                                }`}>
+                                  {tx.type}
+                                </span>
+                              </td>
+                              <td className="py-3 font-mono text-slate-400 text-[11px]">{tx.user_id}</td>
+                              <td className="py-3 max-w-[240px] truncate text-white">{tx.description}</td>
+                              <td className="py-3 font-mono text-[10px] text-slate-400">
+                                <div>{tx.id}</div>
+                                {tx.gateway_payment_id && <div className="text-purple-400">{tx.gateway_payment_id}</div>}
+                              </td>
+                              <td className="py-3 font-mono text-[11px] text-slate-400 whitespace-nowrap">
+                                {new Date(tx.created_at).toLocaleDateString('en-IN', {
+                                  day: 'numeric',
+                                  month: 'short',
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                })}
+                              </td>
+                              <td className="py-3 text-right font-black tabular-nums">
+                                {isFailed ? (
+                                  <span className="text-slate-500">₹{tx.amount.toFixed(2)}</span>
+                                ) : isCredit ? (
+                                  <span className="text-emerald-400">+₹{tx.amount.toFixed(2)}</span>
+                                ) : (
+                                  <span className="text-purple-400">-₹{tx.amount.toFixed(2)}</span>
+                                )}
+                              </td>
+                              <td className="py-3 pr-4 text-right font-bold text-white tabular-nums">
+                                ₹{tx.balance_after.toFixed(2)}
+                              </td>
+                            </tr>
+                          );
+                        })
+                      )}
+                    </tbody>
+                  </table>
                 </div>
               </div>
             </div>
