@@ -308,10 +308,15 @@ export class PaymentService {
           db.log('PAYMENT', 'INFO', `Generated live Razorpay Order ${orderData.id} for payment ${payment.id}`);
           return updated;
         } else {
-          db.log('PAYMENT', 'WARN', `Razorpay order creation returned: ${orderData.error?.description || 'unknown'}`);
+          db.log('PAYMENT', 'WARN', `Razorpay order creation returned: ${orderData.error?.description || 'unknown'} (${orderData.error?.code || 'ERROR'})`, {
+            paymentId: payment.id,
+            error: orderData.error,
+          });
         }
       } catch (err: any) {
-        db.log('PAYMENT', 'ERROR', `Failed to generate live Razorpay order: ${err.message}`);
+        db.log('PAYMENT', 'ERROR', `Failed to generate live Razorpay order: ${err.message}`, {
+          paymentId: payment.id,
+        });
       }
     }
 

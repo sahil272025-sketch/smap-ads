@@ -296,6 +296,7 @@ class ApiClient {
       keyId: string | null;
       amount: number;
       gatewayOrderId: string | null;
+      gatewayError?: { code: string; description: string } | null;
     }>('/wallet/add-funds', {
       method: 'POST',
       body: JSON.stringify({ amount }),

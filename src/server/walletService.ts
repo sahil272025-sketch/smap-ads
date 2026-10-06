@@ -27,6 +27,7 @@ export class WalletService {
     keyId: string | null;
     amount: number;
     gatewayOrderId: string | null;
+    gatewayError?: { code: string; description: string } | null;
   }> {
     const user = db.findUserById(userId);
     if (!user) {
@@ -51,6 +52,7 @@ export class WalletService {
     const environment = PaymentService.getEnvironment();
 
     let gatewayOrderId: string | null = null;
+    let gatewayError: { code: string; description: string } | null = null;
 
     // Create live Razorpay Order if credentials exist
     if (keyId && keySecret) {
@@ -85,11 +87,19 @@ export class WalletService {
               gatewayOrderId,
             });
           } else {
-            db.log('PAYMENT', 'WARN', `Razorpay Order API notice: ${orderData.error?.description || 'standard checkout fallback'}`);
+            const errDesc = orderData.error?.description || 'Failed to authenticate with Razorpay';
+            const errCode = orderData.error?.code || 'BAD_REQUEST_ERROR';
+            gatewayError = { code: errCode, description: errDesc };
+            db.log('PAYMENT', 'WARN', `Razorpay Order API notice: ${errDesc} (${errCode})`, {
+              paymentId,
+              userId,
+              error: orderData.error,
+            });
             gatewayOrderId = null;
           }
         }
       } catch (err: any) {
+        gatewayError = { code: 'NETWORK_ERROR', description: err?.message || 'Gateway connection error' };
         db.log('PAYMENT', 'WARN', `Gateway connection notice during Add Funds: ${err?.message}`);
         gatewayOrderId = null;
       }
@@ -138,6 +148,7 @@ export class WalletService {
       keyId,
       amount: roundedAmount,
       gatewayOrderId,
+      gatewayError,
     };
   }
 

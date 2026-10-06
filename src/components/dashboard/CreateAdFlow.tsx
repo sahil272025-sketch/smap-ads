@@ -497,8 +497,10 @@ const loadRazorpaySdk = (): Promise<boolean> => {
         rzp.on('payment.failed', (response: any) => {
           setIsLaunchingCheckout(false);
           setIsVerifyingPayment(false);
+          const errCode = response.error?.code || 'GATEWAY_ERROR';
           const reason = response.error?.description || response.error?.reason || 'Payment failed or declined at gateway.';
-          setPaymentError(`Payment failed: ${reason}`);
+          const source = response.error?.source ? ` [Source: ${response.error.source}]` : '';
+          setPaymentError(`Payment failed (${errCode}): ${reason}${source}. No charges were made.`);
         });
 
         rzp.open();
