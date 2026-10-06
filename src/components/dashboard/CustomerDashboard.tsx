@@ -244,7 +244,7 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
             {/* Quick top-up chips */}
             <div className="flex items-center gap-2 pt-1 flex-wrap">
               <span className="text-[11px] font-semibold text-slate-400">Quick Add:</span>
-              {[100, 200, 500, 1000].map((amt) => (
+              {[1, 10, 100, 200, 500, 1000].map((amt) => (
                 <button
                   key={amt}
                   type="button"

@@ -21,25 +21,37 @@ interface AddFundsModalProps {
   recommendedAmount?: number;
 }
 
-const PRESET_AMOUNTS = [100, 200, 500, 1000, 2000, 5000];
+const PRESET_AMOUNTS = [1, 10, 100, 200, 500, 1000];
 
 const loadRazorpaySdk = (): Promise<boolean> => {
   return new Promise((resolve) => {
     if (typeof (window as any).Razorpay !== 'undefined') {
       return resolve(true);
     }
-    const existing = document.querySelector('script[src*="checkout.razorpay.com"]');
-    if (existing) {
-      existing.addEventListener('load', () => resolve(true));
-      setTimeout(() => resolve(typeof (window as any).Razorpay !== 'undefined'), 1500);
-      return;
+    let script = document.querySelector('script[src*="checkout.razorpay.com"]') as HTMLScriptElement | null;
+    if (!script) {
+      script = document.createElement('script');
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      script.async = true;
+      document.body.appendChild(script);
     }
-    const script = document.createElement('script');
-    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-    script.async = true;
-    script.onload = () => resolve(true);
-    script.onerror = () => resolve(false);
-    document.body.appendChild(script);
+
+    let attempts = 0;
+    const interval = setInterval(() => {
+      attempts++;
+      if (typeof (window as any).Razorpay !== 'undefined') {
+        clearInterval(interval);
+        resolve(true);
+      } else if (attempts > 30) {
+        clearInterval(interval);
+        resolve(typeof (window as any).Razorpay !== 'undefined');
+      }
+    }, 100);
+
+    script.addEventListener('load', () => {
+      clearInterval(interval);
+      resolve(true);
+    }, { once: true });
   });
 };
 
@@ -51,8 +63,8 @@ export const AddFundsModal: React.FC<AddFundsModalProps> = ({
   recommendedAmount,
 }) => {
   const { user } = useAuth();
-  const [selectedAmount, setSelectedAmount] = useState<number>(recommendedAmount || 500);
-  const [customAmount, setCustomAmount] = useState<string>(recommendedAmount ? String(recommendedAmount) : '500');
+  const [selectedAmount, setSelectedAmount] = useState<number>(recommendedAmount || 100);
+  const [customAmount, setCustomAmount] = useState<string>(recommendedAmount ? String(recommendedAmount) : '100');
   const [loading, setLoading] = useState(false);
   const [verifying, setVerifying] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -80,8 +92,8 @@ export const AddFundsModal: React.FC<AddFundsModalProps> = ({
   const projectedBalance = Math.round((currentBalance + (amountToAdd > 0 ? amountToAdd : 0)) * 100) / 100;
 
   const handleProceedToPayment = async () => {
-    if (!amountToAdd || amountToAdd < 10) {
-      setError('Please enter an amount of at least ₹10');
+    if (!amountToAdd || amountToAdd < 1) {
+      setError('Please enter an amount of at least ₹1');
       return;
     }
 
@@ -90,17 +102,19 @@ export const AddFundsModal: React.FC<AddFundsModalProps> = ({
     setSuccessMsg(null);
 
     try {
-      // 1. Create order on backend
+      // 1. Create order on backend (strictly generates Razorpay order & registers pending ledger record)
       const orderRes = await api.createAddFundsOrder(amountToAdd);
       const { payment, keyId } = orderRes;
 
       // 2. Ensure Razorpay SDK is ready
       const sdkReady = await loadRazorpaySdk();
 
-      if (!sdkReady || !keyId) {
+      const activeKeyId = keyId || 'rzp_live_TjqGRLXgjC3fWI';
+
+      if (!sdkReady || !activeKeyId) {
         setLoading(false);
         setError(
-          keyId
+          activeKeyId
             ? 'Failed to load Razorpay checkout SDK. Please refresh the page and try again.'
             : 'Payment gateway is not currently configured on the server. Please contact support.'
         );
@@ -108,7 +122,7 @@ export const AddFundsModal: React.FC<AddFundsModalProps> = ({
       }
 
       const options: any = {
-        key: keyId,
+        key: activeKeyId,
         amount: Math.round(payment.amount * 100),
         currency: 'INR',
         name: 'SMAP Advertising',
@@ -120,6 +134,31 @@ export const AddFundsModal: React.FC<AddFundsModalProps> = ({
           name: user?.name || '',
           email: user?.email || '',
           contact: user?.phone || '',
+          method: 'upi',
+        },
+        config: {
+          display: {
+            blocks: {
+              upi: {
+                name: 'Pay via UPI',
+                instruments: [
+                  { method: 'upi' },
+                ],
+              },
+              other: {
+                name: 'Cards & NetBanking',
+                instruments: [
+                  { method: 'card' },
+                  { method: 'netbanking' },
+                  { method: 'wallet' },
+                ],
+              },
+            },
+            sequence: ['block.upi', 'block.other'],
+            preferences: {
+              show_default_blocks: true,
+            },
+          },
         },
         theme: {
           color: '#7C3AED',
@@ -271,7 +310,7 @@ export const AddFundsModal: React.FC<AddFundsModalProps> = ({
             />
           </div>
           <p className="text-[11px] text-slate-400 dark:text-slate-500">
-            Minimum top-up amount: ₹10 • Instant credit upon verification
+            Minimum top-up: ₹1 (Instant UPI Testing Supported) • Instant credit upon verification
           </p>
         </div>
 
@@ -294,13 +333,13 @@ export const AddFundsModal: React.FC<AddFundsModalProps> = ({
         <div className="space-y-3 pt-2">
           <button
             onClick={handleProceedToPayment}
-            disabled={loading || verifying || amountToAdd < 10}
+            disabled={loading || verifying || amountToAdd < 1}
             className="w-full flex items-center justify-center gap-2 rounded-2xl bg-purple-600 py-3.5 px-6 text-sm font-bold text-white shadow-xl shadow-purple-600/30 hover:bg-purple-500 active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none transition-all"
           >
             {loading ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
-                <span>Opening Razorpay Checkout...</span>
+                <span>Opening Razorpay UPI Checkout...</span>
               </>
             ) : verifying ? (
               <>
@@ -310,7 +349,7 @@ export const AddFundsModal: React.FC<AddFundsModalProps> = ({
             ) : (
               <>
                 <CreditCard className="h-4 w-4" />
-                <span>Pay ₹{amountToAdd || 0} via Razorpay</span>
+                <span>Pay via UPI / Razorpay (₹{amountToAdd || 0})</span>
                 <ArrowRight className="h-4 w-4" />
               </>
             )}

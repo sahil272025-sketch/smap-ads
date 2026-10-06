@@ -367,18 +367,30 @@ const loadRazorpaySdk = (): Promise<boolean> => {
     if (typeof (window as any).Razorpay !== 'undefined') {
       return resolve(true);
     }
-    const existing = document.querySelector('script[src*="checkout.razorpay.com"]');
-    if (existing) {
-      existing.addEventListener('load', () => resolve(true));
-      setTimeout(() => resolve(typeof (window as any).Razorpay !== 'undefined'), 1500);
-      return;
+    let script = document.querySelector('script[src*="checkout.razorpay.com"]') as HTMLScriptElement | null;
+    if (!script) {
+      script = document.createElement('script');
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      script.async = true;
+      document.body.appendChild(script);
     }
-    const script = document.createElement('script');
-    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-    script.async = true;
-    script.onload = () => resolve(true);
-    script.onerror = () => resolve(false);
-    document.body.appendChild(script);
+
+    let attempts = 0;
+    const interval = setInterval(() => {
+      attempts++;
+      if (typeof (window as any).Razorpay !== 'undefined') {
+        clearInterval(interval);
+        resolve(true);
+      } else if (attempts > 30) {
+        clearInterval(interval);
+        resolve(typeof (window as any).Razorpay !== 'undefined');
+      }
+    }, 100);
+
+    script.addEventListener('load', () => {
+      clearInterval(interval);
+      resolve(true);
+    }, { once: true });
   });
 };
 
@@ -403,7 +415,7 @@ const loadRazorpaySdk = (): Promise<boolean> => {
       }
 
       // 2. Resolve Key ID from payment or gatewayStatus
-      const keyId = currentPayment.gateway_key_id || gatewayStatus?.keyId;
+      const keyId = currentPayment.gateway_key_id || gatewayStatus?.keyId || 'rzp_live_TjqGRLXgjC3fWI';
 
       // 3. Ensure Razorpay Checkout SDK is ready
       const sdkReady = await loadRazorpaySdk();
@@ -413,12 +425,37 @@ const loadRazorpaySdk = (): Promise<boolean> => {
           key: keyId,
           amount: Math.round(currentPayment.amount * 100),
           currency: 'INR',
-          name: 'SMAP',
-          description: `${selectedPkg?.name || 'Advertising Package'} (${selectedPkg?.duration_days || 5} Days)`,
+          name: 'SMAP Advertising',
+          description: `${selectedPkg?.name || 'Advertising Package'} (₹${currentPayment.amount})`,
           prefill: {
             name: user?.name || 'SMAP Advertiser',
             email: user?.email || '',
             contact: user?.phone || '',
+            method: 'upi',
+          },
+          config: {
+            display: {
+              blocks: {
+                upi: {
+                  name: 'Pay via UPI',
+                  instruments: [
+                    { method: 'upi' },
+                  ],
+                },
+                other: {
+                  name: 'Cards & NetBanking',
+                  instruments: [
+                    { method: 'card' },
+                    { method: 'netbanking' },
+                    { method: 'wallet' },
+                  ],
+                },
+              },
+              sequence: ['block.upi', 'block.other'],
+              preferences: {
+                show_default_blocks: true,
+              },
+            },
           },
           theme: {
             color: '#7C3AED',
