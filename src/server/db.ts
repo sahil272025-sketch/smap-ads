@@ -484,6 +484,11 @@ class DatabaseService {
   public findPaymentByCampaignId(campaignId: string) { return this.db.payments.find(p => p.campaign_id === campaignId); }
   public findPaymentByGatewayOrderId(orderId: string) { return this.db.payments.find(p => p.gateway_order_id === orderId); }
   public findPaymentByGatewayPaymentId(paymentId: string) { return this.db.payments.find(p => p.gateway_payment_id === paymentId); }
+  public findPaymentByTransactionReference(ref: string) {
+    if (!ref) return undefined;
+    const clean = ref.trim().toLowerCase();
+    return this.db.payments.find(p => p.transaction_reference && p.transaction_reference.trim().toLowerCase() === clean);
+  }
   public createPayment(payment: Payment) {
     this.db.payments.unshift(payment);
     this.save();

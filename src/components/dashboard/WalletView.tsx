@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { WalletTransaction } from '../../types';
+import { WalletTransaction, Payment } from '../../types';
 import { api } from '../../lib/api';
 import { AddFundsModal } from './AddFundsModal';
 import {
@@ -29,13 +29,21 @@ export const WalletView: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [resetting, setResetting] = useState(false);
   const [resetMessage, setResetMessage] = useState<string | null>(null);
+  const [topupPayments, setTopupPayments] = useState<Payment[]>([]);
 
   const loadWalletData = async () => {
     setLoading(true);
     try {
-      const data = await api.getWallet();
+      const [data, paymentsRes] = await Promise.all([
+        api.getWallet(),
+        api.getPayments().catch(() => ({ payments: [] as Payment[] })),
+      ]);
       setBalance(data.balance || 0);
       setTransactions(data.transactions || []);
+      const userTopups = (paymentsRes.payments || []).filter(
+        (p) => p.campaign_id === 'WALLET_TOPUP' || p.package_id === 'wallet_topup'
+      );
+      setTopupPayments(userTopups);
     } catch (err) {
       console.error('Failed to load wallet data', err);
     } finally {
@@ -152,7 +160,7 @@ export const WalletView: React.FC = () => {
             </span>
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Pre-fund your advertising budget with Razorpay and launch campaigns instantly.
+            Pre-fund your advertising budget via UPI and launch campaigns instantly.
           </p>
         </div>
 
@@ -253,6 +261,53 @@ export const WalletView: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Active UPI Top-Up Requests */}
+      {topupPayments.filter((p) => p.status === 'VERIFICATION_PENDING' || p.status === 'PENDING').length > 0 && (
+        <div className="rounded-2xl border border-amber-500/30 bg-amber-50/50 dark:bg-amber-950/20 p-4 sm:p-5 space-y-3">
+          <div className="flex items-center gap-2 text-xs font-bold text-amber-700 dark:text-amber-400">
+            <Clock className="h-4 w-4" />
+            <span>Active UPI Top-Up Requests</span>
+          </div>
+          <div className="grid gap-2.5">
+            {topupPayments
+              .filter((p) => p.status === 'VERIFICATION_PENDING' || p.status === 'PENDING')
+              .map((p) => (
+                <div
+                  key={p.id}
+                  className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl bg-white dark:bg-[#0B101E] border border-amber-500/20 text-xs"
+                >
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-extrabold text-sm text-slate-900 dark:text-white tabular-nums">
+                        ₹{p.amount.toFixed(2)}
+                      </span>
+                      {p.status === 'VERIFICATION_PENDING' ? (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30">
+                          <Clock className="h-3 w-3" />
+                          Verification Pending
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-500/10 text-slate-600 dark:text-slate-400 border border-slate-500/30">
+                          <Clock className="h-3 w-3" />
+                          Awaiting UTR
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                      {p.transaction_reference
+                        ? `Reference: ${p.transaction_reference} • Auto-verifying with payment gateway`
+                        : 'Awaiting automated gateway webhook or payment confirmation.'}
+                    </p>
+                  </div>
+                  <span className="text-[11px] text-slate-400 font-mono">
+                    {new Date(p.created_at).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                </div>
+              ))}
+          </div>
+        </div>
+      )}
 
       {/* Transaction History Section */}
       <div className="space-y-4">

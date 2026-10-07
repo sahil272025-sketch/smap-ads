@@ -639,6 +639,15 @@ export class PaymentService {
       transactionReference: meta.transaction_reference,
     });
 
+    // Strict Guard: If verified with a UTR, ensure no other PAID payment was already credited using this same UTR
+    const effectiveRef = meta.transaction_reference || payment.transaction_reference;
+    if (effectiveRef) {
+      const existingPaidWithRef = db.findPaymentByTransactionReference(effectiveRef);
+      if (existingPaidWithRef && existingPaidWithRef.id !== paymentId && existingPaidWithRef.status === 'PAID') {
+        throw new Error(`This UPI reference (${effectiveRef}) was already credited for payment ${existingPaidWithRef.id}.`);
+      }
+    }
+
     // Handle Wallet Top-Up credit with strict idempotency guard
     if (payment.campaign_id === 'WALLET_TOPUP' || payment.package_id === 'wallet_topup') {
       const alreadyCredited =
@@ -646,8 +655,14 @@ export class PaymentService {
         (meta.gateway_payment_id ? db.findWalletTransactionByGatewayPaymentId(meta.gateway_payment_id) : undefined);
 
       if (!alreadyCredited) {
+        const sourceLabel = meta.source === 'ADMIN_MANUAL_VERIFICATION'
+          ? 'UPI UTR Verification'
+          : meta.source === 'GATEWAY_WEBHOOK'
+          ? 'Razorpay Webhook'
+          : 'Razorpay Gateway';
+
         db.creditWallet(payment.user_id, payment.amount, {
-          description: `Added funds via ${meta.source === 'GATEWAY_WEBHOOK' ? 'Razorpay Webhook' : 'Razorpay'} (${meta.gateway_payment_id || payment.id})`,
+          description: `Added funds via ${sourceLabel} (${effectiveRef || meta.gateway_payment_id || payment.id})`,
           paymentId: payment.id,
           gatewayPaymentId: meta.gateway_payment_id || payment.gateway_payment_id || undefined,
           gatewayOrderId: meta.gateway_order_id || payment.gateway_order_id || undefined,
@@ -695,6 +710,16 @@ export class PaymentService {
     const cleanRef = transactionReference.trim();
     if (!cleanRef || cleanRef.length < 6) {
       throw new Error('Please enter a valid 12-digit UPI reference (UTR) or transaction ID from your UPI app.');
+    }
+
+    // Strict Duplicate UTR Guard: Prevent reusing or re-submitting an already used UTR
+    const existingPaymentWithRef = db.findPaymentByTransactionReference(cleanRef);
+    if (existingPaymentWithRef && existingPaymentWithRef.id !== paymentId) {
+      if (existingPaymentWithRef.status === 'PAID') {
+        throw new Error('This UPI reference (UTR) has already been verified and credited.');
+      } else {
+        throw new Error('This UPI reference (UTR) has already been submitted and is currently pending verification.');
+      }
     }
 
     const updated = db.updatePayment(paymentId, {

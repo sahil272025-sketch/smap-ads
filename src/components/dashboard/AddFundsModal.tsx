@@ -8,12 +8,9 @@ import {
   ShieldCheck,
   CheckCircle2,
   AlertCircle,
-  Loader2,
   ArrowRight,
-  CreditCard,
   Smartphone,
-  Copy,
-  ExternalLink,
+  Loader2,
 } from 'lucide-react';
 
 interface AddFundsModalProps {
@@ -29,7 +26,8 @@ const PRESET_AMOUNTS = [1, 10, 100, 200, 500, 1000];
 const loadRazorpaySdk = (): Promise<boolean> => {
   return new Promise((resolve) => {
     if (typeof (window as any).Razorpay !== 'undefined') {
-      return resolve(true);
+      resolve(true);
+      return;
     }
     let script = document.querySelector('script[src*="checkout.razorpay.com"]') as HTMLScriptElement | null;
     if (!script) {
@@ -38,23 +36,8 @@ const loadRazorpaySdk = (): Promise<boolean> => {
       script.async = true;
       document.body.appendChild(script);
     }
-
-    let attempts = 0;
-    const interval = setInterval(() => {
-      attempts++;
-      if (typeof (window as any).Razorpay !== 'undefined') {
-        clearInterval(interval);
-        resolve(true);
-      } else if (attempts > 30) {
-        clearInterval(interval);
-        resolve(typeof (window as any).Razorpay !== 'undefined');
-      }
-    }, 100);
-
-    script.addEventListener('load', () => {
-      clearInterval(interval);
-      resolve(true);
-    }, { once: true });
+    script.onload = () => resolve(typeof (window as any).Razorpay !== 'undefined');
+    script.onerror = () => resolve(false);
   });
 };
 
@@ -62,20 +45,15 @@ export const AddFundsModal: React.FC<AddFundsModalProps> = ({
   isOpen,
   onClose,
   currentBalance,
-  onSuccess,
   recommendedAmount,
+  onSuccess,
 }) => {
   const { user } = useAuth();
   const [selectedAmount, setSelectedAmount] = useState<number>(recommendedAmount || 100);
   const [customAmount, setCustomAmount] = useState<string>(recommendedAmount ? String(recommendedAmount) : '100');
-  const [loading, setLoading] = useState(false);
-  const [verifying, setVerifying] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
-  const [activePayment, setActivePayment] = useState<Payment | null>(null);
-  const [utrInput, setUtrInput] = useState('');
-  const [submittingUtr, setSubmittingUtr] = useState(false);
-  const [copiedUpi, setCopiedUpi] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   if (!isOpen) return null;
 
@@ -98,168 +76,117 @@ export const AddFundsModal: React.FC<AddFundsModalProps> = ({
   const amountToAdd = Number(customAmount) || selectedAmount;
   const projectedBalance = Math.round((currentBalance + (amountToAdd > 0 ? amountToAdd : 0)) * 100) / 100;
 
-  const handleCopyUpi = () => {
-    navigator.clipboard.writeText('sahil-stp@ybl');
-    setCopiedUpi(true);
-    setTimeout(() => setCopiedUpi(false), 2000);
-  };
-
-  const handleProceedToPayment = async () => {
+  const handleLaunchUpiCheckout = async () => {
     if (!amountToAdd || amountToAdd < 1) {
       setError('Please enter an amount of at least ₹1');
       return;
     }
-
-    setLoading(true);
     setError(null);
-    setSuccessMsg(null);
+    setIsProcessing(true);
 
     try {
-      // 1. Create order on backend
+      // 1. Create server-side payment & Razorpay Order
       const orderRes = await api.createAddFundsOrder(amountToAdd);
-      const { payment, keyId, gatewayOrderId, gatewayError } = orderRes;
-      setActivePayment(payment);
-
-      const activeKeyId = keyId || 'rzp_live_TjqGRLXgjC3fWI';
-
-      // If Razorpay order creation failed at the backend (e.g. Authentication failed)
-      if (!gatewayOrderId && gatewayError) {
-        setLoading(false);
-        setError(
-          `Razorpay Order Notice [${gatewayError.code}]: ${gatewayError.description}. ` +
-          `Live Razorpay order could not be generated with current server credentials. ` +
-          `You can pay directly using the native UPI App option below.`
-        );
+      
+      if (orderRes.gatewayError) {
+        // Show exact gateway diagnostic notice if order creation failed on gateway
+        setError(`Payment Gateway Notice: ${orderRes.gatewayError.description} (${orderRes.gatewayError.code}). Please verify the Razorpay Live credentials in server configuration.`);
+        setIsProcessing(false);
         return;
       }
 
-      // 2. Ensure Razorpay SDK is ready
+      const keyId = orderRes.keyId;
+      const gatewayOrderId = orderRes.gatewayOrderId;
+      const paymentRecord = orderRes.payment;
+
+      // 2. Load Razorpay Checkout SDK
       const sdkReady = await loadRazorpaySdk();
 
-      if (!sdkReady || !activeKeyId) {
-        setLoading(false);
-        setError(
-          activeKeyId
-            ? 'Failed to load Razorpay checkout SDK. Please refresh the page or use direct UPI below.'
-            : 'Payment gateway is not currently configured on the server. Please contact support.'
-        );
-        return;
+      if (sdkReady && keyId) {
+        const rzpOptions: any = {
+          key: keyId,
+          amount: Math.round(amountToAdd * 100), // in paise
+          currency: 'INR',
+          name: 'SMAP Advertising',
+          description: `Add Funds to SMAP Wallet (₹${amountToAdd})`,
+          prefill: {
+            name: user?.name || 'SMAP Customer',
+            email: user?.email || '',
+            contact: user?.phone || '',
+            method: 'upi',
+          },
+          config: {
+            display: {
+              blocks: {
+                upi: {
+                  name: 'Pay via UPI',
+                  instruments: [{ method: 'upi' }],
+                },
+              },
+              sequence: ['block.upi'],
+              preferences: {
+                show_default_blocks: true,
+              },
+            },
+          },
+          theme: {
+            color: '#7C3AED',
+          },
+          handler: async (response: any) => {
+            try {
+              // 3. Verify payment signature & credit wallet atomically
+              const verifyRes = await api.verifyWalletPayment({
+                paymentId: paymentRecord.id,
+                gatewayPaymentId: response.razorpay_payment_id,
+                gatewayOrderId: response.razorpay_order_id,
+                gatewaySignature: response.razorpay_signature,
+              });
+
+              if (verifyRes.success) {
+                setSuccessMsg(`Payment of ₹${amountToAdd} successfully verified! New SMAP Balance: ₹${verifyRes.balance.toFixed(2)}`);
+                onSuccess(verifyRes.balance);
+                setTimeout(() => {
+                  onClose();
+                }, 1500);
+              }
+            } catch (err: any) {
+              setError(err.message || 'Payment verification failed at server.');
+            } finally {
+              setIsProcessing(false);
+            }
+          },
+          modal: {
+            ondismiss: () => {
+              setIsProcessing(false);
+            },
+          },
+        };
+
+        if (gatewayOrderId) {
+          rzpOptions.order_id = gatewayOrderId;
+        }
+
+        const rzp = new (window as any).Razorpay(rzpOptions);
+
+        rzp.on('payment.failed', (resp: any) => {
+          setIsProcessing(false);
+          const reason = resp.error?.description || resp.error?.reason || 'Payment failed in UPI app';
+          setError(`UPI Payment Notice: ${reason}`);
+        });
+
+        rzp.open();
+      } else {
+        // Fallback: If Checkout SDK cannot initialize, launch direct UPI intent
+        if (paymentRecord?.upi_intent_url) {
+          window.location.href = paymentRecord.upi_intent_url;
+        } else {
+          setError('Could not initialize UPI checkout window. Please check your network connection.');
+        }
+        setIsProcessing(false);
       }
-
-      const options: any = {
-        key: activeKeyId,
-        amount: Math.round(payment.amount * 100), // paise (e.g. 100 paise = ₹1)
-        currency: 'INR',
-        name: 'SMAP Advertising',
-        description: `Add ₹${payment.amount} to SMAP Wallet Balance`,
-        order_id: gatewayOrderId || undefined,
-        prefill: {
-          name: user?.name || '',
-          email: user?.email || '',
-          contact: user?.phone || '',
-          method: 'upi',
-        },
-        config: {
-          display: {
-            blocks: {
-              upi: {
-                name: 'Pay via UPI',
-                instruments: [
-                  { method: 'upi' },
-                ],
-              },
-              other: {
-                name: 'Cards & NetBanking',
-                instruments: [
-                  { method: 'card' },
-                  { method: 'netbanking' },
-                  { method: 'wallet' },
-                ],
-              },
-            },
-            sequence: ['block.upi', 'block.other'],
-            preferences: {
-              show_default_blocks: true,
-            },
-          },
-        },
-        theme: {
-          color: '#7C3AED',
-        },
-        modal: {
-          ondismiss: () => {
-            // User cancelled or closed the Razorpay popup without paying - WALLET BALANCE REMAINS UNCHANGED
-            setLoading(false);
-            setVerifying(false);
-            setError('Payment was cancelled. No funds were added to your wallet.');
-          },
-        },
-        handler: async (response: any) => {
-          // Razorpay returned payment confirmation and cryptographic signature
-          setLoading(false);
-          setVerifying(true);
-          try {
-            const verifyRes = await api.verifyWalletPayment({
-              paymentId: payment.id,
-              gatewayPaymentId: response.razorpay_payment_id,
-              gatewayOrderId: response.razorpay_order_id,
-              gatewaySignature: response.razorpay_signature,
-            });
-
-            setSuccessMsg(`₹${amountToAdd} successfully added to your SMAP wallet!`);
-            onSuccess(verifyRes.balance);
-            setTimeout(() => {
-              onClose();
-            }, 1600);
-          } catch (vErr: any) {
-            setError(vErr.message || 'Payment verification failed at server. No funds added.');
-          } finally {
-            setVerifying(false);
-          }
-        },
-      };
-
-      const rzp = new (window as any).Razorpay(options);
-
-      rzp.on('payment.failed', (resp: any) => {
-        // Payment failed or declined by bank/gateway - WALLET BALANCE REMAINS UNCHANGED
-        setLoading(false);
-        setVerifying(false);
-        const errCode = resp.error?.code || 'GATEWAY_DECLINED';
-        const errDesc = resp.error?.description || resp.error?.reason || 'Payment was declined by bank or gateway.';
-        const errSource = resp.error?.source ? ` [Source: ${resp.error.source}]` : '';
-        setError(`Payment Failed (${errCode}): ${errDesc}${errSource}. Wallet balance remains unchanged.`);
-      });
-
-      rzp.open();
-      setLoading(false);
     } catch (err: any) {
-      setError(err.message || 'Failed to initiate payment.');
-      setLoading(false);
-    }
-  };
-
-  const handleLaunchDirectUpi = () => {
-    if (!activePayment?.upi_intent_url) {
-      const intentUrl = `upi://pay?pa=sahil-stp@ybl&pn=SMAP&am=${amountToAdd.toFixed(2)}&cu=INR&tn=SMAP%20Wallet%20Topup`;
-      window.location.href = intentUrl;
-    } else {
-      window.location.href = activePayment.upi_intent_url;
-    }
-  };
-
-  const handleSubmitUtr = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!activePayment || !utrInput.trim()) return;
-    setSubmittingUtr(true);
-    try {
-      await api.submitPaymentReference(activePayment.id, utrInput.trim());
-      setSuccessMsg('UPI reference recorded. Wallet balance will be confirmed upon verification.');
-      setUtrInput('');
-    } catch (err: any) {
-      setError(err.message || 'Failed to submit transaction reference');
-    } finally {
-      setSubmittingUtr(false);
+      setError(err.message || 'Failed to initialize UPI payment');
+      setIsProcessing(false);
     }
   };
 
@@ -281,14 +208,13 @@ export const AddFundsModal: React.FC<AddFundsModalProps> = ({
                 Add Funds to Wallet
               </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Instant UPI & Razorpay Checkout. Funds never expire.
+                Instant UPI Payment. Funds never expire.
               </p>
             </div>
           </div>
 
           <button
             onClick={onClose}
-            disabled={loading || verifying}
             className="p-2 rounded-xl text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60 transition-colors"
           >
             <X className="h-5 w-5" />
@@ -360,7 +286,7 @@ export const AddFundsModal: React.FC<AddFundsModalProps> = ({
             />
           </div>
           <p className="text-[11px] text-slate-400 dark:text-slate-500">
-            Minimum top-up: ₹1 (Instant UPI Testing Supported) • Instant credit upon verification
+            Minimum top-up: ₹1 (Testing Supported) • Instant credit upon verification
           </p>
         </div>
 
@@ -379,91 +305,32 @@ export const AddFundsModal: React.FC<AddFundsModalProps> = ({
           </div>
         )}
 
-        {/* Security badge & CTA */}
-        <div className="space-y-3 pt-2">
+        {/* Payment CTA Section - ONLY ONE UPI PAYMENT OPTION */}
+        <div className="space-y-4 pt-2">
+          {/* Main button: Launch UPI App (PhonePe / GPay / Paytm) */}
           <button
-            onClick={handleProceedToPayment}
-            disabled={loading || verifying || amountToAdd < 1}
-            className="w-full flex items-center justify-center gap-2 rounded-2xl bg-purple-600 py-3.5 px-6 text-sm font-bold text-white shadow-xl shadow-purple-600/30 hover:bg-purple-500 active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none transition-all"
+            type="button"
+            onClick={handleLaunchUpiCheckout}
+            disabled={amountToAdd < 1 || isProcessing}
+            className="w-full flex items-center justify-center gap-2 rounded-2xl bg-purple-600 hover:bg-purple-500 py-4 px-6 text-sm font-extrabold text-white shadow-xl shadow-purple-600/35 active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none transition-all"
           >
-            {loading ? (
+            {isProcessing ? (
               <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                <span>Connecting to Gateway...</span>
-              </>
-            ) : verifying ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin text-purple-200" />
-                <span>Verifying Cryptographic Payment...</span>
+                <Loader2 className="h-5 w-5 animate-spin text-purple-200" />
+                <span>Opening UPI Checkout...</span>
               </>
             ) : (
               <>
-                <CreditCard className="h-4 w-4" />
-                <span>Pay via UPI / Razorpay (₹{amountToAdd || 0})</span>
+                <Smartphone className="h-5 w-5 text-emerald-300" />
+                <span>Launch UPI App (PhonePe / GPay / Paytm)</span>
                 <ArrowRight className="h-4 w-4" />
               </>
             )}
           </button>
 
-          {/* Direct Mobile UPI Intent Button (GPay, PhonePe, Paytm) */}
-          <div className="pt-2 border-t border-slate-200 dark:border-slate-800 space-y-2">
-            <div className="text-center text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-              Or Pay Direct with Mobile UPI App
-            </div>
-            <button
-              type="button"
-              onClick={handleLaunchDirectUpi}
-              className="w-full flex items-center justify-center gap-2 rounded-2xl bg-slate-900 hover:bg-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 py-3 px-4 text-xs font-bold text-white shadow transition-all active:scale-95"
-            >
-              <Smartphone className="h-4 w-4 text-emerald-400" />
-              <span>Launch UPI App (PhonePe / GPay / Paytm) — ₹{amountToAdd}</span>
-              <ExternalLink className="h-3.5 w-3.5 text-slate-400" />
-            </button>
-
-            {/* Merchant UPI Details */}
-            <div className="flex items-center justify-between rounded-xl border border-slate-200 dark:border-slate-800/80 bg-slate-50 dark:bg-slate-900/60 p-3 text-xs">
-              <div>
-                <span className="block text-[10px] text-slate-400 uppercase font-semibold">
-                  Merchant UPI ID
-                </span>
-                <span className="font-mono font-bold text-slate-800 dark:text-slate-200">
-                  sahil-stp@ybl
-                </span>
-              </div>
-              <button
-                type="button"
-                onClick={handleCopyUpi}
-                className="flex items-center gap-1 text-[11px] font-semibold text-purple-600 dark:text-purple-400 hover:underline"
-              >
-                <Copy className="h-3.5 w-3.5" />
-                <span>{copiedUpi ? 'Copied!' : 'Copy UPI ID'}</span>
-              </button>
-            </div>
-
-            {/* Optional UTR submission if paid outside Razorpay modal */}
-            {activePayment && (
-              <form onSubmit={handleSubmitUtr} className="pt-1 flex gap-2">
-                <input
-                  type="text"
-                  value={utrInput}
-                  onChange={(e) => setUtrInput(e.target.value)}
-                  placeholder="Enter 12-digit UPI Ref / UTR"
-                  className="flex-1 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/80 px-3 py-2 text-xs font-mono text-slate-800 dark:text-slate-200 placeholder:text-slate-400 focus:outline-none focus:border-purple-500"
-                />
-                <button
-                  type="submit"
-                  disabled={submittingUtr || !utrInput.trim()}
-                  className="rounded-xl bg-purple-600 hover:bg-purple-500 px-3 py-2 text-xs font-bold text-white disabled:opacity-50 transition-colors"
-                >
-                  {submittingUtr ? 'Saving...' : 'Submit UTR'}
-                </button>
-              </form>
-            )}
-          </div>
-
           <div className="flex items-center justify-center gap-1.5 text-[11px] text-slate-400 dark:text-slate-500 pt-1">
             <ShieldCheck className="h-3.5 w-3.5 text-emerald-500" />
-            <span>256-bit encrypted • Powered by Razorpay UPI & Webhooks</span>
+            <span>256-bit encrypted • Razorpay Automated UPI Verification</span>
           </div>
         </div>
 
