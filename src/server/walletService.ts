@@ -3,13 +3,211 @@ import { PaymentService } from './paymentService.js';
 
 export class WalletService {
   /**
-   * Get customer wallet balance and transactions
+   * Reconcile any captured payments directly from Razorpay Live API for this user.
+   * Ensures that real payments completed in UPI apps are automatically credited
+   * even if webhooks were delayed or mobile browser was backgrounded.
    */
-  public static getWalletData(userId: string): {
+  public static async reconcileUserLivePayments(userId: string): Promise<{
+    creditedCount: number;
+    newBalance: number;
+    transactions: WalletTransaction[];
+  }> {
+    const user = db.findUserById(userId);
+    if (!user) {
+      return { creditedCount: 0, newBalance: 0, transactions: [] };
+    }
+
+    const keyId = PaymentService.getKeyId();
+    const keySecret = PaymentService.getKeySecret();
+    if (!keyId || !keySecret) {
+      return {
+        creditedCount: 0,
+        newBalance: db.getWalletBalance(userId),
+        transactions: db.getWalletTransactions(userId),
+      };
+    }
+
+    let creditedCount = 0;
+    try {
+      const authHeader = `Basic ${Buffer.from(`${keyId}:${keySecret}`).toString('base64')}`;
+      const allCandidates: any[] = [];
+
+      // 1. Fetch direct payments
+      try {
+        const res = await fetch('https://api.razorpay.com/v1/payments?count=100', {
+          headers: { Authorization: authHeader },
+        });
+        if (res.ok) {
+          const data: any = await res.json();
+          if (Array.isArray(data.items)) {
+            allCandidates.push(...data.items);
+          }
+        }
+      } catch {
+        // ignore
+      }
+
+      // 2. Fetch recent orders and include payments for paid/attempted orders
+      try {
+        const resOrders = await fetch('https://api.razorpay.com/v1/orders?count=50', {
+          headers: { Authorization: authHeader },
+        });
+        if (resOrders.ok) {
+          const oData: any = await resOrders.json();
+          const orders = Array.isArray(oData.items) ? oData.items : [];
+          for (const order of orders) {
+            if (order.status === 'paid' || (order.amount_paid && order.amount_paid > 0) || (order.attempts && order.attempts > 0)) {
+              try {
+                const resOrderPayments = await fetch(`https://api.razorpay.com/v1/orders/${order.id}/payments`, {
+                  headers: { Authorization: authHeader },
+                });
+                if (resOrderPayments.ok) {
+                  const pData: any = await resOrderPayments.json();
+                  if (Array.isArray(pData.items)) {
+                    for (const op of pData.items) {
+                      if (!allCandidates.some((c) => c.id === op.id)) {
+                        allCandidates.push(op);
+                      }
+                    }
+                  }
+                }
+              } catch {
+                // ignore
+              }
+            }
+          }
+        }
+      } catch {
+        // ignore
+      }
+
+      for (const rzpPayment of allCandidates) {
+          if (rzpPayment.status !== 'captured') continue;
+
+          const pEmail = (rzpPayment.email || '').toLowerCase().trim();
+          const uEmail = (user.email || '').toLowerCase().trim();
+          const noteUserId = rzpPayment.notes?.user_id;
+          const noteUserEmail = (rzpPayment.notes?.user_email || '').toLowerCase().trim();
+
+          let isUserMatch = false;
+          if (noteUserId && noteUserId === user.id) {
+            isUserMatch = true;
+          } else if (noteUserEmail && noteUserEmail === uEmail) {
+            isUserMatch = true;
+          } else if (pEmail && uEmail && pEmail === uEmail) {
+            isUserMatch = true;
+          } else if (rzpPayment.order_id) {
+            const matchingPaymentInDb = db.findPaymentByGatewayOrderId(rzpPayment.order_id);
+            if (matchingPaymentInDb && matchingPaymentInDb.user_id === user.id) {
+              isUserMatch = true;
+            }
+          }
+
+          if (!isUserMatch) continue;
+
+          // Check if already credited in wallet (by gateway_payment_id or gateway_order_id)
+          const alreadyCredited =
+            db.findWalletTransactionByGatewayPaymentId(rzpPayment.id) ||
+            (rzpPayment.order_id ? db.findWalletTransactionByGatewayOrderId(rzpPayment.order_id) : undefined);
+
+          if (alreadyCredited) continue;
+
+          const amountInINR = rzpPayment.amount ? Math.round(rzpPayment.amount) / 100 : 0;
+          if (amountInINR <= 0) continue;
+
+          const bankRef =
+            rzpPayment.acquirer_data?.rrn ||
+            rzpPayment.acquirer_data?.upi_transaction_id ||
+            rzpPayment.vpa ||
+            rzpPayment.id;
+
+          let paymentRecord =
+            db.findPaymentByGatewayPaymentId(rzpPayment.id) ||
+            (rzpPayment.order_id ? db.findPaymentByGatewayOrderId(rzpPayment.order_id) : undefined);
+
+          const paymentCreatedAt = new Date(rzpPayment.created_at * 1000).toISOString();
+          const now = new Date().toISOString();
+
+          if (paymentRecord) {
+            db.updatePayment(paymentRecord.id, {
+              status: 'PAID',
+              paid_at: paymentCreatedAt,
+              verified_at: now,
+              verification_source: 'GATEWAY_API',
+              gateway_payment_id: rzpPayment.id,
+              transaction_reference: bankRef,
+              webhook_status: 'PROCESSED',
+            });
+          } else {
+            paymentRecord = {
+              id: `smap_fund_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
+              user_id: user.id,
+              campaign_id: 'WALLET_TOPUP',
+              package_id: 'wallet_topup',
+              amount: amountInINR,
+              currency: 'INR',
+              payment_method: 'UPI',
+              payee_upi: 'sahil-stp@ybl',
+              upi_intent_url: '',
+              transaction_reference: bankRef,
+              gateway_payment_id: rzpPayment.id,
+              gateway_order_id: rzpPayment.order_id || null,
+              gateway_key_id: keyId,
+              status: 'PAID',
+              webhook_status: 'PROCESSED',
+              failure_reason: null,
+              idempotency_key: null,
+              paid_at: paymentCreatedAt,
+              verified_at: now,
+              verification_source: 'GATEWAY_API',
+              notes: `Verified against Razorpay LIVE captured payment (${rzpPayment.id})`,
+              created_at: paymentCreatedAt,
+              updated_at: now,
+            };
+            db.createPayment(paymentRecord);
+          }
+
+          const creditRes = db.creditWallet(user.id, amountInINR, {
+            description: `Added funds via Razorpay UPI (${bankRef || rzpPayment.id})`,
+            paymentId: paymentRecord.id,
+            gatewayPaymentId: rzpPayment.id,
+            gatewayOrderId: rzpPayment.order_id || undefined,
+          });
+
+          creditedCount++;
+          db.log(
+            'PAYMENT',
+            'INFO',
+            `Reconciled and credited ₹${amountInINR} to wallet for user ${user.id} (${user.email}) from Razorpay payment ${rzpPayment.id} (UTR: ${bankRef})`,
+            {
+              userId: user.id,
+              paymentId: paymentRecord.id,
+              gatewayPaymentId: rzpPayment.id,
+              amount: amountInINR,
+              balanceAfter: creditRes.newBalance,
+            }
+          );
+        }
+    } catch (err: any) {
+      db.log('PAYMENT', 'ERROR', `Error during payment reconciliation: ${err?.message}`);
+    }
+
+    return {
+      creditedCount,
+      newBalance: db.getWalletBalance(userId),
+      transactions: db.getWalletTransactions(userId),
+    };
+  }
+
+  /**
+   * Get customer wallet balance and transactions with automatic reconciliation
+   */
+  public static async getWalletData(userId: string): Promise<{
     balance: number;
     currency: 'INR';
     transactions: WalletTransaction[];
-  } {
+  }> {
+    await this.reconcileUserLivePayments(userId);
     const balance = db.getWalletBalance(userId);
     const transactions = db.getWalletTransactions(userId);
     return {

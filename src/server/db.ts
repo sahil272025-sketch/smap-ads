@@ -592,6 +592,10 @@ class DatabaseService {
     return this.db.wallet_transactions.find((tx) => tx.gateway_payment_id === gatewayPaymentId && tx.status === 'SUCCESS');
   }
 
+  public findWalletTransactionByGatewayOrderId(gatewayOrderId: string): WalletTransaction | undefined {
+    return this.db.wallet_transactions.find((tx) => tx.gateway_order_id === gatewayOrderId && tx.status === 'SUCCESS');
+  }
+
   public createWalletTransaction(tx: WalletTransaction): WalletTransaction {
     if (!Array.isArray(this.db.wallet_transactions)) {
       this.db.wallet_transactions = [];

@@ -282,6 +282,18 @@ class ApiClient {
     return this.request<WalletData>('/wallet');
   }
 
+  public syncWallet() {
+    return this.request<{
+      success: boolean;
+      creditedCount: number;
+      balance: number;
+      transactions: WalletTransaction[];
+      message: string;
+    }>('/wallet/sync', {
+      method: 'POST',
+    });
+  }
+
   public getWalletBalance() {
     return this.request<{ balance: number; currency: 'INR' }>('/wallet/balance');
   }

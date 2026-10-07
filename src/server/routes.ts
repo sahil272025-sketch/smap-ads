@@ -758,14 +758,14 @@ apiRouter.post('/payments/:id/submit-ref', requireAuth, (req: AuthenticatedReque
 });
 
 // Real Payment Gateway Webhook Endpoint
-apiRouter.post('/payments/webhook', (req, res) => {
+apiRouter.post('/payments/webhook', async (req, res) => {
   const signature = (req.headers['x-razorpay-signature'] ||
     req.headers['x-payment-signature'] ||
     req.headers['x-webhook-signature']) as string;
-  const rawBody = JSON.stringify(req.body);
+  const rawBody = (req as any).rawBody ? (req as any).rawBody.toString('utf8') : JSON.stringify(req.body);
 
   try {
-    const result = PaymentService.processGatewayWebhook(req.body, signature, rawBody);
+    const result = await PaymentService.processGatewayWebhook(req.body, signature, rawBody);
     res.json(result);
   } catch (err: any) {
     const statusCode = err.message === 'Invalid webhook signature' ? 401 : 400;
@@ -841,13 +841,31 @@ apiRouter.post('/payments/sandbox/simulate-webhook', (req, res) => {
 // 4B. CUSTOMER WALLET & ADD FUNDS API
 // ==========================================
 
-// Get customer wallet data (balance and transaction history)
-apiRouter.get('/wallet', requireAuth, (req: AuthenticatedRequest, res) => {
+// Get customer wallet data (balance and transaction history with live auto-reconciliation)
+apiRouter.get('/wallet', requireAuth, async (req: AuthenticatedRequest, res) => {
   try {
-    const data = WalletService.getWalletData(req.user!.id);
+    const data = await WalletService.getWalletData(req.user!.id);
     res.json(data);
   } catch (err: any) {
     res.status(500).json({ error: err.message || 'Failed to fetch wallet data' });
+  }
+});
+
+// Explicitly sync and reconcile customer wallet with live Razorpay transactions
+apiRouter.post('/wallet/sync', requireAuth, async (req: AuthenticatedRequest, res) => {
+  try {
+    const result = await WalletService.reconcileUserLivePayments(req.user!.id);
+    res.json({
+      success: true,
+      creditedCount: result.creditedCount,
+      balance: result.newBalance,
+      transactions: result.transactions,
+      message: result.creditedCount > 0
+        ? `Successfully synced and credited ${result.creditedCount} new live payment(s). Current balance: ₹${result.newBalance.toFixed(2)}`
+        : 'Wallet is already synchronized with all payment gateway records.',
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || 'Failed to sync live payments' });
   }
 });
 

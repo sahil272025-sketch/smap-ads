@@ -475,22 +475,42 @@ export class PaymentService {
   }
 
   /**
+   * Fetch payment details directly from Razorpay REST API
+   */
+  public static async fetchRazorpayPayment(paymentId: string): Promise<any | null> {
+    const keyId = this.getKeyId();
+    const keySecret = this.getKeySecret();
+    if (!keyId || !keySecret || !paymentId) return null;
+
+    try {
+      const authHeader = `Basic ${Buffer.from(`${keyId}:${keySecret}`).toString('base64')}`;
+      const res = await fetch(`https://api.razorpay.com/v1/payments/${paymentId}`, {
+        headers: { Authorization: authHeader },
+      });
+      if (!res.ok) return null;
+      return await res.json();
+    } catch {
+      return null;
+    }
+  }
+
+  /**
    * Process incoming webhook with idempotency and cryptographic signature checks.
    */
-  public static processGatewayWebhook(payload: any, signature?: string, rawBody?: string): {
+  public static async processGatewayWebhook(payload: any, signature?: string, rawBody?: string): Promise<{
     success: boolean;
     duplicate?: boolean;
     payment_id?: string;
     status?: string;
     error?: string;
-  } {
+  }> {
     // 1. Verify webhook signature if secret configured
     const webhookSecret = this.getWebhookSecret();
+    let isCryptographicallyVerified = false;
     if (webhookSecret && rawBody && signature) {
-      const isValid = this.verifyWebhookSignature(rawBody, signature);
-      if (!isValid) {
-        db.log('PAYMENT', 'WARN', 'Unauthorized webhook signature attempt');
-        throw new Error('Invalid webhook signature');
+      isCryptographicallyVerified = this.verifyWebhookSignature(rawBody, signature);
+      if (!isCryptographicallyVerified) {
+        db.log('PAYMENT', 'WARN', 'Webhook HMAC signature mismatch against webhook secret');
       }
     }
 
@@ -502,6 +522,8 @@ export class PaymentService {
     let amountInRupees: number = 0;
     let bankRef: string | null = null;
     let failureReason: string | null = null;
+    let customerEmail: string | null = null;
+    let noteUserId: string | null = null;
 
     if (payload.payload?.payment?.entity) {
       // Standard Razorpay webhook structure
@@ -512,6 +534,16 @@ export class PaymentService {
       paymentId = entity.notes?.payment_id || entity.receipt || null;
       bankRef = entity.acquirer_data?.rrn || entity.acquirer_data?.upi_transaction_id || entity.vpa || null;
       failureReason = entity.error_description || null;
+      customerEmail = entity.email || entity.notes?.user_email || null;
+      noteUserId = entity.notes?.user_id || null;
+    } else if (payload.payload?.order?.entity) {
+      // Standard Razorpay order.paid webhook structure
+      const oEntity = payload.payload.order.entity;
+      gatewayOrderId = oEntity.id;
+      amountInRupees = oEntity.amount ? oEntity.amount / 100 : 0;
+      paymentId = oEntity.receipt || oEntity.notes?.payment_id || null;
+      customerEmail = oEntity.notes?.user_email || null;
+      noteUserId = oEntity.notes?.user_id || null;
     } else if (payload.payment_id || payload.order_id) {
       // Direct webhook payload format
       paymentId = payload.payment_id || null;
@@ -520,6 +552,26 @@ export class PaymentService {
       amountInRupees = payload.amount || 0;
       bankRef = payload.bank_ref_num || payload.rrn || payload.utr || null;
       failureReason = payload.failure_reason || payload.error_description || null;
+      customerEmail = payload.email || null;
+      noteUserId = payload.user_id || null;
+    }
+
+    // Direct REST API independent validation if HMAC didn't verify or webhookSecret unset
+    if (!isCryptographicallyVerified && gatewayPaymentId) {
+      const rzpPayment = await this.fetchRazorpayPayment(gatewayPaymentId);
+      if (rzpPayment && (rzpPayment.status === 'captured' || rzpPayment.status === 'authorized')) {
+        isCryptographicallyVerified = true;
+        if (!customerEmail && rzpPayment.email) customerEmail = rzpPayment.email;
+        if (!bankRef) bankRef = rzpPayment.acquirer_data?.rrn || rzpPayment.acquirer_data?.upi_transaction_id || rzpPayment.vpa || null;
+        if (!gatewayOrderId && rzpPayment.order_id) gatewayOrderId = rzpPayment.order_id;
+        if (rzpPayment.amount) amountInRupees = rzpPayment.amount / 100;
+        db.log('PAYMENT', 'INFO', `Webhook validated independently via Razorpay REST API for payment ${gatewayPaymentId}`);
+      }
+    }
+
+    if (webhookSecret && !isCryptographicallyVerified) {
+      db.log('PAYMENT', 'WARN', 'Unauthorized webhook: signature invalid and API check failed');
+      throw new Error('Invalid webhook signature');
     }
 
     // Look up payment in DB
@@ -534,7 +586,62 @@ export class PaymentService {
       payment = db.findPaymentByGatewayPaymentId(gatewayPaymentId);
     }
 
+    const isSuccess = event === 'payment.captured' || event === 'order.paid' || event === 'SUCCESS';
+    const isFailed = event === 'payment.failed' || event === 'FAILED' || event === 'USER_DROPPED';
+
+    // If payment record not pre-existing in DB, find matching user and automatically register & credit
     if (!payment) {
+      let targetUser = noteUserId ? db.findUserById(noteUserId) : undefined;
+      if (!targetUser && customerEmail) {
+        targetUser = db.findUserByEmail(customerEmail);
+      }
+
+      if (targetUser && isSuccess && amountInRupees > 0) {
+        const newPaymentId = paymentId || `smap_fund_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
+        const now = new Date().toISOString();
+        const newPayment: Payment = {
+          id: newPaymentId,
+          user_id: targetUser.id,
+          campaign_id: 'WALLET_TOPUP',
+          package_id: 'wallet_topup',
+          amount: amountInRupees,
+          currency: 'INR',
+          payment_method: 'UPI',
+          payee_upi: MERCHANT_UPI_ID,
+          upi_intent_url: '',
+          transaction_reference: bankRef,
+          gateway_payment_id: gatewayPaymentId,
+          gateway_order_id: gatewayOrderId,
+          gateway_key_id: this.getKeyId(),
+          status: 'PAID',
+          webhook_status: 'PROCESSED',
+          failure_reason: null,
+          idempotency_key: null,
+          paid_at: now,
+          verified_at: now,
+          verification_source: 'GATEWAY_WEBHOOK',
+          notes: 'Auto-credited from Razorpay Webhook',
+          created_at: now,
+          updated_at: now,
+        };
+        db.createPayment(newPayment);
+
+        db.creditWallet(targetUser.id, amountInRupees, {
+          description: `Added funds via Razorpay UPI (${bankRef || gatewayPaymentId || 'Verified'})`,
+          paymentId: newPayment.id,
+          gatewayPaymentId: gatewayPaymentId || undefined,
+          gatewayOrderId: gatewayOrderId || undefined,
+        });
+
+        db.log('PAYMENT', 'INFO', `Auto-created and credited ₹${amountInRupees} to ${targetUser.email} from Razorpay webhook`, {
+          userId: targetUser.id,
+          gatewayPaymentId,
+          gatewayOrderId,
+        });
+
+        return { success: true, payment_id: newPayment.id, status: 'PAID' };
+      }
+
       db.log('PAYMENT', 'WARN', `Webhook received for unknown payment: order=${gatewayOrderId}, payment=${gatewayPaymentId}`);
       return { success: false, error: 'Payment record not found' };
     }
@@ -550,9 +657,6 @@ export class PaymentService {
     }
 
     // 3. Process Success vs Failure
-    const isSuccess = event === 'payment.captured' || event === 'order.paid' || event === 'SUCCESS';
-    const isFailed = event === 'payment.failed' || event === 'FAILED' || event === 'USER_DROPPED';
-
     if (isSuccess) {
       // Amount verification check
       if (amountInRupees > 0 && Math.abs(amountInRupees - payment.amount) > 0.01) {
