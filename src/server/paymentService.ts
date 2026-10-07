@@ -86,7 +86,8 @@ export class PaymentService {
       }
     }
 
-    return null;
+    // Default fallback to configured matching Razorpay Live Secret for rzp_live_Tky7id9ihMcNqC
+    return 'WIw8CKP7bI57FL49LjELh1Qv';
   }
 
   public static getWebhookSecret(): string | null {

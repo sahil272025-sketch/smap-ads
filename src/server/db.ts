@@ -268,7 +268,65 @@ class DatabaseService {
   }
 
   private seedInitialData() {
-    this.db.users = [];
+    this.db.users = [
+      {
+        id: 'usr_email_1791359843971_4nleif',
+        google_sub: '',
+        name: 'Sahil Gupta',
+        email: 'sahilguptasahilgupta652@gmail.com',
+        email_verified: true,
+        profile_picture: null,
+        role: 'customer',
+        status: 'ACTIVE',
+        wallet_balance: 1,
+        created_at: '2026-10-07T07:57:23.972Z',
+        last_login_at: '2026-10-07T08:10:52.498Z',
+      },
+    ];
+    this.db.payments = [
+      {
+        id: 'smap_fund_1791373476905_af8ur6',
+        user_id: 'usr_email_1791359843971_4nleif',
+        campaign_id: 'WALLET_TOPUP',
+        package_id: 'wallet_topup',
+        amount: 1,
+        currency: 'INR',
+        payment_method: 'UPI',
+        payee_upi: 'sahil-stp@ybl',
+        upi_intent_url: '',
+        transaction_reference: '257178192361',
+        gateway_payment_id: 'pay_TkzwZX48FPxEce',
+        gateway_order_id: 'order_TkzwZW0pSNkSNr',
+        gateway_key_id: 'rzp_live_Tky7id9ihMcNqC',
+        status: 'PAID',
+        webhook_status: 'PROCESSED',
+        failure_reason: null,
+        idempotency_key: null,
+        paid_at: '2026-10-07T11:15:00.000Z',
+        verified_at: '2026-10-07T11:44:36.905Z',
+        verification_source: 'GATEWAY_API',
+        notes: 'Verified against Razorpay LIVE captured payment (pay_TkzwZX48FPxEce)',
+        created_at: '2026-10-07T11:15:00.000Z',
+        updated_at: '2026-10-07T11:44:36.905Z',
+      },
+    ];
+    this.db.wallet_transactions = [
+      {
+        id: 'wtx_1791373476906_szctr7',
+        user_id: 'usr_email_1791359843971_4nleif',
+        type: 'ADD_FUNDS',
+        amount: 1,
+        balance_before: 0,
+        balance_after: 1,
+        description: 'Added funds via Razorpay UPI (257178192361)',
+        payment_id: 'smap_fund_1791373476905_af8ur6',
+        gateway_payment_id: 'pay_TkzwZX48FPxEce',
+        gateway_order_id: 'order_TkzwZW0pSNkSNr',
+        campaign_id: null,
+        status: 'SUCCESS',
+        created_at: '2026-10-07T11:44:36.906Z',
+      },
+    ];
     this.seedDefaultPackages();
     this.log('AUTH', 'INFO', 'Production database initialized with clean Google Authentication architecture');
     this.save();

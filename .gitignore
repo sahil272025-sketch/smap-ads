@@ -13,6 +13,7 @@ coverage/
 cookies.txt
 data/uploads/*
 !data/uploads/.gitkeep
-data/*.json
+data/*.tmp
+!data/smap_db.json
 data/*.db
 data/*.sqlite
