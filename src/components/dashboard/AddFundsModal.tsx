@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../lib/api';
-import { Payment } from '../../types';
 import {
   X,
   Wallet,
@@ -21,7 +20,7 @@ interface AddFundsModalProps {
   recommendedAmount?: number;
 }
 
-const PRESET_AMOUNTS = [1, 10, 100, 200, 500, 1000];
+const PRESET_AMOUNTS = [1, 10, 100, 200, 299, 509, 1000];
 
 const loadRazorpaySdk = (): Promise<boolean> => {
   return new Promise((resolve) => {
@@ -84,9 +83,8 @@ export const AddFundsModal: React.FC<AddFundsModalProps> = ({
     setError(null);
     setIsProcessing(true);
 
-    // Razorpay Live Domain Security:
-    // Razorpay rejects checkouts initiated from temporary run.app development domains.
-    // If currently inside the preview domain, seamlessly redirect to the registered production website:
+    // If currently running in the temporary AI Studio preview environment,
+    // Razorpay domain security requires checkout to originate from the registered production website:
     const isPreviewDomain = typeof window !== 'undefined' && window.location.hostname.includes('run.app');
     if (isPreviewDomain) {
       const prodUrl = `https://smap-ads.onrender.com/?tab=wallet&add_funds=${amountToAdd}`;
@@ -95,12 +93,11 @@ export const AddFundsModal: React.FC<AddFundsModalProps> = ({
     }
 
     try {
-      // 1. Create server-side payment & Razorpay Order
+      // 1. Create real server-side Razorpay Order
       const orderRes = await api.createAddFundsOrder(amountToAdd);
       
       if (orderRes.gatewayError) {
-        // Show exact gateway diagnostic notice if order creation failed on gateway
-        setError(`Payment Gateway Notice: ${orderRes.gatewayError.description} (${orderRes.gatewayError.code}). Please verify the Razorpay Live credentials in server configuration.`);
+        setError(`Payment Gateway Notice: ${orderRes.gatewayError.description} (${orderRes.gatewayError.code}). Please verify the server gateway configuration.`);
         setIsProcessing(false);
         return;
       }
@@ -149,7 +146,7 @@ export const AddFundsModal: React.FC<AddFundsModalProps> = ({
           },
           handler: async (response: any) => {
             try {
-              // 3. Verify payment signature & credit wallet atomically
+              // 3. Cryptographically verify payment on server & credit wallet atomically
               const verifyRes = await api.verifyWalletPayment({
                 paymentId: paymentRecord.id,
                 gatewayPaymentId: response.razorpay_payment_id,
@@ -185,22 +182,17 @@ export const AddFundsModal: React.FC<AddFundsModalProps> = ({
 
         rzp.on('payment.failed', (resp: any) => {
           setIsProcessing(false);
-          const reason = resp.error?.description || resp.error?.reason || 'Payment failed in UPI app';
+          const reason = resp.error?.description || resp.error?.reason || 'Payment failed or cancelled in UPI app';
           setError(`UPI Payment Notice: ${reason}`);
         });
 
         rzp.open();
       } else {
-        // Fallback: If Checkout SDK cannot initialize, launch direct UPI intent
-        if (paymentRecord?.upi_intent_url) {
-          window.location.href = paymentRecord.upi_intent_url;
-        } else {
-          setError('Could not initialize UPI checkout window. Please check your network connection.');
-        }
+        setError('Could not initialize Razorpay Checkout. Please check your network connection.');
         setIsProcessing(false);
       }
     } catch (err: any) {
-      setError(err.message || 'Failed to initialize UPI payment');
+      setError(err.message || 'Failed to initialize Razorpay payment');
       setIsProcessing(false);
     }
   };
@@ -223,7 +215,7 @@ export const AddFundsModal: React.FC<AddFundsModalProps> = ({
                 Add Funds to Wallet
               </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Instant UPI Payment. Funds never expire.
+                Automated Razorpay UPI Payment • Instant Wallet Credit
               </p>
             </div>
           </div>
@@ -261,7 +253,7 @@ export const AddFundsModal: React.FC<AddFundsModalProps> = ({
           <label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
             Select Preset Amount
           </label>
-          <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+          <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
             {PRESET_AMOUNTS.map((amt) => {
               const isSelected = amountToAdd === amt;
               return (
@@ -296,12 +288,12 @@ export const AddFundsModal: React.FC<AddFundsModalProps> = ({
               inputMode="numeric"
               value={customAmount}
               onChange={handleCustomChange}
-              placeholder="Enter amount (e.g. 500)"
+              placeholder="Enter amount (e.g. 509)"
               className="w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#080D1A] py-3 pl-9 pr-4 text-lg font-extrabold text-slate-900 dark:text-white tabular-nums placeholder:text-slate-400 focus:border-purple-500 focus:outline-none transition-colors"
             />
           </div>
           <p className="text-[11px] text-slate-400 dark:text-slate-500">
-            Minimum top-up: ₹1 (Testing Supported) • Instant credit upon verification
+            Minimum top-up: ₹1 (Testing Supported) • Automated Razorpay verification
           </p>
         </div>
 
@@ -320,7 +312,7 @@ export const AddFundsModal: React.FC<AddFundsModalProps> = ({
           </div>
         )}
 
-        {/* Payment CTA Section - ONLY ONE UPI PAYMENT OPTION */}
+        {/* Payment CTA Section - ONLY ONE "Launch UPI App" BUTTON */}
         <div className="space-y-4 pt-2">
           {typeof window !== 'undefined' && window.location.hostname.includes('run.app') && (
             <div className="rounded-2xl border border-purple-500/20 bg-purple-500/10 p-3 text-[11px] text-purple-300">
