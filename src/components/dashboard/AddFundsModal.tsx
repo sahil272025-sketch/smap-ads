@@ -84,6 +84,16 @@ export const AddFundsModal: React.FC<AddFundsModalProps> = ({
     setError(null);
     setIsProcessing(true);
 
+    // Razorpay Live Domain Security:
+    // Razorpay rejects checkouts initiated from temporary run.app development domains.
+    // If currently inside the preview domain, seamlessly redirect to the registered production website:
+    const isPreviewDomain = typeof window !== 'undefined' && window.location.hostname.includes('run.app');
+    if (isPreviewDomain) {
+      const prodUrl = `https://smap-ads.onrender.com/?tab=wallet&add_funds=${amountToAdd}`;
+      window.location.href = prodUrl;
+      return;
+    }
+
     try {
       // 1. Create server-side payment & Razorpay Order
       const orderRes = await api.createAddFundsOrder(amountToAdd);
@@ -131,6 +141,11 @@ export const AddFundsModal: React.FC<AddFundsModalProps> = ({
           },
           theme: {
             color: '#7C3AED',
+          },
+          notes: {
+            purpose: 'WALLET_TOPUP',
+            domain: 'https://smap-ads.onrender.com',
+            website: 'https://smap-ads.onrender.com',
           },
           handler: async (response: any) => {
             try {
@@ -307,6 +322,13 @@ export const AddFundsModal: React.FC<AddFundsModalProps> = ({
 
         {/* Payment CTA Section - ONLY ONE UPI PAYMENT OPTION */}
         <div className="space-y-4 pt-2">
+          {typeof window !== 'undefined' && window.location.hostname.includes('run.app') && (
+            <div className="rounded-2xl border border-purple-500/20 bg-purple-500/10 p-3 text-[11px] text-purple-300">
+              <span className="font-semibold block text-white mb-0.5">Production Razorpay Gateway:</span>
+              <span>Razorpay requires payments to originate from your registered domain <strong>smap-ads.onrender.com</strong>. Tapping below opens your live site directly.</span>
+            </div>
+          )}
+
           {/* Main button: Launch UPI App (PhonePe / GPay / Paytm) */}
           <button
             type="button"

@@ -74,6 +74,8 @@ export class WalletService {
                 user_id: userId,
                 user_email: user.email,
                 amount: String(roundedAmount),
+                domain: 'https://smap-ads.onrender.com',
+                website: 'https://smap-ads.onrender.com',
               },
             }),
           });

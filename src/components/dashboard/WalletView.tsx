@@ -53,6 +53,19 @@ export const WalletView: React.FC = () => {
 
   useEffect(() => {
     loadWalletData();
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const addFundsParam = params.get('add_funds');
+      if (addFundsParam) {
+        const amt = Number(addFundsParam);
+        if (!isNaN(amt) && amt > 0) {
+          setSelectedTopupAmount(amt);
+          setShowAddFundsModal(true);
+        }
+      }
+    } catch {
+      // ignore
+    }
   }, []);
 
   const handleOpenAddFunds = (amt = 500) => {

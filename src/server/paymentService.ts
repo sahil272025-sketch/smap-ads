@@ -65,7 +65,7 @@ export class PaymentService {
       }
     }
 
-    return 'rzp_live_TjqGRLXgjC3fWI';
+    return 'rzp_live_Tky7id9ihMcNqC';
   }
 
   public static getKeySecret(): string | null {
@@ -86,7 +86,7 @@ export class PaymentService {
       }
     }
 
-    return 'RaSPDQ2irq3zqB1F2a20';
+    return null;
   }
 
   public static getWebhookSecret(): string | null {
