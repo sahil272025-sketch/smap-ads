@@ -1,4 +1,4 @@
-import { User, Package, Campaign, Payment, MetaConnectionState, MetaInsights, SupportTicket, AdminStats, SystemLog, GoogleConfigStatus, WalletTransaction, WalletData, AdminWalletData } from '../types';
+import { User, Package, Campaign, Payment, MetaConnectionState, MetaInsights, MetaVerificationReport, SupportTicket, AdminStats, SystemLog, GoogleConfigStatus, WalletTransaction, WalletData, AdminWalletData } from '../types';
 
 class ApiClient {
   private inMemoryToken: string | null = null;
@@ -93,7 +93,13 @@ class ApiClient {
   }
 
   public getGoogleAuthUrl() {
-    return this.request<{ url: string; configured: boolean }>('/auth/google/url');
+    return this.request<{
+      url: string;
+      configured: boolean;
+      devMode?: boolean;
+      user?: User;
+      token?: string;
+    }>('/auth/google/url');
   }
 
   public verifyGoogleIdToken(idToken: string) {
@@ -152,18 +158,27 @@ class ApiClient {
 
   // Campaigns
   public createCampaign(payload: {
-    packageId: string;
+    packageId?: string;
+    objective?: string;
     creativeUrl: string;
-    creativeType: 'image' | 'video';
+    creativeType?: 'image' | 'video';
     businessName: string;
     primaryText: string;
     headline: string;
-    description: string;
-    destinationType: string;
+    description?: string;
+    callToAction?: string;
+    destinationType?: string;
     destinationUrl: string;
-    targeting: any;
+    placements?: string[];
+    targeting?: any;
+    dailyBudget?: number;
+    durationDays?: number;
+    startDate?: string;
+    endDate?: string;
+    syncToMeta?: boolean;
+    status?: string;
   }) {
-    return this.request<{ campaign: Campaign; payment: Payment }>('/campaigns', {
+    return this.request<{ campaign: Campaign; payment?: Payment; metaResult?: any }>('/campaigns', {
       method: 'POST',
       body: JSON.stringify(payload),
     });
@@ -410,6 +425,10 @@ class ApiClient {
       method: 'POST',
       body: JSON.stringify({ targeting }),
     });
+  }
+
+  public verifyMetaConnection() {
+    return this.request<MetaVerificationReport>('/meta/verify');
   }
 
   // Support

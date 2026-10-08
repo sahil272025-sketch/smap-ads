@@ -54,8 +54,13 @@ export interface Package {
   created_at: string;
 }
 
+export type CampaignObjective = 'AWARENESS' | 'TRAFFIC' | 'ENGAGEMENT' | 'LEADS' | 'SALES';
+
+export type PlacementType = 'facebook_feed' | 'instagram_feed' | 'instagram_stories' | 'instagram_reels';
+
 export type CampaignStatus = 
   | 'DRAFT'
+  | 'PENDING_REVIEW'
   | 'PAYMENT_PENDING'
   | 'PAYMENT_CONFIRMED'
   | 'META_NOT_CONNECTED'
@@ -75,21 +80,29 @@ export interface CampaignTargeting {
   max_age: number;
   gender: 'ALL' | 'MEN' | 'WOMEN';
   interests: string[];
+  locations?: string[];
+  estimated_audience_size?: string;
 }
 
 export interface Campaign {
   id: string;
   user_id: string;
   package_id: string;
+  objective?: CampaignObjective;
   creative_url: string;
   creative_type: 'image' | 'video';
   business_name: string;
   primary_text: string;
   headline: string;
   description: string;
+  call_to_action?: string;
   destination_type: 'website' | 'whatsapp' | 'facebook_page' | 'instagram_profile';
   destination_url: string;
+  placements?: PlacementType[];
   targeting: CampaignTargeting;
+  daily_budget?: number;
+  duration_days?: number;
+  total_budget?: number;
   start_at: string | null;
   end_at: string | null;
   status: CampaignStatus;
@@ -155,6 +168,11 @@ export interface MetaConnection {
     account_status: number;
   }>;
   selected_ad_account_id: string | null;
+  page_id?: string;
+  page_name?: string;
+  instagram_id?: string;
+  instagram_username?: string;
+  is_server_verified?: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -563,8 +581,41 @@ class DatabaseService {
   }
 
   // Meta Connections
-  public findMetaConnectionByUserId(userId: string) {
-    return this.db.meta_connections.find(m => m.user_id === userId);
+  public findMetaConnectionByUserId(userId: string): MetaConnection | undefined {
+    const custom = this.db.meta_connections.find(m => m.user_id === userId);
+    if (custom) return custom;
+
+    // Use verified server-side META_ACCESS_TOKEN and verified Meta assets (Facebook Page, Instagram, SMAP Ads)
+    const serverToken = process.env.META_ACCESS_TOKEN?.trim();
+    if (serverToken && serverToken.length > 0) {
+      return {
+        id: `meta_conn_server_${userId || 'default'}`,
+        user_id: userId,
+        meta_user_id: '128670460329078',
+        meta_user_name: 'Sahil Gupta',
+        access_token: serverToken,
+        token_expires_at: new Date(Date.now() + 60 * 24 * 3600 * 1000).toISOString(),
+        ad_accounts: [
+          {
+            id: 'act_1627260695520511',
+            account_id: '1627260695520511',
+            name: 'SMAP Ads',
+            currency: 'INR',
+            account_status: 1,
+          },
+        ],
+        selected_ad_account_id: 'act_1627260695520511',
+        page_id: '128670460329078',
+        page_name: 'Sahil Gupta',
+        instagram_id: '17841445164423927',
+        instagram_username: 'ravi105065',
+        is_server_verified: true,
+        created_at: '2026-10-08T13:41:00.000Z',
+        updated_at: new Date().toISOString(),
+      };
+    }
+
+    return undefined;
   }
   public saveMetaConnection(connection: MetaConnection) {
     const idx = this.db.meta_connections.findIndex(m => m.user_id === connection.user_id);

@@ -39,11 +39,12 @@ export const MyCampaigns: React.FC<MyCampaignsProps> = ({ onOpenCampaign, onCrea
 
   const filterTabs = [
     { id: 'ALL', label: 'All' },
+    { id: 'DRAFT', label: 'Draft' },
+    { id: 'PENDING_REVIEW', label: 'Pending Review' },
     { id: 'ACTIVE', label: 'Active' },
-    { id: 'UNDER_REVIEW', label: 'Under Review' },
-    { id: 'PAYMENT_PENDING', label: 'Pending' },
     { id: 'PAUSED', label: 'Paused' },
     { id: 'COMPLETED', label: 'Completed' },
+    { id: 'REJECTED', label: 'Rejected' },
     { id: 'FAILED', label: 'Failed' },
   ];
 
@@ -180,10 +181,22 @@ export const MyCampaigns: React.FC<MyCampaignsProps> = ({ onOpenCampaign, onCrea
 
                     <td className="py-4">
                       <span className="font-bold text-slate-900 dark:text-white capitalize block">
-                        {(cmp.package_id || '').replace('pkg_', '').replace('_', ' ')}
+                        {cmp.package_id
+                          ? cmp.package_id.replace('pkg_', '').replace('_', ' ')
+                          : cmp.objective
+                          ? `${cmp.objective.toLowerCase()} campaign`
+                          : 'Custom Campaign'}
                       </span>
                       <span className="text-[11px] text-slate-400">
-                        {cmp.package_id.includes('sprint') ? '5 Days' : cmp.package_id.includes('growth') ? '10 Days' : cmp.package_id.includes('business') ? '14 Days' : '30 Days'} Run
+                        {cmp.duration_days
+                          ? `${cmp.duration_days} Days Run`
+                          : (cmp.package_id || '').includes('sprint')
+                          ? '5 Days Run'
+                          : (cmp.package_id || '').includes('growth')
+                          ? '10 Days Run'
+                          : (cmp.package_id || '').includes('business')
+                          ? '14 Days Run'
+                          : '30 Days Run'}
                       </span>
                     </td>
 

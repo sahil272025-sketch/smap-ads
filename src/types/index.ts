@@ -35,8 +35,13 @@ export interface Package {
   is_popular?: boolean;
 }
 
+export type CampaignObjective = 'AWARENESS' | 'TRAFFIC' | 'ENGAGEMENT' | 'LEADS' | 'SALES';
+
+export type PlacementType = 'facebook_feed' | 'instagram_feed' | 'instagram_stories' | 'instagram_reels';
+
 export type CampaignStatus = 
   | 'DRAFT'
+  | 'PENDING_REVIEW'
   | 'PAYMENT_PENDING'
   | 'PAYMENT_CONFIRMED'
   | 'META_NOT_CONNECTED'
@@ -56,21 +61,29 @@ export interface CampaignTargeting {
   max_age: number;
   gender: 'ALL' | 'MEN' | 'WOMEN';
   interests: string[];
+  locations?: string[];
+  estimated_audience_size?: string;
 }
 
 export interface Campaign {
   id: string;
   user_id: string;
   package_id: string;
+  objective?: CampaignObjective;
   creative_url: string;
   creative_type: 'image' | 'video';
   business_name: string;
   primary_text: string;
   headline: string;
   description: string;
+  call_to_action?: string;
   destination_type: 'website' | 'whatsapp' | 'facebook_page' | 'instagram_profile';
   destination_url: string;
+  placements?: PlacementType[];
   targeting: CampaignTargeting;
+  daily_budget?: number;
+  duration_days?: number;
+  total_budget?: number;
   start_at: string | null;
   end_at: string | null;
   status: CampaignStatus;
@@ -133,6 +146,80 @@ export interface MetaConnectionState {
   }>;
   selected_ad_account_id?: string | null;
   expires_at?: string;
+  page_id?: string;
+  page_name?: string;
+  instagram_id?: string;
+  instagram_username?: string;
+  ad_account_id?: string;
+  ad_account_name?: string;
+  is_server_verified?: boolean;
+}
+
+export interface MetaAssetAccess {
+  adAccount: {
+    verified: boolean;
+    id: string | null;
+    accountId: string | null;
+    name: string | null;
+    currency: string | null;
+    accountStatus: number | null;
+    statusText: string;
+    hasPaymentMethods: boolean;
+    canCreateCallAds: boolean;
+    capabilitiesCount: number;
+    error?: string;
+  };
+  facebookPage: {
+    verified: boolean;
+    id: string | null;
+    name: string | null;
+    category: string | null;
+    tasks: string[];
+    canAdvertise: boolean;
+    error?: string;
+  };
+  instagramAccount: {
+    verified: boolean;
+    id: string | null;
+    username: string | null;
+    statusText: string;
+    notice: string;
+    error?: string;
+  };
+  metaApp: {
+    verified: boolean;
+    id: string | null;
+    name: string | null;
+    error?: string;
+  };
+}
+
+export interface MetaPermissionsCheck {
+  ads_management: boolean;
+  ads_read: boolean;
+  business_management: boolean;
+  pages_manage_ads: boolean;
+  pages_read_engagement: boolean;
+  pages_show_list: boolean;
+  grantedScopes: string[];
+  missingScopes: string[];
+  pageTasks: string[];
+}
+
+export interface MetaVerificationReport {
+  timestamp: string;
+  tokenConfigured: boolean;
+  tokenType: string | null;
+  isValid: boolean;
+  userId: string | null;
+  appId: string | null;
+  appName: string | null;
+  expiresAt: string | null;
+  assets: MetaAssetAccess;
+  permissions: MetaPermissionsCheck;
+  readyForCampaignCreation: boolean;
+  summary: string;
+  recommendations: string[];
 }
 
 export interface MetaInsights {

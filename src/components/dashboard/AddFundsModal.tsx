@@ -10,6 +10,7 @@ import {
   ArrowRight,
   Smartphone,
   Loader2,
+  AppWindow,
 } from 'lucide-react';
 
 interface AddFundsModalProps {
@@ -52,7 +53,8 @@ export const AddFundsModal: React.FC<AddFundsModalProps> = ({
   const [customAmount, setCustomAmount] = useState<string>(recommendedAmount ? String(recommendedAmount) : '100');
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
-  const [isProcessing, setIsProcessing] = useState(false);
+  const [processingMode, setProcessingMode] = useState<'direct' | 'chooser' | null>(null);
+  const isProcessing = processingMode !== null;
 
   if (!isOpen) return null;
 
@@ -75,13 +77,13 @@ export const AddFundsModal: React.FC<AddFundsModalProps> = ({
   const amountToAdd = Number(customAmount) || selectedAmount;
   const projectedBalance = Math.round((currentBalance + (amountToAdd > 0 ? amountToAdd : 0)) * 100) / 100;
 
-  const handleLaunchUpiCheckout = async () => {
+  const handleLaunchUpiCheckout = async (mode: 'direct' | 'chooser' = 'direct') => {
     if (!amountToAdd || amountToAdd < 1) {
       setError('Please enter an amount of at least ₹1');
       return;
     }
     setError(null);
-    setIsProcessing(true);
+    setProcessingMode(mode);
 
     // If currently running in the temporary AI Studio preview environment,
     // Razorpay domain security requires checkout to originate from the registered production website:
@@ -98,7 +100,7 @@ export const AddFundsModal: React.FC<AddFundsModalProps> = ({
       
       if (orderRes.gatewayError) {
         setError(`Payment Gateway Notice: ${orderRes.gatewayError.description} (${orderRes.gatewayError.code}). Please verify the server gateway configuration.`);
-        setIsProcessing(false);
+        setProcessingMode(null);
         return;
       }
 
@@ -110,6 +112,21 @@ export const AddFundsModal: React.FC<AddFundsModalProps> = ({
       const sdkReady = await loadRazorpaySdk();
 
       if (sdkReady && keyId) {
+        const upiBlockConfig = mode === 'chooser'
+          ? {
+              name: 'Use Your UPI App',
+              instruments: [
+                {
+                  method: 'upi',
+                  flows: ['intent'],
+                },
+              ],
+            }
+          : {
+              name: 'Pay via UPI',
+              instruments: [{ method: 'upi' }],
+            };
+
         const rzpOptions: any = {
           key: keyId,
           amount: Math.round(amountToAdd * 100), // in paise
@@ -125,10 +142,7 @@ export const AddFundsModal: React.FC<AddFundsModalProps> = ({
           config: {
             display: {
               blocks: {
-                upi: {
-                  name: 'Pay via UPI',
-                  instruments: [{ method: 'upi' }],
-                },
+                upi: upiBlockConfig,
               },
               sequence: ['block.upi'],
               preferences: {
@@ -164,12 +178,12 @@ export const AddFundsModal: React.FC<AddFundsModalProps> = ({
             } catch (err: any) {
               setError(err.message || 'Payment verification failed at server.');
             } finally {
-              setIsProcessing(false);
+              setProcessingMode(null);
             }
           },
           modal: {
             ondismiss: () => {
-              setIsProcessing(false);
+              setProcessingMode(null);
             },
           },
         };
@@ -181,7 +195,7 @@ export const AddFundsModal: React.FC<AddFundsModalProps> = ({
         const rzp = new (window as any).Razorpay(rzpOptions);
 
         rzp.on('payment.failed', (resp: any) => {
-          setIsProcessing(false);
+          setProcessingMode(null);
           const reason = resp.error?.description || resp.error?.reason || 'Payment failed or cancelled in UPI app';
           setError(`UPI Payment Notice: ${reason}`);
         });
@@ -189,11 +203,11 @@ export const AddFundsModal: React.FC<AddFundsModalProps> = ({
         rzp.open();
       } else {
         setError('Could not initialize Razorpay Checkout. Please check your network connection.');
-        setIsProcessing(false);
+        setProcessingMode(null);
       }
     } catch (err: any) {
       setError(err.message || 'Failed to initialize Razorpay payment');
-      setIsProcessing(false);
+      setProcessingMode(null);
     }
   };
 
@@ -312,8 +326,8 @@ export const AddFundsModal: React.FC<AddFundsModalProps> = ({
           </div>
         )}
 
-        {/* Payment CTA Section - ONLY ONE "Launch UPI App" BUTTON */}
-        <div className="space-y-4 pt-2">
+        {/* Payment CTA Section - Two Distinct UPI Options */}
+        <div className="space-y-3 pt-2">
           {typeof window !== 'undefined' && window.location.hostname.includes('run.app') && (
             <div className="rounded-2xl border border-purple-500/20 bg-purple-500/10 p-3 text-[11px] text-purple-300">
               <span className="font-semibold block text-white mb-0.5">Production Razorpay Gateway:</span>
@@ -321,22 +335,53 @@ export const AddFundsModal: React.FC<AddFundsModalProps> = ({
             </div>
           )}
 
-          {/* Main button: Launch UPI App (PhonePe / GPay / Paytm) */}
+          {/* Option 1: Launch UPI App (PhonePe / GPay / Paytm) */}
           <button
             type="button"
-            onClick={handleLaunchUpiCheckout}
+            onClick={() => handleLaunchUpiCheckout('direct')}
             disabled={amountToAdd < 1 || isProcessing}
-            className="w-full flex items-center justify-center gap-2 rounded-2xl bg-purple-600 hover:bg-purple-500 py-4 px-6 text-sm font-extrabold text-white shadow-xl shadow-purple-600/35 active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none transition-all"
+            className="w-full flex items-center justify-center gap-2 rounded-2xl bg-purple-600 hover:bg-purple-500 py-3.5 px-6 text-sm font-extrabold text-white shadow-xl shadow-purple-600/35 active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none transition-all"
           >
-            {isProcessing ? (
+            {processingMode === 'direct' ? (
               <>
                 <Loader2 className="h-5 w-5 animate-spin text-purple-200" />
-                <span>Opening UPI Checkout...</span>
+                <span>Opening PhonePe / GPay / Paytm...</span>
               </>
             ) : (
               <>
                 <Smartphone className="h-5 w-5 text-emerald-300" />
                 <span>Launch UPI App (PhonePe / GPay / Paytm)</span>
+                <ArrowRight className="h-4 w-4" />
+              </>
+            )}
+          </button>
+
+          {/* Clean OR Divider */}
+          <div className="relative flex items-center justify-center py-0.5">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-slate-200 dark:border-slate-800" />
+            </div>
+            <div className="relative bg-white dark:bg-[#0B101E] px-3 text-[11px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">
+              OR
+            </div>
+          </div>
+
+          {/* Option 2: Use Your UPI App */}
+          <button
+            type="button"
+            onClick={() => handleLaunchUpiCheckout('chooser')}
+            disabled={amountToAdd < 1 || isProcessing}
+            className="w-full flex items-center justify-center gap-2 rounded-2xl border-2 border-purple-500/40 bg-purple-500/10 hover:bg-purple-500/20 py-3.5 px-6 text-sm font-extrabold text-purple-700 dark:text-purple-300 shadow-sm active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none transition-all"
+          >
+            {processingMode === 'chooser' ? (
+              <>
+                <Loader2 className="h-5 w-5 animate-spin text-purple-400" />
+                <span>Opening UPI App Chooser...</span>
+              </>
+            ) : (
+              <>
+                <AppWindow className="h-5 w-5 text-purple-500 dark:text-purple-400" />
+                <span>Use Your UPI App</span>
                 <ArrowRight className="h-4 w-4" />
               </>
             )}

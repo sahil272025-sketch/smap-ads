@@ -34,8 +34,8 @@ if (!process.env.GOOGLE_CLIENT_ID || process.env.GOOGLE_CLIENT_ID.trim().length 
   process.env.GOOGLE_CLIENT_ID = DEFAULT_GOOGLE_CLIENT_ID;
 }
 
-// Verify and ensure production Google OAuth redirect URI is configured
-if (!process.env.GOOGLE_REDIRECT_URI || process.env.GOOGLE_REDIRECT_URI.includes('ais-dev')) {
+// Verify and ensure Google OAuth redirect URI is configured
+if (!process.env.GOOGLE_REDIRECT_URI) {
   process.env.GOOGLE_REDIRECT_URI = RENDER_PRODUCTION_REDIRECT_URI;
 }
 

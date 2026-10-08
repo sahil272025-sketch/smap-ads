@@ -1,0 +1,701 @@
+{
+  "users": [
+    {
+      "id": "usr_email_1791359843971_4nleif",
+      "google_sub": "dev_google_preview_sub_101",
+      "name": "Sahil Gupta",
+      "email": "sahilguptasahilgupta652@gmail.com",
+      "email_verified": true,
+      "profile_picture": null,
+      "role": "customer",
+      "status": "ACTIVE",
+      "wallet_balance": 2,
+      "created_at": "2026-10-07T07:57:23.972Z",
+      "last_login_at": "2026-10-08T14:46:48.287Z",
+      "password_hash": "$2b$10$kOoXeEQ.8B4VhRgfODyEluoltxhu7OLfmZneP4WWkK4udDvtme5TW",
+      "phone": "9296421589",
+      "updated_at": "2026-10-08T14:46:48.287Z"
+    }
+  ],
+  "packages": [
+    {
+      "id": "pkg_starter_200",
+      "name": "Starter Sprint",
+      "price": 200,
+      "duration_days": 5,
+      "platforms": [
+        "Facebook",
+        "Instagram"
+      ],
+      "features": [
+        "5 Days duration",
+        "Facebook + Instagram advertising",
+        "Target audience setup",
+        "Campaign management",
+        "Campaign status tracking",
+        "UPI Instant Intent checkout"
+      ],
+      "active": true,
+      "created_at": "2026-10-08T11:12:45.201Z"
+    },
+    {
+      "id": "pkg_growth_399",
+      "name": "Growth Accelerate",
+      "price": 399,
+      "duration_days": 10,
+      "platforms": [
+        "Facebook",
+        "Instagram"
+      ],
+      "features": [
+        "10 Days duration",
+        "Facebook + Instagram advertising",
+        "Target audience setup",
+        "Campaign management",
+        "Campaign status tracking",
+        "Priority campaign monitoring"
+      ],
+      "active": true,
+      "is_popular": true,
+      "created_at": "2026-10-08T11:12:45.201Z"
+    },
+    {
+      "id": "pkg_pro_549",
+      "name": "Business Pro",
+      "price": 549,
+      "duration_days": 14,
+      "platforms": [
+        "Facebook",
+        "Instagram"
+      ],
+      "features": [
+        "14 Days duration",
+        "Facebook + Instagram advertising",
+        "Target audience setup",
+        "Campaign management",
+        "Campaign status tracking",
+        "Extended auction reach stability"
+      ],
+      "active": true,
+      "created_at": "2026-10-08T11:12:45.201Z"
+    },
+    {
+      "id": "pkg_scale_749",
+      "name": "Enterprise Scale",
+      "price": 749,
+      "duration_days": 30,
+      "platforms": [
+        "Facebook",
+        "Instagram"
+      ],
+      "features": [
+        "30 Days full monthly duration",
+        "Facebook + Instagram advertising",
+        "Target audience setup",
+        "Campaign management",
+        "Campaign status tracking",
+        "Long-term audience learning phase"
+      ],
+      "active": true,
+      "created_at": "2026-10-08T11:12:45.201Z"
+    }
+  ],
+  "campaigns": [
+    {
+      "id": "smap_cmp_1791470260290_fqamdk",
+      "user_id": "usr_email_1791359843971_4nleif",
+      "objective": "TRAFFIC",
+      "creative_type": "image",
+      "business_name": "Sahil Gupta SMAP Store",
+      "primary_text": "Grab up to 40% discount on all premium products with free nationwide delivery across India.",
+      "headline": "Festive Season Grand Sale",
+      "description": "Special festive collection",
+      "call_to_action": "SHOP_NOW",
+      "destination_type": "website",
+      "destination_url": "https://example.com/festive-store",
+      "placements": [
+        "facebook_feed",
+        "instagram_feed",
+        "instagram_stories",
+        "instagram_reels"
+      ],
+      "targeting": {
+        "country": "IN",
+        "state": "All India",
+        "city": "All Cities",
+        "min_age": 18,
+        "max_age": 60,
+        "gender": "ALL",
+        "interests": [
+          "Online Shopping",
+          "Retail & E-commerce",
+          "Fashion & Apparel"
+        ],
+        "locations": [
+          "All India"
+        ],
+        "estimated_audience_size": "22M – 28M people"
+      },
+      "daily_budget": 399,
+      "duration_days": 10,
+      "total_budget": 3990,
+      "start_at": "2026-10-08T14:37:40.289Z",
+      "end_at": "2026-10-18T14:37:40.289Z",
+      "status": "DRAFT",
+      "meta_campaign_id": "120251645899580295",
+      "meta_adset_id": "120251645900110295",
+      "meta_creative_id": null,
+      "meta_ad_id": null,
+      "meta_account_id": "act_1627260695520511",
+      "meta_status_message": "Meta Campaign draft 120251645899580295 created in PAUSED status (safely non-delivering). Meta AdSet draft 120251645900110295 created in PAUSED status with ₹399/day budget. Identities attached: Facebook Page \"Sahil Gupta\" (128670460329078), Instagram @ravi105065 (17841445164423927). App development mode restricts creative publication until Live mode is enabled in Meta App Dashboard.",
+      "rejection_reason": null,
+      "error_details": null,
+      "created_at": "2026-10-08T14:37:40.289Z",
+      "updated_at": "2026-10-08T14:37:40.289Z",
+      "package_id": "custom_campaign"
+    },
+    {
+      "id": "smap_cmp_1791470200613_9ebge3",
+      "user_id": "usr_email_1791359843971_4nleif",
+      "objective": "TRAFFIC",
+      "creative_type": "image",
+      "business_name": "Sahil Gupta SMAP Test Merchant",
+      "primary_text": "Experience verified advertising solutions across Facebook and Instagram with SMAP platform.",
+      "headline": "High-Conversion Safe Draft Ad Test",
+      "description": "Safe non-delivering test campaign",
+      "call_to_action": "LEARN_MORE",
+      "destination_type": "website",
+      "destination_url": "https://example.com/smap-test-landing",
+      "placements": [
+        "facebook_feed",
+        "instagram_feed",
+        "instagram_stories",
+        "instagram_reels"
+      ],
+      "targeting": {
+        "country": "IN",
+        "state": "All India",
+        "city": "All Cities",
+        "min_age": 20,
+        "max_age": 55,
+        "gender": "ALL",
+        "interests": [
+          "Online Shopping",
+          "Small Business",
+          "Technology & Gadgets"
+        ],
+        "locations": [
+          "All India"
+        ],
+        "estimated_audience_size": "18M – 24M people"
+      },
+      "daily_budget": 200,
+      "duration_days": 5,
+      "total_budget": 1000,
+      "start_at": "2026-10-08T14:36:40.613Z",
+      "end_at": "2026-10-13T14:36:40.613Z",
+      "status": "DRAFT",
+      "meta_campaign_id": "120251645887980295",
+      "meta_adset_id": null,
+      "meta_creative_id": null,
+      "meta_ad_id": null,
+      "meta_account_id": "act_1627260695520511",
+      "meta_status_message": "Meta Campaign draft 120251645887980295 created in PAUSED status (safely non-delivering). AdSet notice: Invalid parameter. Identities attached: Facebook Page \"Sahil Gupta\" (128670460329078), Instagram @ravi105065 (17841445164423927). App development mode restricts creative publication until Live mode is enabled in Meta App Dashboard.",
+      "rejection_reason": null,
+      "error_details": null,
+      "created_at": "2026-10-08T14:36:40.613Z",
+      "updated_at": "2026-10-08T14:36:40.613Z",
+      "package_id": "custom_campaign"
+    }
+  ],
+  "payments": [
+    {
+      "id": "smap_fund_1791463332757_2zlu34",
+      "user_id": "usr_email_1791359843971_4nleif",
+      "campaign_id": "WALLET_TOPUP",
+      "package_id": "wallet_topup",
+      "amount": 1,
+      "currency": "INR",
+      "payment_method": "UPI",
+      "payee_upi": "sahil-stp@ybl",
+      "upi_intent_url": "",
+      "transaction_reference": "667696542797",
+      "gateway_payment_id": "pay_Tl1f9rKgLanRDW",
+      "gateway_order_id": "order_Tl1f13HoNuW0Ra",
+      "gateway_key_id": "rzp_live_Tky7id9ihMcNqC",
+      "status": "PAID",
+      "webhook_status": "PROCESSED",
+      "failure_reason": null,
+      "idempotency_key": null,
+      "paid_at": "2026-10-07T12:55:54.000Z",
+      "verified_at": "2026-10-08T12:42:12.757Z",
+      "verification_source": "GATEWAY_API",
+      "notes": "Verified against Razorpay LIVE captured payment (pay_Tl1f9rKgLanRDW)",
+      "created_at": "2026-10-07T12:55:54.000Z",
+      "updated_at": "2026-10-08T12:42:12.757Z"
+    },
+    {
+      "id": "smap_fund_1791373476905_af8ur6",
+      "user_id": "usr_email_1791359843971_4nleif",
+      "campaign_id": "WALLET_TOPUP",
+      "package_id": "wallet_topup",
+      "amount": 1,
+      "currency": "INR",
+      "payment_method": "UPI",
+      "payee_upi": "sahil-stp@ybl",
+      "upi_intent_url": "",
+      "transaction_reference": "257178192361",
+      "gateway_payment_id": "pay_TkzwZX48FPxEce",
+      "gateway_order_id": "order_TkzwZW0pSNkSNr",
+      "gateway_key_id": "rzp_live_Tky7id9ihMcNqC",
+      "status": "PAID",
+      "webhook_status": "PROCESSED",
+      "failure_reason": null,
+      "idempotency_key": null,
+      "paid_at": "2026-10-07T11:15:00.000Z",
+      "verified_at": "2026-10-07T11:44:36.905Z",
+      "verification_source": "GATEWAY_API",
+      "notes": "Verified against Razorpay LIVE captured payment (pay_TkzwZX48FPxEce)",
+      "created_at": "2026-10-07T11:15:00.000Z",
+      "updated_at": "2026-10-07T11:44:36.905Z"
+    }
+  ],
+  "meta_connections": [],
+  "support_tickets": [],
+  "system_logs": [
+    {
+      "id": "log_1791470808288_rvvjcw",
+      "category": "AUTH",
+      "level": "INFO",
+      "message": "Google user signed in: sahilguptasahilgupta652@gmail.com (sub: dev_google_preview_sub_101)",
+      "details": {
+        "userId": "usr_email_1791359843971_4nleif"
+      },
+      "created_at": "2026-10-08T14:46:48.288Z"
+    },
+    {
+      "id": "log_1791470796371_21knvo",
+      "category": "AUTH",
+      "level": "INFO",
+      "message": "Google user signed in: sahilguptasahilgupta652@gmail.com (sub: dev_google_preview_sub_101)",
+      "details": {
+        "userId": "usr_email_1791359843971_4nleif"
+      },
+      "created_at": "2026-10-08T14:46:36.371Z"
+    },
+    {
+      "id": "log_1791470774425_3r7qvr",
+      "category": "AUTH",
+      "level": "INFO",
+      "message": "Google user signed in: sahilguptasahilgupta652@gmail.com (sub: dev_google_preview_sub_101)",
+      "details": {
+        "userId": "usr_email_1791359843971_4nleif"
+      },
+      "created_at": "2026-10-08T14:46:14.426Z"
+    },
+    {
+      "id": "log_1791470712294_py637q",
+      "category": "AUTH",
+      "level": "INFO",
+      "message": "Google user signed in: sahilguptasahilgupta652@gmail.com (sub: dev_google_preview_sub_101)",
+      "details": {
+        "userId": "usr_email_1791359843971_4nleif"
+      },
+      "created_at": "2026-10-08T14:45:12.294Z"
+    },
+    {
+      "id": "log_1791470701737_jzqquz",
+      "category": "AUTH",
+      "level": "INFO",
+      "message": "Google user signed in: sahilguptasahilgupta652@gmail.com (sub: dev_google_preview_sub_101)",
+      "details": {
+        "userId": "usr_email_1791359843971_4nleif"
+      },
+      "created_at": "2026-10-08T14:45:01.737Z"
+    },
+    {
+      "id": "log_1791470692619_nechax",
+      "category": "AUTH",
+      "level": "INFO",
+      "message": "User logged in with email/password: sahilguptasahilgupta652@gmail.com",
+      "details": {
+        "userId": "usr_email_1791359843971_4nleif"
+      },
+      "created_at": "2026-10-08T14:44:52.619Z"
+    },
+    {
+      "id": "log_1791470594017_v6f4j8",
+      "category": "AUTH",
+      "level": "INFO",
+      "message": "User logged in with email/password: sahilguptasahilgupta652@gmail.com",
+      "details": {
+        "userId": "usr_email_1791359843971_4nleif"
+      },
+      "created_at": "2026-10-08T14:43:14.017Z"
+    },
+    {
+      "id": "log_1791470372527_vk6qmj",
+      "category": "SCHEDULER",
+      "level": "INFO",
+      "message": "Campaign expiry background scheduler started (check interval: 30s)",
+      "created_at": "2026-10-08T14:39:32.527Z"
+    },
+    {
+      "id": "log_1791470263316_b3e5gp",
+      "category": "CAMPAIGN",
+      "level": "INFO",
+      "message": "Created campaign draft smap_cmp_1791470260290_fqamdk for user usr_email_1791359843971_4nleif",
+      "details": {
+        "campaignId": "smap_cmp_1791470260290_fqamdk",
+        "objective": "TRAFFIC",
+        "metaCampaignId": "120251645899580295",
+        "metaAdsetId": "120251645900110295",
+        "dailyBudget": 399,
+        "durationDays": 10,
+        "totalBudget": 3990,
+        "status": "DRAFT"
+      },
+      "created_at": "2026-10-08T14:37:43.316Z"
+    },
+    {
+      "id": "log_1791470263315_jy6tc2",
+      "category": "META_API",
+      "level": "INFO",
+      "message": "Successfully created paused Meta AdSet: 120251645900110295",
+      "created_at": "2026-10-08T14:37:43.315Z"
+    },
+    {
+      "id": "log_1791470261514_k6yioi",
+      "category": "META_API",
+      "level": "INFO",
+      "message": "Successfully created paused Meta Campaign: 120251645899580295",
+      "created_at": "2026-10-08T14:37:41.514Z"
+    },
+    {
+      "id": "log_1791470260290_p1scn3",
+      "category": "META_API",
+      "level": "INFO",
+      "message": "Creating non-delivering draft campaign on Meta for SMAP campaign smap_cmp_1791470260290_fqamdk",
+      "created_at": "2026-10-08T14:37:40.290Z"
+    },
+    {
+      "id": "log_1791470202883_e7wogh",
+      "category": "CAMPAIGN",
+      "level": "INFO",
+      "message": "Created campaign draft smap_cmp_1791470200613_9ebge3 for user usr_email_1791359843971_4nleif",
+      "details": {
+        "campaignId": "smap_cmp_1791470200613_9ebge3",
+        "objective": "TRAFFIC",
+        "metaCampaignId": "120251645887980295",
+        "metaAdsetId": null,
+        "dailyBudget": 200,
+        "durationDays": 5,
+        "totalBudget": 1000,
+        "status": "DRAFT"
+      },
+      "created_at": "2026-10-08T14:36:42.883Z"
+    },
+    {
+      "id": "log_1791470202882_pfk4xb",
+      "category": "META_API",
+      "level": "WARN",
+      "message": "Meta draft AdSet notice: Invalid parameter",
+      "created_at": "2026-10-08T14:36:42.882Z"
+    },
+    {
+      "id": "log_1791470201851_4r5tcy",
+      "category": "META_API",
+      "level": "INFO",
+      "message": "Successfully created paused Meta Campaign: 120251645887980295",
+      "created_at": "2026-10-08T14:36:41.851Z"
+    },
+    {
+      "id": "log_1791470200614_pdtz35",
+      "category": "META_API",
+      "level": "INFO",
+      "message": "Creating non-delivering draft campaign on Meta for SMAP campaign smap_cmp_1791470200613_9ebge3",
+      "created_at": "2026-10-08T14:36:40.614Z"
+    },
+    {
+      "id": "log_1791468283577_gqbbed",
+      "category": "AUTH",
+      "level": "INFO",
+      "message": "User logged in with email/password: sahilguptasahilgupta652@gmail.com",
+      "details": {
+        "userId": "usr_email_1791359843971_4nleif"
+      },
+      "created_at": "2026-10-08T14:04:43.577Z"
+    },
+    {
+      "id": "log_1791468283240_kq3rvy",
+      "category": "AUTH",
+      "level": "INFO",
+      "message": "User logged in with email/password: sahilguptasahilgupta652@gmail.com",
+      "details": {
+        "userId": "usr_email_1791359843971_4nleif"
+      },
+      "created_at": "2026-10-08T14:04:43.240Z"
+    },
+    {
+      "id": "log_1791468085315_04r1py",
+      "category": "AUTH",
+      "level": "INFO",
+      "message": "User logged in with email/password: sahilguptasahilgupta652@gmail.com",
+      "details": {
+        "userId": "usr_email_1791359843971_4nleif"
+      },
+      "created_at": "2026-10-08T14:01:25.315Z"
+    },
+    {
+      "id": "log_1791468021888_zzfawu",
+      "category": "AUTH",
+      "level": "INFO",
+      "message": "Google user signed in: sahilguptasahilgupta652@gmail.com (sub: dev_google_preview_sub_101)",
+      "details": {
+        "userId": "usr_email_1791359843971_4nleif"
+      },
+      "created_at": "2026-10-08T14:00:21.888Z"
+    },
+    {
+      "id": "log_1791468003634_dwk7kn",
+      "category": "SCHEDULER",
+      "level": "INFO",
+      "message": "Campaign expiry background scheduler started (check interval: 30s)",
+      "created_at": "2026-10-08T14:00:03.635Z"
+    },
+    {
+      "id": "log_1791467214320_0jrtk0",
+      "category": "AUTH",
+      "level": "INFO",
+      "message": "Google user signed in: sahilguptasahilgupta652@gmail.com (sub: dev_google_preview_sub_101)",
+      "details": {
+        "userId": "usr_email_1791359843971_4nleif"
+      },
+      "created_at": "2026-10-08T13:46:54.320Z"
+    },
+    {
+      "id": "log_1791467190913_ewhidu",
+      "category": "AUTH",
+      "level": "INFO",
+      "message": "User profile updated: sahilguptasahilgupta652@gmail.com",
+      "details": {
+        "userId": "usr_email_1791359843971_4nleif"
+      },
+      "created_at": "2026-10-08T13:46:30.913Z"
+    },
+    {
+      "id": "log_1791467185128_6h5c0n",
+      "category": "AUTH",
+      "level": "INFO",
+      "message": "User profile updated: sahilguptasahilgupta652@gmail.com",
+      "details": {
+        "userId": "usr_email_1791359843971_4nleif"
+      },
+      "created_at": "2026-10-08T13:46:25.128Z"
+    },
+    {
+      "id": "log_1791467170181_nne8fg",
+      "category": "AUTH",
+      "level": "INFO",
+      "message": "User logged in with email/password: sahilguptasahilgupta652@gmail.com",
+      "details": {
+        "userId": "usr_email_1791359843971_4nleif"
+      },
+      "created_at": "2026-10-08T13:46:10.181Z"
+    },
+    {
+      "id": "log_1791463332758_kgpekn",
+      "category": "PAYMENT",
+      "level": "INFO",
+      "message": "Reconciled and credited ₹1 to wallet for user usr_email_1791359843971_4nleif (sahilguptasahilgupta652@gmail.com) from Razorpay payment pay_Tl1f9rKgLanRDW (UTR: 667696542797)",
+      "details": {
+        "userId": "usr_email_1791359843971_4nleif",
+        "paymentId": "smap_fund_1791463332757_2zlu34",
+        "gatewayPaymentId": "pay_Tl1f9rKgLanRDW",
+        "amount": 1,
+        "balanceAfter": 2
+      },
+      "created_at": "2026-10-08T12:42:12.758Z"
+    },
+    {
+      "id": "log_1791463332758_mxkts0",
+      "category": "PAYMENT",
+      "level": "INFO",
+      "message": "Credited ₹1 to wallet for user usr_email_1791359843971_4nleif. New balance: ₹2",
+      "details": {
+        "userId": "usr_email_1791359843971_4nleif",
+        "amount": 1,
+        "balanceBefore": 1,
+        "balanceAfter": 2,
+        "txId": "wtx_1791463332758_qq6nw8",
+        "paymentId": "smap_fund_1791463332757_2zlu34"
+      },
+      "created_at": "2026-10-08T12:42:12.758Z"
+    },
+    {
+      "id": "log_1791463312440_m8vc26",
+      "category": "AUTH",
+      "level": "INFO",
+      "message": "Google user signed in: sahilguptasahilgupta652@gmail.com (sub: dev_google_preview_sub_101)",
+      "details": {
+        "userId": "usr_email_1791359843971_4nleif"
+      },
+      "created_at": "2026-10-08T12:41:52.440Z"
+    },
+    {
+      "id": "log_1791463296105_rnhkjm",
+      "category": "SCHEDULER",
+      "level": "INFO",
+      "message": "Campaign expiry background scheduler started (check interval: 30s)",
+      "created_at": "2026-10-08T12:41:36.105Z"
+    },
+    {
+      "id": "log_1791463264662_bbzgyr",
+      "category": "SCHEDULER",
+      "level": "INFO",
+      "message": "Campaign expiry background scheduler started (check interval: 30s)",
+      "created_at": "2026-10-08T12:41:04.662Z"
+    },
+    {
+      "id": "log_1791462474083_1ul06q",
+      "category": "SCHEDULER",
+      "level": "INFO",
+      "message": "Campaign expiry background scheduler started (check interval: 30s)",
+      "created_at": "2026-10-08T12:27:54.083Z"
+    },
+    {
+      "id": "log_1791459153409_ihf6h9",
+      "category": "AUTH",
+      "level": "INFO",
+      "message": "Google user signed in: sahilguptasahilgupta652@gmail.com (sub: dev_google_preview_sub_101)",
+      "details": {
+        "userId": "usr_email_1791359843971_4nleif"
+      },
+      "created_at": "2026-10-08T11:32:33.409Z"
+    },
+    {
+      "id": "log_1791459129225_gn4atu",
+      "category": "SCHEDULER",
+      "level": "INFO",
+      "message": "Campaign expiry background scheduler started (check interval: 30s)",
+      "created_at": "2026-10-08T11:32:09.225Z"
+    },
+    {
+      "id": "log_1791459121402_i08dn7",
+      "category": "AUTH",
+      "level": "INFO",
+      "message": "Google user signed in: sahilguptasahilgupta652@gmail.com (sub: dev_google_preview_sub_101)",
+      "details": {
+        "userId": "usr_email_1791359843971_4nleif"
+      },
+      "created_at": "2026-10-08T11:32:01.402Z"
+    },
+    {
+      "id": "log_1791459105756_pg9la2",
+      "category": "SCHEDULER",
+      "level": "INFO",
+      "message": "Campaign expiry background scheduler started (check interval: 30s)",
+      "created_at": "2026-10-08T11:31:45.756Z"
+    },
+    {
+      "id": "log_1791459098950_vb959e",
+      "category": "AUTH",
+      "level": "INFO",
+      "message": "Linked Google account to existing user: sahilguptasahilgupta652@gmail.com",
+      "details": {
+        "userId": "usr_email_1791359843971_4nleif"
+      },
+      "created_at": "2026-10-08T11:31:38.950Z"
+    },
+    {
+      "id": "log_1791458635215_2bkmio",
+      "category": "AUTH",
+      "level": "INFO",
+      "message": "User logged in with email/password: sahilguptasahilgupta652@gmail.com",
+      "details": {
+        "userId": "usr_email_1791359843971_4nleif"
+      },
+      "created_at": "2026-10-08T11:23:55.215Z"
+    },
+    {
+      "id": "log_1791458427873_z4s8ro",
+      "category": "AUTH",
+      "level": "INFO",
+      "message": "User logged in with email/password: sahilguptasahilgupta652@gmail.com",
+      "details": {
+        "userId": "usr_email_1791359843971_4nleif"
+      },
+      "created_at": "2026-10-08T11:20:27.873Z"
+    },
+    {
+      "id": "log_1791458259643_4z9prq",
+      "category": "AUTH",
+      "level": "INFO",
+      "message": "Added password credentials to user: sahilguptasahilgupta652@gmail.com",
+      "details": {
+        "userId": "usr_email_1791359843971_4nleif"
+      },
+      "created_at": "2026-10-08T11:17:39.643Z"
+    },
+    {
+      "id": "log_1791458178168_zolpf3",
+      "category": "SCHEDULER",
+      "level": "INFO",
+      "message": "Campaign expiry background scheduler started (check interval: 30s)",
+      "created_at": "2026-10-08T11:16:18.168Z"
+    },
+    {
+      "id": "log_1791458149463_norw44",
+      "category": "SCHEDULER",
+      "level": "INFO",
+      "message": "Campaign expiry background scheduler started (check interval: 30s)",
+      "created_at": "2026-10-08T11:15:49.463Z"
+    },
+    {
+      "id": "log_1791457965391_ktgjbl",
+      "category": "SCHEDULER",
+      "level": "INFO",
+      "message": "Campaign expiry background scheduler started (check interval: 30s)",
+      "created_at": "2026-10-08T11:12:45.391Z"
+    },
+    {
+      "id": "log_1791457965202_smxpry",
+      "category": "AUTH",
+      "level": "INFO",
+      "message": "Production database initialized with clean Google Authentication architecture",
+      "created_at": "2026-10-08T11:12:45.202Z"
+    }
+  ],
+  "wallet_transactions": [
+    {
+      "id": "wtx_1791463332758_qq6nw8",
+      "user_id": "usr_email_1791359843971_4nleif",
+      "type": "ADD_FUNDS",
+      "amount": 1,
+      "balance_before": 1,
+      "balance_after": 2,
+      "description": "Added funds via Razorpay UPI (667696542797)",
+      "payment_id": "smap_fund_1791463332757_2zlu34",
+      "gateway_payment_id": "pay_Tl1f9rKgLanRDW",
+      "gateway_order_id": "order_Tl1f13HoNuW0Ra",
+      "campaign_id": null,
+      "status": "SUCCESS",
+      "created_at": "2026-10-08T12:42:12.758Z"
+    },
+    {
+      "id": "wtx_1791373476906_szctr7",
+      "user_id": "usr_email_1791359843971_4nleif",
+      "type": "ADD_FUNDS",
+      "amount": 1,
+      "balance_before": 0,
+      "balance_after": 1,
+      "description": "Added funds via Razorpay UPI (257178192361)",
+      "payment_id": "smap_fund_1791373476905_af8ur6",
+      "gateway_payment_id": "pay_TkzwZX48FPxEce",
+      "gateway_order_id": "order_TkzwZW0pSNkSNr",
+      "campaign_id": null,
+      "status": "SUCCESS",
+      "created_at": "2026-10-07T11:44:36.906Z"
+    }
+  ]
+}

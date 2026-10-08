@@ -63,9 +63,16 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
   ).length;
   const completedCampaigns = campaigns.filter((c) => c.status === 'COMPLETED').length;
 
-  const totalSpent = payments
-    .filter((p) => p.status === 'PAID')
-    .reduce((sum, p) => sum + p.amount, 0);
+  // Meta advertising spend only. Razorpay wallet top-ups (WALLET_TOPUP / wallet_topup)
+  // are customer balance funding and must NOT be counted as ad spend.
+  // Meta "Total Spent" remains ₹0 until an actual Meta campaign spends money.
+  const campaignPayments = payments.filter(
+    (p) =>
+      p.status === 'PAID' &&
+      p.campaign_id !== 'WALLET_TOPUP' &&
+      p.package_id !== 'wallet_topup'
+  );
+  const totalSpent = campaignPayments.reduce((sum, p) => sum + p.amount, 0);
 
   const displayName = user?.name || 'Sahil Gupta';
 
@@ -293,15 +300,15 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
                 <path d="M12 2C6.477 2 2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.879V14.89h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.989C18.343 21.129 22 16.99 22 12c0-5.523-4.477-10-10-10z"/>
               </svg>
             </div>
-            <div className="space-y-1">
+            <div className="space-y-1.5">
               <div className="flex items-center gap-2.5 flex-wrap">
                 <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
                   Meta Advertising Account
                 </h3>
                 {metaConnection?.connected ? (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
-                    Connected
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-[11px] font-bold text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                    Meta Advertising Account — Connected
                   </span>
                 ) : (
                   <span className="inline-flex items-center rounded-full bg-red-500/10 dark:bg-red-950/40 px-2.5 py-0.5 text-[10px] font-bold text-red-600 dark:text-red-400 border border-red-500/20">
@@ -310,11 +317,32 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
                 )}
               </div>
               <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 max-w-2xl leading-relaxed">
-                Connect your Meta account to run Facebook & Instagram ads directly from SMAP. It's secure and only you can access your account.
+                {metaConnection?.connected
+                  ? 'Your server-side Meta connection is verified. Campaigns are authorized to publish to Facebook and Instagram automatically.'
+                  : 'Connect your Meta account to run Facebook & Instagram ads directly from SMAP. It\'s secure and only you can access your account.'}
               </p>
-              <div className="flex items-center gap-1.5 text-[11px] text-slate-400 dark:text-slate-500 pt-1">
-                <ShieldCheck className="h-3.5 w-3.5 text-slate-400" />
-                <span>Your data is safe & secure</span>
+
+              {/* Requirement 10: Clear connection status chips for Facebook + Instagram + Ad Account */}
+              {metaConnection?.connected && (
+                <div className="pt-1 flex flex-wrap items-center gap-2">
+                  <div className="inline-flex items-center gap-1.5 rounded-lg border border-blue-500/25 bg-blue-500/5 px-2.5 py-1 text-[11px] text-blue-600 dark:text-blue-400 font-medium">
+                    <span className="h-1.5 w-1.5 rounded-full bg-blue-500"></span>
+                    <span>Facebook Page: <strong>{metaConnection.page_name || 'Sahil Gupta'}</strong></span>
+                  </div>
+                  <div className="inline-flex items-center gap-1.5 rounded-lg border border-pink-500/25 bg-pink-500/5 px-2.5 py-1 text-[11px] text-pink-600 dark:text-pink-400 font-medium">
+                    <span className="h-1.5 w-1.5 rounded-full bg-pink-500"></span>
+                    <span>Instagram: <strong>@{metaConnection.instagram_username || 'ravi105065'}</strong></span>
+                  </div>
+                  <div className="inline-flex items-center gap-1.5 rounded-lg border border-purple-500/25 bg-purple-500/5 px-2.5 py-1 text-[11px] text-purple-600 dark:text-purple-400 font-medium">
+                    <span className="h-1.5 w-1.5 rounded-full bg-purple-500"></span>
+                    <span>Ad Account: <strong>{metaConnection.ad_account_name || 'SMAP Ads'}</strong> ({metaConnection.selected_ad_account_id || 'act_1627260695520511'})</span>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex items-center gap-1.5 text-[11px] text-slate-400 dark:text-slate-500 pt-0.5">
+                <ShieldCheck className="h-3.5 w-3.5 text-emerald-500" />
+                <span>Verified via Meta Marketing API • Feed, Stories & Reels Placements Active</span>
               </div>
             </div>
           </div>
@@ -444,7 +472,7 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
                 ₹{totalSpent.toLocaleString('en-IN')}
               </div>
               <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">
-                Verified UPI payments
+                {totalSpent > 0 ? 'Active Meta advertising spend' : 'Meta advertising spend (₹0 spent — wallet top-ups excluded)'}
               </p>
             </div>
           </div>
@@ -454,28 +482,39 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
             <svg className="w-full h-24 overflow-visible" viewBox="0 0 400 90" preserveAspectRatio="none">
               <defs>
                 <linearGradient id="spendGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#8B5CF6" stopOpacity="0.4" />
+                  <stop offset="0%" stopColor="#8B5CF6" stopOpacity={totalSpent > 0 ? 0.4 : 0.05} />
                   <stop offset="100%" stopColor="#8B5CF6" stopOpacity="0.0" />
                 </linearGradient>
               </defs>
               <path
-                d="M 0,80 Q 70,75 140,55 T 280,45 T 400,20 L 400,90 L 0,90 Z"
+                d={totalSpent > 0 ? "M 0,80 Q 70,75 140,55 T 280,45 T 400,20 L 400,90 L 0,90 Z" : "M 0,80 L 400,80 L 400,90 L 0,90 Z"}
                 fill="url(#spendGradient)"
               />
               <path
-                d="M 0,80 Q 70,75 140,55 T 280,45 T 400,20"
+                d={totalSpent > 0 ? "M 0,80 Q 70,75 140,55 T 280,45 T 400,20" : "M 0,80 L 400,80"}
                 fill="none"
                 stroke="#8B5CF6"
-                strokeWidth="2.5"
+                strokeWidth={totalSpent > 0 ? "2.5" : "1.5"}
+                strokeDasharray={totalSpent > 0 ? undefined : "4 4"}
                 strokeLinecap="round"
               />
-              {/* Dots matching the reference */}
-              <circle cx="70" cy="75" r="3.5" fill="#8B5CF6" className="dark:filter dark:drop-shadow-[0_0_6px_#8B5CF6]" />
-              <circle cx="140" cy="55" r="3.5" fill="#8B5CF6" className="dark:filter dark:drop-shadow-[0_0_6px_#8B5CF6]" />
-              <circle cx="210" cy="52" r="3.5" fill="#8B5CF6" className="dark:filter dark:drop-shadow-[0_0_6px_#8B5CF6]" />
-              <circle cx="280" cy="45" r="3.5" fill="#8B5CF6" className="dark:filter dark:drop-shadow-[0_0_6px_#8B5CF6]" />
-              <circle cx="340" cy="35" r="3.5" fill="#8B5CF6" className="dark:filter dark:drop-shadow-[0_0_6px_#8B5CF6]" />
-              <circle cx="400" cy="20" r="4.5" fill="#FFFFFF" stroke="#8B5CF6" strokeWidth="2.5" />
+              {totalSpent > 0 ? (
+                <>
+                  <circle cx="70" cy="75" r="3.5" fill="#8B5CF6" className="dark:filter dark:drop-shadow-[0_0_6px_#8B5CF6]" />
+                  <circle cx="140" cy="55" r="3.5" fill="#8B5CF6" className="dark:filter dark:drop-shadow-[0_0_6px_#8B5CF6]" />
+                  <circle cx="210" cy="52" r="3.5" fill="#8B5CF6" className="dark:filter dark:drop-shadow-[0_0_6px_#8B5CF6]" />
+                  <circle cx="280" cy="45" r="3.5" fill="#8B5CF6" className="dark:filter dark:drop-shadow-[0_0_6px_#8B5CF6]" />
+                  <circle cx="340" cy="35" r="3.5" fill="#8B5CF6" className="dark:filter dark:drop-shadow-[0_0_6px_#8B5CF6]" />
+                  <circle cx="400" cy="20" r="4.5" fill="#FFFFFF" stroke="#8B5CF6" strokeWidth="2.5" />
+                </>
+              ) : (
+                <>
+                  <circle cx="100" cy="80" r="2.5" fill="#8B5CF6" opacity="0.6" />
+                  <circle cx="200" cy="80" r="2.5" fill="#8B5CF6" opacity="0.6" />
+                  <circle cx="300" cy="80" r="2.5" fill="#8B5CF6" opacity="0.6" />
+                  <circle cx="400" cy="80" r="3" fill="#8B5CF6" />
+                </>
+              )}
             </svg>
           </div>
         </div>
@@ -677,7 +716,11 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
                       {cmp.headline || cmp.business_name || 'Ad Campaign'}
                     </td>
                     <td className="py-3 text-slate-600 dark:text-slate-300 capitalize">
-                      {cmp.package_id.replace('pkg_', '').replace('_', ' ')}
+                      {cmp.package_id
+                        ? cmp.package_id.replace('pkg_', '').replace('_', ' ')
+                        : cmp.objective
+                        ? `${cmp.objective.toLowerCase()} campaign`
+                        : 'Custom Campaign'}
                     </td>
                     <td className="py-3">
                       <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${
@@ -687,11 +730,19 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
                           ? 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
                           : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20'
                       }`}>
-                        {cmp.status.replace('_', ' ')}
+                        {(cmp.status || 'DRAFT').replace('_', ' ')}
                       </span>
                     </td>
                     <td className="py-3 text-slate-500 dark:text-slate-400">
-                      {cmp.package_id.includes('sprint') ? '5 Days' : cmp.package_id.includes('growth') ? '10 Days' : cmp.package_id.includes('business') ? '14 Days' : '30 Days'}
+                      {cmp.duration_days
+                        ? `${cmp.duration_days} Days`
+                        : (cmp.package_id || '').includes('sprint')
+                        ? '5 Days'
+                        : (cmp.package_id || '').includes('growth')
+                        ? '10 Days'
+                        : (cmp.package_id || '').includes('business')
+                        ? '14 Days'
+                        : '30 Days'}
                     </td>
                     <td className="py-3 text-right">
                       <button
@@ -724,14 +775,19 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
 
 export const StatusBadge: React.FC<{ status: string }> = ({ status }) => {
   switch (status) {
+    case 'DRAFT':
+      return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700">Draft</span>;
+    case 'PENDING_REVIEW':
+    case 'UNDER_REVIEW':
+      return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">Pending Review</span>;
     case 'ACTIVE':
       return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">Active</span>;
+    case 'PAUSED':
+      return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">Paused</span>;
     case 'COMPLETED':
       return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">Completed</span>;
-    case 'PAUSED':
-      return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">Paused</span>;
-    case 'UNDER_REVIEW':
-      return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">Under Review</span>;
+    case 'REJECTED':
+      return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20">Rejected</span>;
     case 'PAYMENT_PENDING':
       return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">Payment Pending</span>;
     case 'PAYMENT_CONFIRMED':

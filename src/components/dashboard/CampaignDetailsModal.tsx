@@ -114,32 +114,34 @@ export const CampaignDetailsModal: React.FC<CampaignDetailsModalProps> = ({ camp
             {/* Top Stats Overview */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
               <div className="rounded-xl border border-slate-800 bg-[#090D18] p-3.5">
-                <span className="block text-slate-500 text-[11px]">Selected Package</span>
-                <span className="font-bold text-white text-sm mt-0.5 block">{data.package?.name || 'Sprint'}</span>
-                <span className="text-[11px] text-indigo-400 font-semibold">₹{data.package?.price}</span>
+                <span className="block text-slate-500 text-[11px]">Campaign Objective</span>
+                <span className="font-bold text-white text-sm mt-0.5 block capitalize">{data.campaign.objective || data.package?.name || 'Traffic'}</span>
+                <span className="text-[11px] text-indigo-400 font-semibold">₹{data.campaign.daily_budget ? `${data.campaign.daily_budget}/day` : `₹${data.package?.price || data.campaign.total_budget || 200}`}</span>
               </div>
 
               <div className="rounded-xl border border-slate-800 bg-[#090D18] p-3.5">
-                <span className="block text-slate-500 text-[11px]">Duration</span>
-                <span className="font-bold text-white text-sm mt-0.5 block">{data.package?.duration_days} Days</span>
-                <span className="text-[11px] text-slate-400">Auto-stop active</span>
+                <span className="block text-slate-500 text-[11px]">Duration & Budget</span>
+                <span className="font-bold text-white text-sm mt-0.5 block">{data.campaign.duration_days || data.package?.duration_days || 5} Days</span>
+                <span className="text-[11px] text-slate-400">Total: ₹{data.campaign.total_budget || data.package?.price || 1000}</span>
               </div>
 
               <div className="rounded-xl border border-slate-800 bg-[#090D18] p-3.5">
-                <span className="block text-slate-500 text-[11px]">Networks</span>
+                <span className="block text-slate-500 text-[11px]">Placements</span>
                 <div className="flex items-center gap-1.5 mt-1 text-slate-200 font-semibold text-xs">
                   <Facebook className="h-3.5 w-3.5 text-blue-400" />
                   <Instagram className="h-3.5 w-3.5 text-pink-400" />
-                  <span>Facebook & Instagram</span>
+                  <span>{data.campaign.placements?.length ? `${data.campaign.placements.length} Placements` : 'FB + IG Feed & Stories'}</span>
                 </div>
               </div>
 
               <div className="rounded-xl border border-slate-800 bg-[#090D18] p-3.5">
-                <span className="block text-slate-500 text-[11px]">Payment Status</span>
-                <span className={`font-bold text-sm mt-0.5 block ${data.payment?.status === 'PAID' ? 'text-emerald-400' : 'text-amber-400'}`}>
-                  {data.payment?.status || 'PENDING'}
+                <span className="block text-slate-500 text-[11px]">Delivery & Mode</span>
+                <span className={`font-bold text-sm mt-0.5 block ${data.campaign.status === 'ACTIVE' ? 'text-emerald-400' : 'text-amber-400'}`}>
+                  {data.campaign.status}
                 </span>
-                <span className="text-[11px] text-slate-400 font-mono">UPI Intent</span>
+                <span className="text-[11px] text-slate-400">
+                  {data.campaign.meta_campaign_id ? 'Meta Draft Linked' : 'Safe Non-Delivering'}
+                </span>
               </div>
             </div>
 

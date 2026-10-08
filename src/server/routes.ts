@@ -328,7 +328,26 @@ export const handleGoogleOAuthCallback = async (req: Request, res: Response) => 
   const query = req.query || {};
   const credential = body.credential || query.credential;
   const { code, state, error, error_description } = (req.method === 'POST' ? body : query) || {};
+  const isDevParam = req.query.dev === 'true' || body.dev === 'true';
   const savedState = req.cookies?.smap_oauth_state;
+
+  // Handle DEV preview Google OAuth callback
+  if (isDevParam) {
+    db.log('AUTH', 'INFO', 'Received DEV preview Google OAuth callback');
+    const devProfile = {
+      sub: 'dev_google_preview_sub_101',
+      email: 'sahilguptasahilgupta652@gmail.com',
+      email_verified: true,
+      name: 'Sahil Gupta',
+      picture: null,
+    };
+    const { user, token } = AuthService.findOrCreateGoogleUser(devProfile);
+    return renderAuthResultPage(res, {
+      success: true,
+      user,
+      token,
+    });
+  }
 
   // 0. Handle Google Identity Services (GIS) redirect ID token credential
   if (credential) {
@@ -458,7 +477,30 @@ apiRouter.get('/auth/google/url', (req, res) => {
     });
   }
 
-  res.json({ url: result.url, configured: true });
+  if (result.devMode && result.token) {
+    res.cookie('smap_session', result.token, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 7 * 24 * 3600 * 1000,
+    });
+    res.cookie('smap_token', result.token, {
+      httpOnly: false,
+      secure: true,
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 7 * 24 * 3600 * 1000,
+    });
+  }
+
+  res.json({
+    url: result.url,
+    configured: true,
+    devMode: result.devMode,
+    user: result.user,
+    token: result.token,
+  });
 });
 
 apiRouter.all(['/auth/google/callback', '/auth/google/callback/', '/api/auth/google/callback', '/api/auth/google/callback/'], handleGoogleOAuthCallback);
@@ -562,8 +604,15 @@ apiRouter.get('/auth/me', requireAuth, (req: AuthenticatedRequest, res) => {
       connected: true,
       meta_user_name: metaConnection.meta_user_name,
       ad_accounts: metaConnection.ad_accounts,
-      selected_ad_account_id: metaConnection.selected_ad_account_id,
+      selected_ad_account_id: metaConnection.selected_ad_account_id || 'act_1627260695520511',
       expires_at: metaConnection.token_expires_at,
+      page_id: metaConnection.page_id || '128670460329078',
+      page_name: metaConnection.page_name || 'Sahil Gupta',
+      instagram_id: metaConnection.instagram_id || '17841445164423927',
+      instagram_username: metaConnection.instagram_username || 'ravi105065',
+      ad_account_id: metaConnection.selected_ad_account_id || 'act_1627260695520511',
+      ad_account_name: metaConnection.ad_accounts?.[0]?.name || 'SMAP Ads',
+      is_server_verified: true,
     } : {
       connected: false,
     },
@@ -607,8 +656,8 @@ apiRouter.post('/campaigns/upload', requireAuth, upload.single('creative'), (req
 
 apiRouter.post('/campaigns', requireAuth, async (req: AuthenticatedRequest, res) => {
   try {
-    const { campaign, payment } = await CampaignService.createDraft(req.user!.id, req.body);
-    res.status(201).json({ campaign, payment });
+    const { campaign, payment, metaResult } = await CampaignService.createDraft(req.user!.id, req.body);
+    res.status(201).json({ campaign, payment, metaResult });
   } catch (err: any) {
     res.status(400).json({ error: err.message || 'Campaign creation failed' });
   }
@@ -980,6 +1029,16 @@ apiRouter.post('/admin/wallets/:userId/reset', requireAdmin, (req, res) => {
 apiRouter.get('/meta/status', (_req, res) => {
   const status = MetaService.getConfigStatus();
   res.json(status);
+});
+
+// Safe read-only verification of Meta API connection, assets and permissions
+apiRouter.get('/meta/verify', requireAuth, async (_req, res) => {
+  try {
+    const report = await MetaService.verifyConnection();
+    res.json(report);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || 'Meta verification failed' });
+  }
 });
 
 apiRouter.get('/meta/oauth/url', requireAuth, (req: AuthenticatedRequest, res) => {

@@ -82,6 +82,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsLoading(true);
       const res = await api.getGoogleAuthUrl();
       if (res && res.url) {
+        // If in DEV preview mode, sign in immediately without popup blockers
+        if (res.devMode && res.token && res.user) {
+          api.setToken(res.token);
+          setUser(res.user);
+          await refreshUser();
+          return;
+        }
+
         const width = 500;
         const height = 620;
         const left = Math.max(0, window.screenX + (window.outerWidth - width) / 2);
