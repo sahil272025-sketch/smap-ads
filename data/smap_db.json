@@ -11,10 +11,10 @@
       "status": "ACTIVE",
       "wallet_balance": 2,
       "created_at": "2026-10-07T07:57:23.972Z",
-      "last_login_at": "2026-10-08T14:46:48.287Z",
+      "last_login_at": "2026-10-09T08:13:53.214Z",
       "password_hash": "$2b$10$kOoXeEQ.8B4VhRgfODyEluoltxhu7OLfmZneP4WWkK4udDvtme5TW",
       "phone": "9296421589",
-      "updated_at": "2026-10-08T14:46:48.287Z"
+      "updated_at": "2026-10-09T08:13:53.214Z"
     }
   ],
   "packages": [
@@ -101,6 +101,58 @@
     }
   ],
   "campaigns": [
+    {
+      "id": "smap_cmp_1791533185121_inmvn8",
+      "user_id": "usr_email_1791359843971_4nleif",
+      "package_id": "custom_campaign",
+      "objective": "ENGAGEMENT",
+      "creative_url": "/api/uploads/1000041292_1791533032878.png",
+      "creative_type": "image",
+      "business_name": "SMAP Merchant Store",
+      "primary_text": "Discover curated, high-quality collections with nationwide fast delivery. Shop now and enjoy verified satisfaction!",
+      "headline": "Special Festive Discount on All Orders",
+      "description": "Limited time offer • Free delivery across India",
+      "call_to_action": "SEND_WHATSAPP_MESSAGE",
+      "destination_type": "whatsapp",
+      "destination_url": "9296421589",
+      "placements": [
+        "facebook_feed",
+        "instagram_feed",
+        "instagram_reels",
+        "instagram_stories"
+      ],
+      "targeting": {
+        "country": "IN",
+        "state": "All India",
+        "city": "All Cities",
+        "min_age": 18,
+        "max_age": 65,
+        "gender": "ALL",
+        "interests": [
+          "Digital Marketing"
+        ],
+        "locations": [
+          "All India"
+        ],
+        "estimated_audience_size": "1.5 Cr – 2.5 Cr people"
+      },
+      "daily_budget": 1000,
+      "duration_days": 14,
+      "total_budget": 14000,
+      "start_at": "2026-10-09",
+      "end_at": "2026-10-23",
+      "status": "DRAFT",
+      "meta_campaign_id": "120251657010760295",
+      "meta_adset_id": "120251657010910295",
+      "meta_creative_id": null,
+      "meta_ad_id": null,
+      "meta_account_id": "act_1627260695520511",
+      "meta_status_message": "Meta Campaign draft 120251657010760295 created in PAUSED status (safely non-delivering). Meta AdSet draft 120251657010910295 created in PAUSED status with ₹1000/day budget. Identities attached: Facebook Page \"Sahil Gupta\" (128670460329078), Instagram @ravi105065 (17841445164423927). App development mode restricts creative publication until Live mode is enabled in Meta App Dashboard.",
+      "rejection_reason": null,
+      "error_details": null,
+      "created_at": "2026-10-09T08:06:25.121Z",
+      "updated_at": "2026-10-09T08:06:25.121Z"
+    },
     {
       "id": "smap_cmp_1791470260290_fqamdk",
       "user_id": "usr_email_1791359843971_4nleif",
@@ -260,9 +312,117 @@
       "updated_at": "2026-10-07T11:44:36.905Z"
     }
   ],
-  "meta_connections": [],
+  "meta_connections": [
+    {
+      "id": "meta_conn_server_default",
+      "user_id": "default",
+      "meta_user_id": "128670460329078",
+      "meta_user_name": "Sahil Gupta",
+      "access_token": "EAAPxe7cUc6MBSjtnyhcXzjWpVxntCNpjYnP4uQkZB4XpDfsrFWsLZCJbQVZAJZBb2zDST7s4Gr94en4WjhTZBa4fDUzy5JW5qGhseobNJtZAa2j1WUU16lfjxoaJV3cQnc6vPzZC9IIMhmeknhAp0EjZBUg0ZChmL9wIQfTyzRR98OTgbsoZAgN27ifrE3zbmnAgon5HDJ2IjO5LhZAFf8E0XVA1vi0215FhI1y6xcs",
+      "token_expires_at": "2027-10-09T08:00:00.000Z",
+      "ad_accounts": [
+        {
+          "id": "act_1627260695520511",
+          "account_id": "1627260695520511",
+          "name": "SMAP Ads",
+          "currency": "INR",
+          "account_status": 1
+        }
+      ],
+      "selected_ad_account_id": "act_1627260695520511",
+      "page_id": "128670460329078",
+      "page_name": "Sahil Gupta",
+      "instagram_id": "17841445164423927",
+      "instagram_username": "ravi105065",
+      "is_server_verified": true,
+      "created_at": "2026-10-08T13:41:00.000Z",
+      "updated_at": "2026-10-09T08:32:37.468Z"
+    }
+  ],
   "support_tickets": [],
   "system_logs": [
+    {
+      "id": "log_1791533633215_lb6swc",
+      "category": "AUTH",
+      "level": "INFO",
+      "message": "Google user signed in: sahilguptasahilgupta652@gmail.com (sub: dev_google_preview_sub_101)",
+      "details": {
+        "userId": "usr_email_1791359843971_4nleif"
+      },
+      "created_at": "2026-10-09T08:13:53.215Z"
+    },
+    {
+      "id": "log_1791533244375_wqtute",
+      "category": "AUTH",
+      "level": "INFO",
+      "message": "Google user signed in: sahilguptasahilgupta652@gmail.com (sub: dev_google_preview_sub_101)",
+      "details": {
+        "userId": "usr_email_1791359843971_4nleif"
+      },
+      "created_at": "2026-10-09T08:07:24.375Z"
+    },
+    {
+      "id": "log_1791533187966_44184k",
+      "category": "CAMPAIGN",
+      "level": "INFO",
+      "message": "Created campaign draft smap_cmp_1791533185121_inmvn8 for user usr_email_1791359843971_4nleif",
+      "details": {
+        "campaignId": "smap_cmp_1791533185121_inmvn8",
+        "objective": "ENGAGEMENT",
+        "metaCampaignId": "120251657010760295",
+        "metaAdsetId": "120251657010910295",
+        "dailyBudget": 1000,
+        "durationDays": 14,
+        "totalBudget": 14000,
+        "status": "DRAFT"
+      },
+      "created_at": "2026-10-09T08:06:27.967Z"
+    },
+    {
+      "id": "log_1791533187965_iq102o",
+      "category": "META_API",
+      "level": "INFO",
+      "message": "Successfully created paused Meta AdSet: 120251657010910295",
+      "created_at": "2026-10-09T08:06:27.965Z"
+    },
+    {
+      "id": "log_1791533186427_6abcfu",
+      "category": "META_API",
+      "level": "INFO",
+      "message": "Successfully created paused Meta Campaign: 120251657010760295",
+      "created_at": "2026-10-09T08:06:26.427Z"
+    },
+    {
+      "id": "log_1791533185122_juibwd",
+      "category": "META_API",
+      "level": "INFO",
+      "message": "Creating non-delivering draft campaign on Meta for SMAP campaign smap_cmp_1791533185121_inmvn8",
+      "created_at": "2026-10-09T08:06:25.122Z"
+    },
+    {
+      "id": "log_1791532924376_filxau",
+      "category": "AUTH",
+      "level": "INFO",
+      "message": "Google user signed in: sahilguptasahilgupta652@gmail.com (sub: dev_google_preview_sub_101)",
+      "details": {
+        "userId": "usr_email_1791359843971_4nleif"
+      },
+      "created_at": "2026-10-09T08:02:04.376Z"
+    },
+    {
+      "id": "log_1791532898569_2hqmmq",
+      "category": "SCHEDULER",
+      "level": "INFO",
+      "message": "Campaign expiry background scheduler started (check interval: 30s)",
+      "created_at": "2026-10-09T08:01:38.569Z"
+    },
+    {
+      "id": "log_1791532750012_ponrry",
+      "category": "SCHEDULER",
+      "level": "INFO",
+      "message": "Campaign expiry background scheduler started (check interval: 30s)",
+      "created_at": "2026-10-09T07:59:10.012Z"
+    },
     {
       "id": "log_1791470808288_rvvjcw",
       "category": "AUTH",

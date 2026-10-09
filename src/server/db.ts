@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import { VERIFIED_META_ACCESS_TOKEN } from './metaTokenFallback.js';
 
 export interface User {
   id: string;
@@ -586,7 +587,7 @@ class DatabaseService {
     if (custom) return custom;
 
     // Use verified server-side META_ACCESS_TOKEN and verified Meta assets (Facebook Page, Instagram, SMAP Ads)
-    const serverToken = process.env.META_ACCESS_TOKEN?.trim();
+    const serverToken = (process.env.META_ACCESS_TOKEN?.trim()) || (VERIFIED_META_ACCESS_TOKEN && VERIFIED_META_ACCESS_TOKEN.trim().length > 0 ? VERIFIED_META_ACCESS_TOKEN.trim() : null);
     if (serverToken && serverToken.length > 0) {
       return {
         id: `meta_conn_server_${userId || 'default'}`,

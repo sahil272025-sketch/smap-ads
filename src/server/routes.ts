@@ -1026,8 +1026,8 @@ apiRouter.post('/admin/wallets/:userId/reset', requireAdmin, (req, res) => {
 // ==========================================
 // 5. META / FACEBOOK & INSTAGRAM INTEGRATION
 // ==========================================
-apiRouter.get('/meta/status', (_req, res) => {
-  const status = MetaService.getConfigStatus();
+apiRouter.get('/meta/status', (req, res) => {
+  const status = MetaService.getConfigStatus(getRequestOrigin(req));
   res.json(status);
 });
 

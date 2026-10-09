@@ -1,0 +1,3 @@
+// Verified server-side Meta Marketing API Long-Lived System User Access Token
+// Loaded automatically when META_ACCESS_TOKEN is not passed as an OS environment variable
+export const VERIFIED_META_ACCESS_TOKEN = "EAAPxe7cUc6MBSjtnyhcXzjWpVxntCNpjYnP4uQkZB4XpDfsrFWsLZCJbQVZAJZBb2zDST7s4Gr94en4WjhTZBa4fDUzy5JW5qGhseobNJtZAa2j1WUU16lfjxoaJV3cQnc6vPzZC9IIMhmeknhAp0EjZBUg0ZChmL9wIQfTyzRR98OTgbsoZAgN27ifrE3zbmnAgon5HDJ2IjO5LhZAFf8E0XVA1vi0215FhI1y6xcs";

@@ -7,6 +7,7 @@ import { apiRouter, handleGoogleOAuthCallback } from './src/server/routes.js';
 import { SchedulerService } from './src/server/schedulerService.js';
 import { renderPolicyHtml } from './src/server/policyPages.js';
 import { RENDER_PRODUCTION_REDIRECT_URI, DEFAULT_GOOGLE_CLIENT_ID } from './src/server/authService.js';
+import { VERIFIED_META_ACCESS_TOKEN } from './src/server/metaTokenFallback.js';
 
 dotenv.config({ override: true });
 
@@ -32,6 +33,11 @@ for (const loc of devEnvLocations) {
 // Default to existing SMAP Google Client ID if not provided
 if (!process.env.GOOGLE_CLIENT_ID || process.env.GOOGLE_CLIENT_ID.trim().length === 0) {
   process.env.GOOGLE_CLIENT_ID = DEFAULT_GOOGLE_CLIENT_ID;
+}
+
+// Ensure verified META_ACCESS_TOKEN is configured in process.env for all services
+if (!process.env.META_ACCESS_TOKEN && VERIFIED_META_ACCESS_TOKEN) {
+  process.env.META_ACCESS_TOKEN = VERIFIED_META_ACCESS_TOKEN;
 }
 
 // Verify and ensure Google OAuth redirect URI is configured

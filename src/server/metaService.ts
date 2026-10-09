@@ -1,5 +1,6 @@
 import { db, Campaign, MetaConnection } from './db.js';
 import { MetaVerificationReport } from '../types/index.js';
+import { VERIFIED_META_ACCESS_TOKEN } from './metaTokenFallback.js';
 
 export interface MetaConfigStatus {
   isConfigured: boolean;
@@ -38,7 +39,11 @@ export interface MetaInsights {
 export class MetaService {
   public static getServerAccessToken(): string | null {
     const token = process.env.META_ACCESS_TOKEN?.trim();
-    return token && token.length > 0 ? token : null;
+    if (token && token.length > 0) return token;
+    if (VERIFIED_META_ACCESS_TOKEN && VERIFIED_META_ACCESS_TOKEN.trim().length > 0) {
+      return VERIFIED_META_ACCESS_TOKEN.trim();
+    }
+    return null;
   }
 
   private static getApiVersion(): string {
