@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { db, Campaign, MetaConnection } from './db.js';
+import { db, Campaign, MetaConnection, MetaPage, MetaInstagramAccount } from './db.js';
 import { MetaVerificationReport } from '../types/index.js';
 import { VERIFIED_META_ACCESS_TOKEN } from './metaTokenFallback.js';
 
@@ -72,8 +72,10 @@ export class MetaService {
   public static readonly REQUIRED_SCOPES = [
     'ads_management',
     'ads_read',
+    'business_management',
     'pages_show_list',
     'pages_read_engagement',
+    'pages_manage_ads',
     'instagram_basic',
   ];
 
@@ -495,7 +497,7 @@ export class MetaService {
     const redirectUri = config.redirectUri;
 
     try {
-      // 1. Exchange authorization code for User Access Token
+      // 1. Exchange authorization code for User Access Token (short-lived)
       const tokenUrl = `https://graph.facebook.com/${config.apiVersion}/oauth/access_token?client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri)}&client_secret=${appSecret}&code=${code}`;
       const tokenRes = await fetch(tokenUrl);
       const tokenData = await tokenRes.json();
@@ -506,7 +508,26 @@ export class MetaService {
         return { success: false, error: errorMsg };
       }
 
-      const accessToken = tokenData.access_token;
+      let accessToken = tokenData.access_token;
+      let tokenExpiresInSeconds = tokenData.expires_in || 3600; // default 1 hour for short-lived
+      let tokenType: 'short_lived' | 'long_lived' = 'short_lived';
+
+      // 1B. Exchange short-lived User Access Token for 60-day Long-Lived User Access Token
+      try {
+        const longLivedUrl = `https://graph.facebook.com/${config.apiVersion}/oauth/access_token?grant_type=fb_exchange_token&client_id=${appId}&client_secret=${appSecret}&fb_exchange_token=${accessToken}`;
+        const longLivedRes = await fetch(longLivedUrl);
+        const longLivedData = await longLivedRes.json();
+        if (longLivedRes.ok && longLivedData.access_token) {
+          accessToken = longLivedData.access_token;
+          tokenExpiresInSeconds = longLivedData.expires_in || (60 * 24 * 3600);
+          tokenType = 'long_lived';
+          db.log('META_API', 'INFO', `Successfully exchanged for 60-day long-lived Meta token (expires in ${Math.round(tokenExpiresInSeconds / 86400)} days)`);
+        } else {
+          db.log('META_API', 'WARN', 'Long-lived token exchange returned fallback response; keeping short-lived token', { response: longLivedData });
+        }
+      } catch (err: any) {
+        db.log('META_API', 'WARN', `Failed to exchange for long-lived token: ${err?.message}`);
+      }
 
       // 2. Fetch User Profile
       const meRes = await fetch(`https://graph.facebook.com/${config.apiVersion}/me?fields=id,name&access_token=${accessToken}`);
@@ -516,7 +537,7 @@ export class MetaService {
         return { success: false, error: meData.error?.message || 'Failed to fetch Meta user profile' };
       }
 
-      // 3. Fetch Authorized Ad Accounts
+      // 3. Fetch Customer's Authorized Ad Accounts
       const adAccountsRes = await fetch(`https://graph.facebook.com/${config.apiVersion}/me/adaccounts?fields=id,account_id,name,currency,account_status&access_token=${accessToken}`);
       const adAccountsData = await adAccountsRes.json();
 
@@ -530,6 +551,69 @@ export class MetaService {
           }))
         : [];
 
+      // 4. Fetch Customer's Facebook Pages with linked Instagram accounts
+      let pages: MetaPage[] = [];
+      let instagramAccounts: MetaInstagramAccount[] = [];
+
+      try {
+        const pagesUrl = `https://graph.facebook.com/${config.apiVersion}/me/accounts?fields=id,name,access_token,category,tasks,instagram_business_account{id,username},connected_instagram_account{id,username}&access_token=${accessToken}`;
+        const pagesRes = await fetch(pagesUrl);
+        const pagesData = await pagesRes.json();
+
+        if (pagesRes.ok && Array.isArray(pagesData.data)) {
+          for (const p of pagesData.data) {
+            const igAccount = p.instagram_business_account || p.connected_instagram_account;
+            pages.push({
+              id: p.id,
+              name: p.name,
+              access_token: p.access_token,
+              category: p.category,
+              tasks: Array.isArray(p.tasks) ? p.tasks : [],
+              instagram_account_id: igAccount?.id,
+              instagram_username: igAccount?.username,
+            });
+
+            if (igAccount?.id && !instagramAccounts.some(ig => ig.id === igAccount.id)) {
+              instagramAccounts.push({
+                id: igAccount.id,
+                username: igAccount.username || igAccount.id,
+                name: igAccount.username,
+                page_id: p.id,
+              });
+            }
+          }
+        }
+      } catch (err: any) {
+        db.log('META_API', 'WARN', `Failed to fetch customer Facebook Pages: ${err?.message}`);
+      }
+
+      // 5. Query Ad Accounts for linked Instagram Accounts (if not discovered via Pages)
+      if (adAccounts.length > 0 && instagramAccounts.length === 0) {
+        try {
+          for (const acc of adAccounts.slice(0, 3)) {
+            const cleanAccId = acc.id.replace('act_', '');
+            const igRes = await fetch(`https://graph.facebook.com/${config.apiVersion}/act_${cleanAccId}/instagram_accounts?fields=id,username&access_token=${accessToken}`);
+            const igData = await igRes.json();
+            if (igRes.ok && Array.isArray(igData.data)) {
+              for (const ig of igData.data) {
+                if (!instagramAccounts.some(existing => existing.id === ig.id)) {
+                  instagramAccounts.push({
+                    id: ig.id,
+                    username: ig.username || ig.id,
+                    name: ig.username,
+                  });
+                }
+              }
+            }
+          }
+        } catch (err: any) {
+          db.log('META_API', 'WARN', `Failed to query ad account Instagram accounts: ${err?.message}`);
+        }
+      }
+
+      const selectedPage = pages.length > 0 ? pages[0] : null;
+      const selectedIg = instagramAccounts.length > 0 ? instagramAccounts[0] : null;
+
       return {
         success: true,
         connection: {
@@ -538,9 +622,18 @@ export class MetaService {
           meta_user_id: meData.id,
           meta_user_name: meData.name || 'Authorized Meta User',
           access_token: accessToken,
-          token_expires_at: new Date(Date.now() + 60 * 24 * 3600 * 1000).toISOString(),
+          token_expires_at: new Date(Date.now() + tokenExpiresInSeconds * 1000).toISOString(),
+          token_type: tokenType,
           ad_accounts: adAccounts,
           selected_ad_account_id: adAccounts.length > 0 ? adAccounts[0].id : null,
+          pages,
+          selected_page_id: selectedPage?.id || null,
+          page_id: selectedPage?.id || undefined,
+          page_name: selectedPage?.name || undefined,
+          instagram_accounts: instagramAccounts,
+          selected_instagram_id: selectedIg?.id || null,
+          instagram_id: selectedIg?.id || undefined,
+          instagram_username: selectedIg?.username || undefined,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         },
@@ -596,7 +689,7 @@ export class MetaService {
    * Creates Meta Campaign and Ad Set in strictly 'PAUSED' status (safely non-delivering, zero budget spend)
    * Connects Sahil Gupta Facebook Page (128670460329078) and ravi105065 Instagram Account (17841445164423927)
    */
-  public static async createDraftCampaignInMeta(campaign: Campaign): Promise<{
+  public static async createDraftCampaignInMeta(campaign: Campaign, connection?: MetaConnection): Promise<{
     success: boolean;
     meta_campaign_id?: string;
     meta_adset_id?: string;
@@ -616,14 +709,20 @@ export class MetaService {
     error?: string;
   }> {
     const config = this.getConfigStatus();
-    const effectiveToken = this.getServerAccessToken();
+    const effectiveToken = connection?.access_token || this.getServerAccessToken();
+
+    const targetAdAccount = connection?.selected_ad_account_id || connection?.ad_accounts?.[0]?.id || 'act_1627260695520511';
+    const targetPageId = connection?.selected_page_id || connection?.page_id || connection?.pages?.[0]?.id || '128670460329078';
+    const targetPageName = connection?.page_name || connection?.pages?.find(p => p.id === targetPageId)?.name || 'Sahil Gupta';
+    const targetIgId = connection?.selected_instagram_id || connection?.instagram_id || connection?.instagram_accounts?.[0]?.id || '17841445164423927';
+    const targetIgUser = connection?.instagram_username || connection?.instagram_accounts?.find(ig => ig.id === targetIgId)?.username || 'ravi105065';
 
     const identities = {
-      ad_account: 'act_1627260695520511',
-      facebook_page_id: '128670460329078',
-      facebook_page_name: 'Sahil Gupta',
-      instagram_account_id: '17841445164423927',
-      instagram_username: 'ravi105065',
+      ad_account: targetAdAccount.startsWith('act_') ? targetAdAccount : `act_${targetAdAccount}`,
+      facebook_page_id: targetPageId,
+      facebook_page_name: targetPageName,
+      instagram_account_id: targetIgId,
+      instagram_username: targetIgUser,
     };
 
     if (!config.isConfigured || !effectiveToken) {
@@ -837,11 +936,15 @@ export class MetaService {
       if (imageSource.startsWith('data:image')) {
         const parts = imageSource.split(',');
         base64Data = parts[1] || null;
-      } else if (imageSource.startsWith('/api/uploads/') || imageSource.startsWith('uploads/')) {
+      } else if (imageSource.startsWith('/api/uploads/') || imageSource.startsWith('uploads/') || imageSource.startsWith('data/uploads/')) {
         const filename = path.basename(imageSource);
-        const filePath = path.resolve(process.cwd(), 'uploads', filename);
-        if (fs.existsSync(filePath)) {
-          const fileBuffer = fs.readFileSync(filePath);
+        // Check primary storage (data/uploads) and fallback locations
+        const primaryPath = path.resolve(process.cwd(), 'data/uploads', filename);
+        const legacyPath = path.resolve(process.cwd(), 'uploads', filename);
+        const targetPath = fs.existsSync(primaryPath) ? primaryPath : (fs.existsSync(legacyPath) ? legacyPath : null);
+
+        if (targetPath) {
+          const fileBuffer = fs.readFileSync(targetPath);
           base64Data = fileBuffer.toString('base64');
         }
       } else if (imageSource.startsWith('http://') || imageSource.startsWith('https://')) {
@@ -857,8 +960,10 @@ export class MetaService {
         params.append('url', imageSource);
       } else {
         const fallbackPath = path.resolve(process.cwd(), imageSource.replace(/^\//, ''));
-        if (fs.existsSync(fallbackPath)) {
-          base64Data = fs.readFileSync(fallbackPath).toString('base64');
+        const dataUploadPath = path.resolve(process.cwd(), 'data/uploads', path.basename(imageSource));
+        const effectivePath = fs.existsSync(fallbackPath) ? fallbackPath : (fs.existsSync(dataUploadPath) ? dataUploadPath : null);
+        if (effectivePath) {
+          base64Data = fs.readFileSync(effectivePath).toString('base64');
           params.append('bytes', base64Data);
         } else {
           return { success: false, error: `Local creative asset not found at path: ${imageSource}` };
@@ -932,8 +1037,11 @@ export class MetaService {
       }
 
       const filename = path.basename(videoSource);
-      const filePath = path.resolve(process.cwd(), 'uploads', filename);
-      if (!fs.existsSync(filePath)) {
+      const primaryPath = path.resolve(process.cwd(), 'data/uploads', filename);
+      const legacyPath = path.resolve(process.cwd(), 'uploads', filename);
+      const filePath = fs.existsSync(primaryPath) ? primaryPath : (fs.existsSync(legacyPath) ? legacyPath : null);
+
+      if (!filePath) {
         return { success: false, error: `Local video asset not found at path: ${videoSource}` };
       }
 
@@ -990,7 +1098,7 @@ export class MetaService {
         const res = await fetch(url);
         const data = await res.json();
         if (res.ok && Array.isArray(data.data) && data.data.length > 0) {
-          const entry = data.data[0];
+          const entry = data.data.find((e: any) => e.currency === targetCurrency) || data.data[0];
           const curr = entry.currency || targetCurrency;
           let minPaise = 8500;
           if (billingEvent === 'LINK_CLICKS' || billingEvent === 'ACTIONS') {
@@ -1281,12 +1389,31 @@ export class MetaService {
         }
       }
 
-      // 7. Create Ad Creative with image_hash/video_id and explicit identities
+      // 7. Determine dynamic Page ID and Instagram Actor ID for Ad Creative
+      const targetPageId = connection?.selected_page_id || connection?.page_id || connection?.pages?.[0]?.id;
+      const targetInstagramId = connection?.selected_instagram_id || connection?.instagram_id || connection?.instagram_accounts?.[0]?.id;
+
+      if (!targetPageId) {
+        const errorMsg = 'No Facebook Page is connected or selected for your Meta account. Please connect a Facebook Page in your Profile to publish ads.';
+        db.log('META_API', 'ERROR', errorMsg, { userId: campaign.user_id });
+        return {
+          success: false,
+          status: 'FAILED',
+          meta_campaign_id: metaCampaignId,
+          meta_adset_id: metaAdsetId,
+          error: errorMsg,
+        };
+      }
+
+      // Create Ad Creative with image_hash/video_id and dynamic customer identities
       const creativeUrl = `https://graph.facebook.com/${config.apiVersion}/${cleanAccountId}/adcreatives`;
       const storySpec: any = {
-        page_id: '128670460329078', // Sahil Gupta (Verified Facebook Page)
-        instagram_actor_id: '17841445164423927', // @ravi105065 (Verified Instagram Account)
+        page_id: targetPageId,
       };
+
+      if (targetInstagramId) {
+        storySpec.instagram_actor_id = targetInstagramId;
+      }
 
       if (campaign.creative_type === 'video' && videoId) {
         storySpec.video_data = {

@@ -465,6 +465,20 @@ class ApiClient {
     });
   }
 
+  public selectMetaPage(pageId: string) {
+    return this.request<{ success: boolean; connection: any }>('/meta/select-page', {
+      method: 'POST',
+      body: JSON.stringify({ pageId }),
+    });
+  }
+
+  public selectMetaInstagram(instagramId: string) {
+    return this.request<{ success: boolean; connection: any }>('/meta/select-instagram', {
+      method: 'POST',
+      body: JSON.stringify({ instagramId }),
+    });
+  }
+
   public disconnectMeta() {
     return this.request<{ success: boolean; message: string }>('/meta/disconnect', {
       method: 'DELETE',

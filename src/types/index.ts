@@ -145,6 +145,22 @@ export interface MetaConnectionState {
     account_status: number;
   }>;
   selected_ad_account_id?: string | null;
+  pages?: Array<{
+    id: string;
+    name: string;
+    category?: string;
+    tasks?: string[];
+    instagram_account_id?: string;
+    instagram_username?: string;
+  }>;
+  selected_page_id?: string | null;
+  instagram_accounts?: Array<{
+    id: string;
+    username: string;
+    name?: string;
+    page_id?: string;
+  }>;
+  selected_instagram_id?: string | null;
   expires_at?: string;
   page_id?: string;
   page_name?: string;

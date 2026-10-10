@@ -603,16 +603,20 @@ apiRouter.get('/auth/me', requireAuth, (req: AuthenticatedRequest, res) => {
     metaConnection: metaConnection ? {
       connected: true,
       meta_user_name: metaConnection.meta_user_name,
-      ad_accounts: metaConnection.ad_accounts,
-      selected_ad_account_id: metaConnection.selected_ad_account_id || 'act_1627260695520511',
+      ad_accounts: metaConnection.ad_accounts || [],
+      selected_ad_account_id: metaConnection.selected_ad_account_id || (metaConnection.ad_accounts?.[0]?.id ?? null),
+      pages: metaConnection.pages || [],
+      selected_page_id: metaConnection.selected_page_id || metaConnection.page_id || (metaConnection.pages?.[0]?.id ?? null),
+      instagram_accounts: metaConnection.instagram_accounts || [],
+      selected_instagram_id: metaConnection.selected_instagram_id || metaConnection.instagram_id || (metaConnection.instagram_accounts?.[0]?.id ?? null),
       expires_at: metaConnection.token_expires_at,
-      page_id: metaConnection.page_id || '128670460329078',
-      page_name: metaConnection.page_name || 'Sahil Gupta',
-      instagram_id: metaConnection.instagram_id || '17841445164423927',
-      instagram_username: metaConnection.instagram_username || 'ravi105065',
-      ad_account_id: metaConnection.selected_ad_account_id || 'act_1627260695520511',
-      ad_account_name: metaConnection.ad_accounts?.[0]?.name || 'SMAP Ads',
-      is_server_verified: true,
+      page_id: metaConnection.selected_page_id || metaConnection.page_id || metaConnection.pages?.[0]?.id,
+      page_name: metaConnection.page_name || metaConnection.pages?.find(p => p.id === (metaConnection.selected_page_id || metaConnection.page_id))?.name || metaConnection.pages?.[0]?.name,
+      instagram_id: metaConnection.selected_instagram_id || metaConnection.instagram_id || metaConnection.instagram_accounts?.[0]?.id,
+      instagram_username: metaConnection.instagram_username || metaConnection.instagram_accounts?.find(ig => ig.id === (metaConnection.selected_instagram_id || metaConnection.instagram_id))?.username || metaConnection.instagram_accounts?.[0]?.username,
+      ad_account_id: metaConnection.selected_ad_account_id || (metaConnection.ad_accounts?.[0]?.id ?? null),
+      ad_account_name: metaConnection.ad_accounts?.find(a => a.id === metaConnection.selected_ad_account_id)?.name || metaConnection.ad_accounts?.[0]?.name,
+      is_server_verified: metaConnection.is_server_verified ?? false,
     } : {
       connected: false,
     },
@@ -1128,13 +1132,71 @@ apiRouter.get('/meta/oauth/callback', async (req, res) => {
 });
 
 apiRouter.post('/meta/select-account', requireAuth, (req: AuthenticatedRequest, res) => {
-  const { adAccountId } = req.body;
+  const { adAccountId, pageId, instagramId } = req.body;
   const connection = db.findMetaConnectionByUserId(req.user!.id);
   if (!connection) {
     return res.status(400).json({ error: 'Meta account not connected' });
   }
 
-  connection.selected_ad_account_id = adAccountId;
+  if (adAccountId) {
+    connection.selected_ad_account_id = adAccountId;
+  }
+  if (pageId) {
+    connection.selected_page_id = pageId;
+    connection.page_id = pageId;
+    const pageObj = connection.pages?.find(p => p.id === pageId);
+    if (pageObj) {
+      connection.page_name = pageObj.name;
+    }
+  }
+  if (instagramId) {
+    connection.selected_instagram_id = instagramId;
+    connection.instagram_id = instagramId;
+    const igObj = connection.instagram_accounts?.find(ig => ig.id === instagramId);
+    if (igObj) {
+      connection.instagram_username = igObj.username;
+    }
+  }
+
+  db.saveMetaConnection(connection);
+  res.json({ success: true, connection });
+});
+
+apiRouter.post('/meta/select-page', requireAuth, (req: AuthenticatedRequest, res) => {
+  const { pageId } = req.body;
+  const connection = db.findMetaConnectionByUserId(req.user!.id);
+  if (!connection) {
+    return res.status(400).json({ error: 'Meta account not connected' });
+  }
+
+  connection.selected_page_id = pageId;
+  connection.page_id = pageId;
+  const pageObj = connection.pages?.find(p => p.id === pageId);
+  if (pageObj) {
+    connection.page_name = pageObj.name;
+    if (pageObj.instagram_account_id && !connection.selected_instagram_id) {
+      connection.selected_instagram_id = pageObj.instagram_account_id;
+      connection.instagram_id = pageObj.instagram_account_id;
+      connection.instagram_username = pageObj.instagram_username;
+    }
+  }
+  db.saveMetaConnection(connection);
+  res.json({ success: true, connection });
+});
+
+apiRouter.post('/meta/select-instagram', requireAuth, (req: AuthenticatedRequest, res) => {
+  const { instagramId } = req.body;
+  const connection = db.findMetaConnectionByUserId(req.user!.id);
+  if (!connection) {
+    return res.status(400).json({ error: 'Meta account not connected' });
+  }
+
+  connection.selected_instagram_id = instagramId;
+  connection.instagram_id = instagramId;
+  const igObj = connection.instagram_accounts?.find(ig => ig.id === instagramId);
+  if (igObj) {
+    connection.instagram_username = igObj.username;
+  }
   db.saveMetaConnection(connection);
   res.json({ success: true, connection });
 });

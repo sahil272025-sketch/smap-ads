@@ -158,6 +158,23 @@ export interface Payment {
   updated_at: string;
 }
 
+export interface MetaPage {
+  id: string;
+  name: string;
+  access_token?: string;
+  category?: string;
+  tasks?: string[];
+  instagram_account_id?: string;
+  instagram_username?: string;
+}
+
+export interface MetaInstagramAccount {
+  id: string;
+  username: string;
+  name?: string;
+  page_id?: string;
+}
+
 export interface MetaConnection {
   id: string;
   user_id: string;
@@ -165,6 +182,7 @@ export interface MetaConnection {
   meta_user_name: string;
   access_token: string;
   token_expires_at: string;
+  token_type?: 'short_lived' | 'long_lived' | 'system';
   ad_accounts: Array<{
     id: string;
     account_id: string;
@@ -173,8 +191,12 @@ export interface MetaConnection {
     account_status: number;
   }>;
   selected_ad_account_id: string | null;
+  pages?: MetaPage[];
+  selected_page_id?: string | null;
   page_id?: string;
   page_name?: string;
+  instagram_accounts?: MetaInstagramAccount[];
+  selected_instagram_id?: string | null;
   instagram_id?: string;
   instagram_username?: string;
   is_server_verified?: boolean;
@@ -688,8 +710,28 @@ class DatabaseService {
           },
         ],
         selected_ad_account_id: 'act_1627260695520511',
+        pages: [
+          {
+            id: '128670460329078',
+            name: 'Sahil Gupta',
+            category: 'Business',
+            tasks: ['MANAGE', 'ADVERTISE'],
+            instagram_account_id: '17841445164423927',
+            instagram_username: 'ravi105065',
+          },
+        ],
+        selected_page_id: '128670460329078',
         page_id: '128670460329078',
         page_name: 'Sahil Gupta',
+        instagram_accounts: [
+          {
+            id: '17841445164423927',
+            username: 'ravi105065',
+            name: 'ravi105065',
+            page_id: '128670460329078',
+          },
+        ],
+        selected_instagram_id: '17841445164423927',
         instagram_id: '17841445164423927',
         instagram_username: 'ravi105065',
         is_server_verified: true,

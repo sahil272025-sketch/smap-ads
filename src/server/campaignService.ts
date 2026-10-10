@@ -122,7 +122,8 @@ export class CampaignService {
 
     if (shouldSyncMeta) {
       try {
-        metaResult = await MetaService.createDraftCampaignInMeta(campaign);
+        const userConn = db.findMetaConnectionByUserId(userId);
+        metaResult = await MetaService.createDraftCampaignInMeta(campaign, userConn);
         if (metaResult.success) {
           campaign.meta_campaign_id = metaResult.meta_campaign_id || null;
           campaign.meta_adset_id = metaResult.meta_adset_id || null;

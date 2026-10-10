@@ -14,6 +14,46 @@ export const ProfileView: React.FC = () => {
   const [disconnecting, setDisconnecting] = useState(false);
   const [verifying, setVerifying] = useState(false);
   const [verificationResult, setVerificationResult] = useState<string | null>(null);
+  const [updatingAsset, setUpdatingAsset] = useState(false);
+
+  const handleSelectAdAccount = async (adAccountId: string) => {
+    setUpdatingAsset(true);
+    try {
+      await api.selectMetaAccount(adAccountId);
+      await refreshUser();
+      setStatusMsg({ type: 'success', text: 'Ad account selection updated.' });
+    } catch (err: any) {
+      setStatusMsg({ type: 'error', text: err.message || 'Failed to select ad account' });
+    } finally {
+      setUpdatingAsset(false);
+    }
+  };
+
+  const handleSelectPage = async (pageId: string) => {
+    setUpdatingAsset(true);
+    try {
+      await api.selectMetaPage(pageId);
+      await refreshUser();
+      setStatusMsg({ type: 'success', text: 'Facebook Page selection updated.' });
+    } catch (err: any) {
+      setStatusMsg({ type: 'error', text: err.message || 'Failed to select Facebook Page' });
+    } finally {
+      setUpdatingAsset(false);
+    }
+  };
+
+  const handleSelectInstagram = async (instagramId: string) => {
+    setUpdatingAsset(true);
+    try {
+      await api.selectMetaInstagram(instagramId);
+      await refreshUser();
+      setStatusMsg({ type: 'success', text: 'Instagram account selection updated.' });
+    } catch (err: any) {
+      setStatusMsg({ type: 'error', text: err.message || 'Failed to select Instagram account' });
+    } finally {
+      setUpdatingAsset(false);
+    }
+  };
 
   const handleVerifyMeta = async () => {
     setVerifying(true);
@@ -197,30 +237,91 @@ export const ProfileView: React.FC = () => {
 
         {metaConnection?.connected ? (
           <div className="space-y-4 pt-2">
-            <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#090D18] p-4 text-xs text-slate-700 dark:text-slate-300 space-y-2.5">
+            <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#090D18] p-4 text-xs text-slate-700 dark:text-slate-300 space-y-3.5">
               <div className="flex justify-between items-center">
                 <span className="text-slate-500">Authorized Meta User:</span>
-                <span className="font-semibold text-slate-900 dark:text-white">{metaConnection.meta_user_name || 'Sahil Gupta'}</span>
+                <span className="font-semibold text-slate-900 dark:text-white">{metaConnection.meta_user_name || 'Authorized User'}</span>
               </div>
-              <div className="flex justify-between items-center">
-                <span className="text-slate-500">Facebook Page:</span>
-                <span className="font-semibold text-slate-900 dark:text-white">
-                  {metaConnection.page_name || 'Sahil Gupta'} <span className="text-[11px] text-slate-400 font-normal">(ID: {metaConnection.page_id || '128670460329078'})</span>
-                </span>
+
+              {/* Facebook Page Selection */}
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1.5 pt-1 border-t border-slate-200/50 dark:border-slate-800/50">
+                <div>
+                  <span className="text-slate-500 font-medium">Facebook Page:</span>
+                  <p className="text-[11px] text-slate-400">Used as the primary publisher identity for sponsored ads</p>
+                </div>
+                {metaConnection.pages && metaConnection.pages.length > 1 ? (
+                  <select
+                    disabled={updatingAsset}
+                    value={metaConnection.selected_page_id || metaConnection.page_id || ''}
+                    onChange={(e) => handleSelectPage(e.target.value)}
+                    className="rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-2.5 py-1 text-xs text-slate-900 dark:text-white font-medium focus:ring-1 focus:ring-purple-500"
+                  >
+                    {metaConnection.pages.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.name} ({p.id})
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <span className="font-semibold text-slate-900 dark:text-white">
+                    {metaConnection.page_name || 'No Page Connected'} {metaConnection.page_id ? <span className="text-[11px] text-slate-400 font-normal">(ID: {metaConnection.page_id})</span> : ''}
+                  </span>
+                )}
               </div>
-              <div className="flex justify-between items-center">
-                <span className="text-slate-500">Instagram Professional:</span>
-                <span className="font-semibold text-slate-900 dark:text-white">
-                  @{metaConnection.instagram_username || 'ravi105065'} <span className="text-[11px] text-slate-400 font-normal">(ID: {metaConnection.instagram_id || '17841445164423927'})</span>
-                </span>
+
+              {/* Instagram Account Selection */}
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1.5 pt-1 border-t border-slate-200/50 dark:border-slate-800/50">
+                <div>
+                  <span className="text-slate-500 font-medium">Instagram Account:</span>
+                  <p className="text-[11px] text-slate-400">Connected account for Instagram Feed, Stories & Reels</p>
+                </div>
+                {metaConnection.instagram_accounts && metaConnection.instagram_accounts.length > 1 ? (
+                  <select
+                    disabled={updatingAsset}
+                    value={metaConnection.selected_instagram_id || metaConnection.instagram_id || ''}
+                    onChange={(e) => handleSelectInstagram(e.target.value)}
+                    className="rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-2.5 py-1 text-xs text-slate-900 dark:text-white font-medium focus:ring-1 focus:ring-purple-500"
+                  >
+                    {metaConnection.instagram_accounts.map((ig) => (
+                      <option key={ig.id} value={ig.id}>
+                        @{ig.username} ({ig.id})
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <span className="font-semibold text-slate-900 dark:text-white">
+                    {metaConnection.instagram_username ? `@${metaConnection.instagram_username}` : 'Optional (Fallback to Page)'} {metaConnection.instagram_id ? <span className="text-[11px] text-slate-400 font-normal">(ID: {metaConnection.instagram_id})</span> : ''}
+                  </span>
+                )}
               </div>
-              <div className="flex justify-between items-center">
-                <span className="text-slate-500">SMAP Ad Account:</span>
-                <span className="font-semibold text-slate-900 dark:text-white">
-                  {metaConnection.ad_account_name || 'SMAP Ads'} <span className="text-[11px] text-slate-400 font-normal">({metaConnection.selected_ad_account_id || 'act_1627260695520511'})</span>
-                </span>
+
+              {/* Meta Ad Account Selection */}
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1.5 pt-1 border-t border-slate-200/50 dark:border-slate-800/50">
+                <div>
+                  <span className="text-slate-500 font-medium">Meta Ad Account:</span>
+                  <p className="text-[11px] text-slate-400">Ad Account where campaign creatives and ad sets are created</p>
+                </div>
+                {metaConnection.ad_accounts && metaConnection.ad_accounts.length > 1 ? (
+                  <select
+                    disabled={updatingAsset}
+                    value={metaConnection.selected_ad_account_id || ''}
+                    onChange={(e) => handleSelectAdAccount(e.target.value)}
+                    className="rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-2.5 py-1 text-xs text-slate-900 dark:text-white font-medium focus:ring-1 focus:ring-purple-500"
+                  >
+                    {metaConnection.ad_accounts.map((acc) => (
+                      <option key={acc.id} value={acc.id}>
+                        {acc.name} ({acc.id})
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <span className="font-semibold text-slate-900 dark:text-white">
+                    {metaConnection.ad_account_name || 'SMAP Ads'} <span className="text-[11px] text-slate-400 font-normal">({metaConnection.selected_ad_account_id || 'act_1627260695520511'})</span>
+                  </span>
+                )}
               </div>
-              <div className="flex justify-between items-center">
+
+              <div className="flex justify-between items-center pt-1 border-t border-slate-200/50 dark:border-slate-800/50">
                 <span className="text-slate-500">Supported Placements:</span>
                 <span className="font-semibold text-emerald-600 dark:text-emerald-400">
                   Facebook Feed, Instagram Feed, Stories & Reels

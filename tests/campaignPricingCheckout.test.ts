@@ -658,6 +658,116 @@ async function runTests() {
   assert(secondRecon.transaction === null, 'Second reconciliation does NOT generate duplicate transaction');
   assert(db.findUserById(auditCustId)?.wallet_balance === 2, 'Balance remains strictly ₹2.00 without double crediting');
 
+  // TEST 23: Dynamic Customer Asset IDs & Multi-Page / Multi-Instagram Support
+  console.log('\n--- TEST 23: Dynamic Customer Asset IDs & Page/Instagram Binding ---');
+  const customMetaUser: User = {
+    id: `usr_meta_${Date.now()}`,
+    email: `meta_${Date.now()}@test.com`,
+    name: 'Customer With Assets',
+    role: 'customer',
+    status: 'ACTIVE',
+    google_sub: `sub_${Date.now()}`,
+    email_verified: true,
+    profile_picture: null,
+    last_login_at: new Date().toISOString(),
+    wallet_balance: 500,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  };
+  db.createUser(customMetaUser);
+
+  const customConnection = {
+    id: `conn_${Date.now()}`,
+    user_id: customMetaUser.id,
+    meta_user_id: '998877665544',
+    meta_user_name: 'Customer Business Owner',
+    access_token: 'EAAP_mock_customer_long_lived_token',
+    token_expires_at: new Date(Date.now() + 60 * 24 * 3600 * 1000).toISOString(),
+    token_type: 'long_lived' as const,
+    ad_accounts: [
+      {
+        id: 'act_9988112233',
+        account_id: '9988112233',
+        name: 'Customer Custom Ad Account',
+        currency: 'INR',
+        account_status: 1,
+      },
+    ],
+    selected_ad_account_id: 'act_9988112233',
+    pages: [
+      {
+        id: 'page_cust_111',
+        name: 'Customer Brand Store',
+        category: 'Retail',
+        tasks: ['MANAGE', 'ADVERTISE'],
+        instagram_account_id: 'ig_cust_222',
+        instagram_username: 'customerbrand',
+      },
+      {
+        id: 'page_cust_333',
+        name: 'Secondary Brand Page',
+        category: 'Services',
+        tasks: ['ADVERTISE'],
+      },
+    ],
+    selected_page_id: 'page_cust_111',
+    page_id: 'page_cust_111',
+    page_name: 'Customer Brand Store',
+    instagram_accounts: [
+      {
+        id: 'ig_cust_222',
+        username: 'customerbrand',
+        name: 'Customer Brand',
+        page_id: 'page_cust_111',
+      },
+    ],
+    selected_instagram_id: 'ig_cust_222',
+    instagram_id: 'ig_cust_222',
+    instagram_username: 'customerbrand',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  };
+  db.saveMetaConnection(customConnection);
+
+  const fetchedConn = db.findMetaConnectionByUserId(customMetaUser.id);
+  assert(!!fetchedConn, 'Custom Meta connection successfully saved and retrieved');
+  assert(fetchedConn?.selected_page_id === 'page_cust_111', 'Selected page is customer owned page_cust_111');
+  assert(fetchedConn?.selected_instagram_id === 'ig_cust_222', 'Selected Instagram is customer owned ig_cust_222');
+  assert(fetchedConn?.selected_ad_account_id === 'act_9988112233', 'Selected Ad Account is customer owned act_9988112233');
+
+  // Verify createDraftCampaignInMeta binds to customer's dynamic assets
+  const custCampaign = await CampaignService.createDraft(customMetaUser.id, {
+    packageId: 'pkg_starter_200',
+    businessName: 'Customer Brand',
+    headline: 'Grand Opening Special',
+    primaryText: 'Visit our new store online today!',
+    creativeUrl: 'https://example.com/asset.jpg',
+    destinationUrl: 'https://example.com',
+    syncToMeta: true,
+  });
+
+  assert(!!custCampaign.campaign, 'Customer campaign draft created successfully');
+  assert(
+    custCampaign.metaResult?.identities?.facebook_page_id === 'page_cust_111',
+    'Meta draft uses customer-owned Facebook Page ID (page_cust_111), not hardcoded platform owner Page'
+  );
+  assert(
+    custCampaign.metaResult?.identities?.instagram_account_id === 'ig_cust_222',
+    'Meta draft uses customer-owned Instagram Account ID (ig_cust_222)'
+  );
+  assert(
+    custCampaign.metaResult?.identities?.ad_account === 'act_9988112233',
+    'Meta draft uses customer-owned Ad Account (act_9988112233)'
+  );
+
+  // TEST 24: Safety Gate is Strictly Preserved
+  console.log('\n--- TEST 24: Safety Gate Strict Enforcement ---');
+  const gate = MetaService.canSubmitLiveCampaigns();
+  assert(
+    gate.allowed === false,
+    'META_LIVE_SUBMISSIONS_ENABLED is strictly false; live ad creation remains blocked'
+  );
+
   console.log('\n====================================================');
   console.log(`🎉 ALL ${passedTests}/${totalTests} TESTS PASSED SUCCESSFULLY!`);
   console.log('====================================================\n');
