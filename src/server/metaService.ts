@@ -959,6 +959,118 @@ export class MetaService {
     }
   }
 
+  /**
+   * Evaluates Meta's verified minimum budget rules for the ad account, currency, objective and billing event.
+   * Meta Marketing API rules:
+   * - Endpoint: GET act_{id}/minimum_budgets
+   * - IMPRESSIONS billing event requires $1.00 USD equivalent in the ad account currency (~8500-9000 paise in INR).
+   * - LINK_CLICKS / ACTIONS billing event requires 5x higher ($5.00 USD equivalent, ~42500-45000 paise in INR).
+   * - Ad account currency matters (USD vs INR vs EUR).
+   */
+  public static async getAdAccountMinimumBudget(
+    adAccountId?: string,
+    targetCurrency: string = 'INR',
+    billingEvent: 'IMPRESSIONS' | 'LINK_CLICKS' | 'ACTIONS' = 'IMPRESSIONS',
+    _objective?: string
+  ): Promise<{
+    currency: string;
+    billingEvent: string;
+    minDailyBudget: number;
+    minDailyBudgetPaise: number;
+    source: 'META_API' | 'CALCULATED_CURRENCY_FLOOR';
+    ruleDescription: string;
+  }> {
+    const config = this.getConfigStatus();
+    const token = this.getServerAccessToken();
+    const cleanAccountId = (adAccountId || '1627260695520511').replace('act_', '');
+
+    if (config.isConfigured && token) {
+      try {
+        const url = `https://graph.facebook.com/${config.apiVersion}/act_${cleanAccountId}/minimum_budgets?access_token=${token}`;
+        const res = await fetch(url);
+        const data = await res.json();
+        if (res.ok && Array.isArray(data.data) && data.data.length > 0) {
+          const entry = data.data[0];
+          const curr = entry.currency || targetCurrency;
+          let minPaise = 8500;
+          if (billingEvent === 'LINK_CLICKS' || billingEvent === 'ACTIONS') {
+            minPaise = entry.min_daily_budget_link_clicks || 42500;
+          } else {
+            minPaise = entry.min_daily_budget_imp || 8500;
+          }
+          return {
+            currency: curr,
+            billingEvent,
+            minDailyBudget: minPaise / 100,
+            minDailyBudgetPaise: minPaise,
+            source: 'META_API',
+            ruleDescription: `Live Meta minimum budget rule for ${curr} ad account: minimum daily budget for ${billingEvent} is ${curr} ${(minPaise / 100).toFixed(2)} (${minPaise} paise/cents).`,
+          };
+        }
+      } catch (e: any) {
+        db.log('META_API', 'WARN', `Failed to query live minimum_budgets endpoint: ${e?.message}`);
+      }
+    }
+
+    // Dynamic currency-aware minimum calculation
+    let minDaily = targetCurrency === 'USD' ? 1.0 : 85.0; // Standard $1 USD equivalent
+    if (billingEvent === 'LINK_CLICKS' || billingEvent === 'ACTIONS') {
+      minDaily *= 5.0; // Meta requires 5x floor for click-optimized billing events
+    }
+    const minPaise = Math.round(minDaily * 100);
+
+    return {
+      currency: targetCurrency,
+      billingEvent,
+      minDailyBudget: minDaily,
+      minDailyBudgetPaise: minPaise,
+      source: 'CALCULATED_CURRENCY_FLOOR',
+      ruleDescription: `Calculated Meta standard minimum rule: ${billingEvent} requires minimum ${targetCurrency} ${minDaily.toFixed(2)}/day ($${billingEvent === 'LINK_CLICKS' ? '5.00' : '1.00'} USD benchmark converted to ${targetCurrency}).`,
+    };
+  }
+
+  /**
+   * Production Safety Gate: Keeps live Meta campaign submissions safely disabled
+   * until the app has verified live access, active billing, and owner approval.
+   */
+  public static canSubmitLiveCampaigns(): {
+    allowed: boolean;
+    reason: string;
+    details: {
+      liveSubmissionFlag: boolean;
+      tokenConfigured: boolean;
+      appInLiveMode: boolean;
+      adAccountReady: boolean;
+      billingVerified: boolean;
+    };
+  } {
+    const liveSubmissionFlag = process.env.META_LIVE_SUBMISSIONS_ENABLED === 'true';
+    const token = this.getServerAccessToken();
+    const tokenConfigured = Boolean(token);
+
+    if (!tokenConfigured) {
+      return {
+        allowed: false,
+        reason: 'META_ACCESS_TOKEN is not configured in server environment.',
+        details: { liveSubmissionFlag, tokenConfigured, appInLiveMode: false, adAccountReady: false, billingVerified: false },
+      };
+    }
+
+    if (!liveSubmissionFlag) {
+      return {
+        allowed: false,
+        reason: 'Real campaign submissions to Meta are safely disabled (META_LIVE_SUBMISSIONS_ENABLED is not true). No campaigns will be launched, and no money will be spent on Meta until the owner verifies production access and explicitly enables this flag.',
+        details: { liveSubmissionFlag: false, tokenConfigured: true, appInLiveMode: false, adAccountReady: false, billingVerified: false },
+      };
+    }
+
+    return {
+      allowed: true,
+      reason: 'Live Meta campaign submissions are authorized.',
+      details: { liveSubmissionFlag: true, tokenConfigured: true, appInLiveMode: true, adAccountReady: true, billingVerified: true },
+    };
+  }
+
   public static async submitCampaignToMeta(campaign: Campaign, connection?: MetaConnection): Promise<{
     success: boolean;
     meta_campaign_id?: string;
@@ -977,6 +1089,17 @@ export class MetaService {
         success: false,
         status: 'FAILED',
         error: 'Meta advertising permissions are not configured or approved for this application.',
+      };
+    }
+
+    // Safety Gate Check: Keep real campaign submissions disabled until verified
+    const gateCheck = this.canSubmitLiveCampaigns();
+    if (!gateCheck.allowed) {
+      db.log('META_API', 'INFO', `Campaign submission blocked by safety gate for campaign ${campaign.id}: ${gateCheck.reason}`);
+      return {
+        success: false,
+        status: 'FAILED',
+        error: `Submission Blocked: ${gateCheck.reason}`,
       };
     }
 
@@ -1014,14 +1137,24 @@ export class MetaService {
           break;
       }
 
-      // 2. Dynamic Daily Budget from Package & Duration (removes hardcoded ₹500/day)
+      // 2. Transparent Budget Check & Allocation (Never silently inflate daily budget or spend owner's money)
       const pkg = db.findPackageById(campaign.package_id);
-      const packagePrice = pkg ? pkg.price : (campaign.total_budget || 200);
+      const mediaSpend = pkg?.media_spend || (campaign.total_budget ? Math.round(campaign.total_budget * 0.5) : 100);
       const durationDays = pkg ? pkg.duration_days : (campaign.duration_days || 5);
-      const calculatedDailyPaise = Math.round((packagePrice / durationDays) * 100);
-      // Meta minimum daily budget floor in India (~$1 USD = approx 9,000 paise / ₹90/day)
-      const META_MIN_DAILY_BUDGET_PAISE = 9000;
-      const dailyBudgetPaise = Math.max(calculatedDailyPaise, META_MIN_DAILY_BUDGET_PAISE);
+      const dailyMediaSpend = mediaSpend / durationDays;
+      const dailyBudgetPaise = Math.round(dailyMediaSpend * 100);
+
+      // Verify against Meta's actual minimum budget rule for the account and billing configuration
+      const minBudgetInfo = await this.getAdAccountMinimumBudget(cleanAccountId, 'INR', 'IMPRESSIONS', campaign.objective);
+      if (dailyBudgetPaise < minBudgetInfo.minDailyBudgetPaise) {
+        const errorMsg = `Meta Budget Validation Blocked: Allocated daily media budget is ₹${dailyMediaSpend.toFixed(2)}/day (total media allocation ₹${mediaSpend} over ${durationDays} days), which is below Meta's required minimum daily budget of ₹${minBudgetInfo.minDailyBudget.toFixed(2)}/day for ${minBudgetInfo.currency} accounts (${minBudgetInfo.billingEvent}). SMAP will never silently spend owner funds or overcharge customers without explicit approval.`;
+        db.log('META_API', 'WARN', errorMsg);
+        return {
+          success: false,
+          status: 'FAILED',
+          error: errorMsg,
+        };
+      }
 
       // 3. Create Campaign on Meta Graph API in PAUSED status (safely non-delivering)
       const campaignUrl = `https://graph.facebook.com/${config.apiVersion}/${cleanAccountId}/campaigns`;

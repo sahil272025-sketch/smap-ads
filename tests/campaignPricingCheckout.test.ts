@@ -2,6 +2,8 @@ import { db, User } from '../src/server/db.js';
 import { CampaignService } from '../src/server/campaignService.js';
 import { WalletService } from '../src/server/walletService.js';
 import { MetaService } from '../src/server/metaService.js';
+import { SupportService } from '../src/server/supportService.js';
+import { renderPolicyHtml } from '../src/server/policyPages.js';
 
 let totalTests = 0;
 let passedTests = 0;
@@ -425,6 +427,105 @@ async function runTests() {
     reconciled.status !== 'ACTIVE',
     'Paused Meta campaign is not falsely reconciled as ACTIVE'
   );
+
+  // TEST 13: Meta Minimum Budget Rule Verification (Dynamic & Non-Universal)
+  console.log('\n--- TEST 13: Meta Minimum Budget Dynamic Rules ---');
+  const liveAdAccountBudget = await MetaService.getAdAccountMinimumBudget('1627260695520511', 'AED', 'IMPRESSIONS');
+  assert(Boolean(liveAdAccountBudget.currency), `Ad account currency recognized dynamically: ${liveAdAccountBudget.currency}`);
+  assert(liveAdAccountBudget.source === 'META_API', 'Queried live Meta Marketing API /minimum_budgets endpoint directly');
+  assert(liveAdAccountBudget.minDailyBudget > 0, `Meta minimum daily budget retrieved for ${liveAdAccountBudget.currency}: ${liveAdAccountBudget.minDailyBudget}`);
+  
+  const clicksBudget = await MetaService.getAdAccountMinimumBudget('1627260695520511', 'AED', 'LINK_CLICKS');
+  assert(clicksBudget.minDailyBudget > liveAdAccountBudget.minDailyBudget, 'LINK_CLICKS billing event requires a significantly higher minimum budget than IMPRESSIONS');
+
+  const inrFallback = await MetaService.getAdAccountMinimumBudget('non_existent_account', 'INR', 'IMPRESSIONS');
+  assert(inrFallback.currency === 'INR', 'INR fallback currency evaluated as INR');
+  assert(inrFallback.minDailyBudget === 85.0, 'INR calculated benchmark is ₹85.00/day ($1.00 equivalent)');
+
+  const usdFallback = await MetaService.getAdAccountMinimumBudget('non_existent_account', 'USD', 'IMPRESSIONS');
+  assert(usdFallback.minDailyBudget === 1.0, 'USD ad accounts floor evaluated at $1.00/day, proving ₹90 is not assumed universally');
+
+  // TEST 14: Transparent Package Fee vs Meta Media Spend & Payer Entity
+  console.log('\n--- TEST 14: Transparent Fee Breakdown & Payer Disclosure ---');
+  const starterPkg = db.findPackageById('pkg_starter_200')!;
+  assert(starterPkg.platform_fee === 100, 'Starter Sprint has ₹100 explicit platform fee');
+  assert(starterPkg.media_spend === 100, 'Starter Sprint has ₹100 explicit Meta media budget');
+  assert(starterPkg.platform_fee! + starterPkg.media_spend! === starterPkg.price, 'Platform fee + media spend strictly equals total charged price (₹200)');
+  assert(Boolean(starterPkg.payer_entity && starterPkg.payer_entity.includes('Customer pays SMAP')), 'Payer entity transparently informs customer who pays Meta');
+
+  const growthPkg = db.findPackageById('pkg_growth_399')!;
+  assert(growthPkg.platform_fee === 150, 'Growth Accelerate has ₹150 platform fee');
+  assert(growthPkg.media_spend === 249, 'Growth Accelerate has ₹249 Meta media spend');
+  assert(growthPkg.platform_fee! + growthPkg.media_spend! === growthPkg.price, 'Growth fee + media spend strictly equals ₹399');
+
+  // TEST 15: Production Safety Gate Blocks Real Submissions Until Enabled
+  console.log('\n--- TEST 15: Production Safety Gate & Budget Validation ---');
+  const safetyGate = MetaService.canSubmitLiveCampaigns();
+  assert(
+    safetyGate.allowed === false,
+    'Safety gate blocks live campaign submissions when META_LIVE_SUBMISSIONS_ENABLED is not explicitly true'
+  );
+  assert(
+    safetyGate.reason.includes('safely disabled') || safetyGate.reason.includes('blocked'),
+    'Safety gate returns clear explanation that real ads/spending are blocked'
+  );
+
+  const blockedSubmit = await MetaService.submitCampaignToMeta(dummyCampaign);
+  assert(blockedSubmit.success === false, 'submitCampaignToMeta returns false when safety gate is active');
+  assert(blockedSubmit.status === 'FAILED', 'Blocked submission marked as FAILED with zero money spent on Meta');
+  assert(Boolean(blockedSubmit.error && (blockedSubmit.error.includes('Submission Blocked') || blockedSubmit.error.includes('Budget'))), 'Blocked submission stores transparent blocker reason');
+
+  // TEST 16: Refund/Cancellation Policy, Grievance Officer & Support Ticket Tracking
+  console.log('\n--- TEST 16: Refund Policy, Grievance Officer & Ticket Tracking ---');
+  const contactHtml = renderPolicyHtml('contact');
+  assert(contactHtml.includes('Designated Grievance Redressal Officer'), 'Contact page contains Designated Grievance Redressal Officer section');
+  assert(contactHtml.includes('Sahil Gupta'), 'Grievance Officer name (Sahil Gupta) prominently rendered');
+  assert(contactHtml.includes('sahilking17341734@gmail.com'), 'Official Grievance Officer email rendered');
+  assert(contactHtml.includes('24 business hours'), '24-hour statutory acknowledgement timeline displayed');
+
+  const refundHtml = renderPolicyHtml('refund');
+  assert(refundHtml.includes('7 calendar days') || refundHtml.includes('7-Day Refund Window'), 'Refund page renders 7-day refund policy window');
+  assert(refundHtml.includes('Prior to Meta Submission'), 'Refund policy specifies 100% full refund before Meta submission');
+
+  // Verify Support Ticket lifecycle in database
+  const newTicket = SupportService.createTicket({
+    userId: testUserId,
+    subject: 'Campaign Budget Clarification',
+    message: 'How is my ₹200 Starter Sprint allocated between SMAP and Meta?',
+  });
+  assert(Boolean(newTicket.id), `Support ticket created successfully with ID: ${newTicket.id}`);
+  assert(newTicket.status === 'OPEN', 'Newly created ticket has status OPEN');
+  
+  // Create test admin for support replies
+  const adminUserId = `test_admin_${Date.now()}`;
+  db.createUser({
+    id: adminUserId,
+    email: 'admin@smap-ads.test',
+    name: 'SMAP Admin Support',
+    role: 'admin',
+    status: 'ACTIVE',
+    google_sub: `sub_admin_${Date.now()}`,
+    email_verified: true,
+    profile_picture: null,
+    last_login_at: new Date().toISOString(),
+    wallet_balance: 0,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  });
+
+  const updatedWithReply = SupportService.addReply(
+    newTicket.id,
+    adminUserId,
+    'admin',
+    'Your Starter Sprint includes ₹100 platform management and ₹100 Meta media budget.'
+  );
+  assert(Boolean(updatedWithReply), 'Support reply created successfully');
+  assert(updatedWithReply!.status === 'IN_PROGRESS', 'Admin reply moves ticket status to IN_PROGRESS');
+  assert(updatedWithReply!.replies.length === 1, 'Ticket thread contains reply');
+
+  const resolvedTicket = SupportService.updateStatus(newTicket.id, 'RESOLVED');
+  assert(Boolean(resolvedTicket), 'Ticket resolved successfully');
+  assert(resolvedTicket!.status === 'RESOLVED', 'Ticket status successfully marked as RESOLVED');
 
   console.log('\n====================================================');
   console.log(`🎉 ALL ${passedTests}/${totalTests} TESTS PASSED SUCCESSFULLY!`);

@@ -48,6 +48,9 @@ export interface Package {
   name: string;
   price: number; // ₹200, ₹399, ₹549, ₹749
   duration_days: number; // 5, 10, 14, 30
+  platform_fee?: number;
+  media_spend?: number;
+  payer_entity?: string;
   platforms: string[]; // ['Facebook', 'Instagram']
   features: string[];
   active: boolean;
@@ -438,21 +441,29 @@ class DatabaseService {
     // Growth Accelerate: ₹399 (10 days)
     // Business Pro: ₹549 (14 days)
     // Enterprise Scale: ₹749 (30 days)
-    const canonicalMap: Record<string, { name: string; price: number; duration: number }> = {
-      pkg_starter_200: { name: 'Starter Sprint', price: 200, duration: 5 },
-      pkg_growth_399: { name: 'Growth Accelerate', price: 399, duration: 10 },
-      pkg_pro_549: { name: 'Business Pro', price: 549, duration: 14 },
-      pkg_scale_749: { name: 'Enterprise Scale', price: 749, duration: 30 },
+    const canonicalMap: Record<string, { name: string; price: number; duration: number; platform_fee: number; media_spend: number }> = {
+      pkg_starter_200: { name: 'Starter Sprint', price: 200, duration: 5, platform_fee: 100, media_spend: 100 },
+      pkg_growth_399: { name: 'Growth Accelerate', price: 399, duration: 10, platform_fee: 150, media_spend: 249 },
+      pkg_pro_549: { name: 'Business Pro', price: 549, duration: 14, platform_fee: 200, media_spend: 349 },
+      pkg_scale_749: { name: 'Enterprise Scale', price: 749, duration: 30, platform_fee: 250, media_spend: 499 },
     };
 
     let updated = false;
     for (const [id, spec] of Object.entries(canonicalMap)) {
       const existing = this.db.packages.find((p) => p.id === id);
       if (existing) {
-        if (existing.price !== spec.price || existing.duration_days !== spec.duration) {
+        if (
+          existing.price !== spec.price ||
+          existing.duration_days !== spec.duration ||
+          existing.platform_fee !== spec.platform_fee ||
+          existing.media_spend !== spec.media_spend
+        ) {
           existing.price = spec.price;
           existing.duration_days = spec.duration;
           existing.name = spec.name;
+          existing.platform_fee = spec.platform_fee;
+          existing.media_spend = spec.media_spend;
+          existing.payer_entity = 'Customer pays SMAP via UPI. Meta bills SMAP Agency Ad Account directly for ad spend.';
           updated = true;
         }
       } else {
@@ -461,13 +472,16 @@ class DatabaseService {
           name: spec.name,
           price: spec.price,
           duration_days: spec.duration,
+          platform_fee: spec.platform_fee,
+          media_spend: spec.media_spend,
+          payer_entity: 'Customer pays SMAP via UPI. Meta bills SMAP Agency Ad Account directly for ad spend.',
           platforms: ['Facebook', 'Instagram'],
           features: [
             `${spec.duration} Days duration`,
             'Facebook + Instagram advertising',
-            'Target audience setup',
-            'Campaign management',
-            'Campaign status tracking',
+            `₹${spec.media_spend} Meta media budget (~₹${(spec.media_spend / spec.duration).toFixed(1)}/day)`,
+            `₹${spec.platform_fee} Platform setup & monitoring fee`,
+            'Automated pause when package expires',
           ],
           active: true,
           created_at: new Date().toISOString(),

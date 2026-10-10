@@ -60,7 +60,7 @@ export class SupportService {
 
     const updated = db.addTicketReply(ticketId, reply);
     if (role === 'admin' && ticket.status === 'OPEN') {
-      db.updateTicket(ticketId, { status: 'IN_PROGRESS' });
+      return db.updateTicket(ticketId, { status: 'IN_PROGRESS' }) || updated;
     }
 
     return updated;

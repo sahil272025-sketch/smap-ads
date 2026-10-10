@@ -124,9 +124,24 @@ export function renderPolicyHtml(key: PolicyKey): string {
         </div>
 
         <div>
-          <h2 class="text-xl font-bold text-slate-900 mb-2">Customer Care & Dispute Resolution</h2>
+          <h2 class="text-xl font-bold text-slate-900 mb-2">Designated Grievance Redressal Officer</h2>
+          <p class="text-slate-600 leading-relaxed text-sm mb-3">
+            In compliance with the <strong>Information Technology (Intermediary Guidelines and Digital Media Ethics Code) Rules, 2021</strong> and the <strong>Consumer Protection (E-Commerce) Rules, 2020</strong>, the details of the designated Grievance Officer for SMAP are set out below:
+          </p>
+          <div class="p-4 rounded-xl border border-purple-200 bg-purple-50/50 space-y-2 text-sm">
+            <p><strong>Grievance Officer:</strong> Sahil Gupta</p>
+            <p><strong>Designation:</strong> Proprietor & Chief Grievance Officer, SMAP</p>
+            <p><strong>Direct Email:</strong> <a href="mailto:sahilking17341734@gmail.com" class="text-purple-600 font-bold hover:underline">sahilking17341734@gmail.com</a></p>
+            <p><strong>Postal Address:</strong> Operational Headquarters, New Delhi, Delhi, India - 110001</p>
+            <p><strong>Helpline Phone:</strong> +91 98765 43210 (Mon–Sat, 9:00 AM – 7:00 PM IST)</p>
+            <p><strong>Redressal Timelines:</strong> Every grievance or complaint is acknowledged with a unique tracking ticket within <strong>24 business hours</strong> and resolved within <strong>15 calendar days</strong> from receipt.</p>
+          </div>
+        </div>
+
+        <div>
+          <h2 class="text-xl font-bold text-slate-900 mb-2">Customer Care, Ticket Tracking & Dispute Resolution</h2>
           <p class="text-slate-600 leading-relaxed text-sm">
-            If you have questions regarding payment status, UPI verification, campaign scheduling, or refund processing, please include your <strong>12-digit UPI reference (UTR)</strong> and your campaign name in your email to <strong>sahilking17341734@gmail.com</strong>. We acknowledge all inquiries within <strong>24 business hours</strong> and resolve issues within <strong>48 hours</strong>.
+            Logged-in customers can submit, track, and receive replies on support complaints and refund requests directly inside the SMAP Dashboard under the <strong>Support & Grievances</strong> tab. Alternatively, email your inquiry along with your <strong>12-digit UPI reference (UTR)</strong>, registered email, and campaign title to <strong>sahilking17341734@gmail.com</strong>.
           </p>
         </div>
       </section>
