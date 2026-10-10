@@ -151,15 +151,20 @@ export const AdminDashboard: React.FC = () => {
     }
   };
 
-  const handleResetCustomerBalance = async (userId: string, name: string, currentBalance: number) => {
-    if (!window.confirm(`Reset balance of ₹${currentBalance.toFixed(2)} for ${name} to ₹0.00?`)) {
+  const handleReconcileCustomerBalance = async (userId: string, name: string) => {
+    const reason = window.prompt(
+      `Reconcile customer wallet for ${name} against verified Razorpay payments?\nEnter audit note:`,
+      'Admin verified ledger balance reconciliation'
+    );
+    if (!reason) {
       return;
     }
     try {
-      await api.adminResetCustomerBalance(userId, 'Admin reset unverified test balance');
+      const res = await api.adminReconcileCustomerBalance(userId, reason);
+      alert(res.message);
       await loadAllAdminData();
     } catch (err: any) {
-      alert(err.message || 'Failed to reset customer balance');
+      alert(err.message || 'Failed to reconcile customer balance');
     }
   };
 
@@ -415,16 +420,13 @@ export const AdminDashboard: React.FC = () => {
                             })}
                           </td>
                           <td className="py-3 pr-4 text-center">
-                            {c.currentBalance > 0 ? (
-                              <button
-                                onClick={() => handleResetCustomerBalance(c.userId, c.name, c.currentBalance)}
-                                className="px-2 py-1 rounded bg-amber-950/60 hover:bg-amber-900 border border-amber-600/50 text-[10px] font-bold text-amber-300 transition-colors"
-                              >
-                                Reset to ₹0
-                              </button>
-                            ) : (
-                              <span className="text-[10px] text-slate-500">Reconciled</span>
-                            )}
+                            <button
+                              onClick={() => handleReconcileCustomerBalance(c.userId, c.name)}
+                              className="px-2.5 py-1 rounded bg-indigo-950/60 hover:bg-indigo-900 border border-indigo-600/50 text-[10px] font-bold text-indigo-300 transition-colors"
+                              title="Verify against Razorpay and restore legitimate balance if discrepancy exists"
+                            >
+                              Reconcile Balance
+                            </button>
                           </td>
                         </tr>
                       ))}

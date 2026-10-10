@@ -497,6 +497,69 @@ export class WalletService {
   }
 
   /**
+   * Reconcile customer wallet against verified Razorpay payments and debit transactions.
+   * Restores legitimate customer balances if wiped out or undercredited by test resets,
+   * with complete audit logging and transaction traceability.
+   */
+  public static reconcileAndRestoreLegitimateBalance(
+    userId: string,
+    adminUserId: string,
+    reason?: string
+  ) {
+    return db.reconcileAndRestoreLegitimateBalance(userId, adminUserId, reason);
+  }
+
+  /**
+   * Get detailed audit breakdown of user's wallet ledger vs verified payment gateway receipts.
+   */
+  public static getWalletAuditSummary(userId: string) {
+    const user = db.findUserById(userId);
+    if (!user) {
+      throw new Error(`User ${userId} not found`);
+    }
+
+    const currentBalance = typeof user.wallet_balance === 'number' && !isNaN(user.wallet_balance)
+      ? user.wallet_balance
+      : 0;
+
+    const verifiedPayments = (db.findPaymentsByUserId(userId) || [])
+      .filter((p: Payment) => p.status === 'PAID')
+      .map((p: Payment) => ({
+        id: p.id,
+        gatewayPaymentId: p.gateway_payment_id || null,
+        amount: p.amount,
+        verifiedAt: p.verified_at,
+        notes: p.notes,
+      }));
+
+    const totalVerifiedCredits = Math.round(
+      verifiedPayments.reduce((sum: number, p: { amount: number }) => sum + p.amount, 0) * 100
+    ) / 100;
+
+    const txs = db.getWalletTransactions(userId);
+    const campaignDebits = txs
+      .filter((tx) => tx.type === 'CAMPAIGN_PAYMENT' && tx.status === 'SUCCESS')
+      .reduce((sum, tx) => sum + tx.amount, 0);
+
+    const targetBalance = Math.max(0, Math.round((totalVerifiedCredits - campaignDebits) * 100) / 100);
+    const discrepancy = Math.round((targetBalance - currentBalance) * 100) / 100;
+
+    return {
+      userId,
+      userEmail: user.email,
+      userName: user.name,
+      currentBalance,
+      targetBalance,
+      discrepancy,
+      totalVerifiedCredits,
+      campaignDebits,
+      verifiedPayments,
+      transactions: txs,
+      isBalanced: discrepancy === 0,
+    };
+  }
+
+  /**
    * Reset/reconcile unverified or test wallet balance to ₹0.
    */
   public static resetTestBalance(userId: string, reason?: string) {

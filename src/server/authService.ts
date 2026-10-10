@@ -395,7 +395,8 @@ export class AuthService {
     const now = new Date().toISOString();
 
     // Determine admin role server-side only
-    const adminEmailsConfig = process.env.ADMIN_EMAILS || 'sahilking17341734@gmail.com';
+    const defaultAdminEmails = 'sahilking17341734@gmail.com,sahilguptasahilgupta652@gmail.com';
+    const adminEmailsConfig = process.env.ADMIN_EMAILS || defaultAdminEmails;
     const adminList = adminEmailsConfig.split(',').map((e) => e.trim().toLowerCase());
     const isAdmin = adminList.includes(profile.email.toLowerCase());
     const role: 'customer' | 'admin' = isAdmin ? 'admin' : 'customer';
@@ -516,7 +517,8 @@ export class AuthService {
     const passwordHash = await bcrypt.hash(password, 10);
     const now = new Date().toISOString();
 
-    const adminEmailsConfig = process.env.ADMIN_EMAILS || 'sahilking17341734@gmail.com';
+    const defaultAdminEmails = 'sahilking17341734@gmail.com,sahilguptasahilgupta652@gmail.com';
+    const adminEmailsConfig = process.env.ADMIN_EMAILS || defaultAdminEmails;
     const adminList = adminEmailsConfig.split(',').map((e) => e.trim().toLowerCase());
     const role: 'customer' | 'admin' = adminList.includes(cleanEmail) ? 'admin' : 'customer';
 

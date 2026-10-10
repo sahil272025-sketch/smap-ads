@@ -27,8 +27,6 @@ export const WalletView: React.FC = () => {
   const [selectedTopupAmount, setSelectedTopupAmount] = useState<number>(500);
   const [filterType, setFilterType] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
-  const [resetting, setResetting] = useState(false);
-  const [resetMessage, setResetMessage] = useState<string | null>(null);
   const [topupPayments, setTopupPayments] = useState<Payment[]>([]);
   const [syncing, setSyncing] = useState(false);
   const [syncNotice, setSyncNotice] = useState<string | null>(null);
@@ -90,23 +88,6 @@ export const WalletView: React.FC = () => {
   const handleOpenAddFunds = (amt = 500) => {
     setSelectedTopupAmount(amt);
     setShowAddFundsModal(true);
-  };
-
-  const handleResetTestBalance = async () => {
-    if (!window.confirm('Are you sure you want to reset your unverified/test balance to ₹0.00? This cannot be undone.')) {
-      return;
-    }
-    setResetting(true);
-    setResetMessage(null);
-    try {
-      const res = await api.resetTestBalance();
-      setResetMessage(res.message);
-      await loadWalletData();
-    } catch (err: any) {
-      alert(err.message || 'Failed to reset balance');
-    } finally {
-      setResetting(false);
-    }
   };
 
   const handleFundsAdded = (newBal: number) => {
@@ -271,23 +252,7 @@ export const WalletView: React.FC = () => {
                   +₹{amt}
                 </button>
               ))}
-
-              {balance > 0 && (
-                <button
-                  onClick={handleResetTestBalance}
-                  disabled={resetting}
-                  className="ml-auto text-[11px] text-amber-400 hover:text-amber-300 underline font-medium"
-                >
-                  {resetting ? 'Resetting...' : 'Reset Test Balance (₹0)'}
-                </button>
-              )}
             </div>
-
-            {resetMessage && (
-              <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs">
-                {resetMessage}
-              </div>
-            )}
           </div>
 
           <div className="flex flex-col sm:flex-row md:flex-col gap-3 shrink-0">

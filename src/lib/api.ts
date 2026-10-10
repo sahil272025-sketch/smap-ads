@@ -391,15 +391,35 @@ class ApiClient {
     });
   }
 
-  public resetTestBalance() {
+  public adminReconcileCustomerBalance(userId: string, reason?: string) {
     return this.request<{
       success: boolean;
+      status: 'RESTORED' | 'ALREADY_RECONCILED';
+      previousBalance: number;
+      restoredBalance: number;
+      correctionAmount: number;
       message: string;
-      balance: number;
-      transaction: WalletTransaction;
-    }>('/wallet/reset-test-balance', {
+      transaction: WalletTransaction | null;
+    }>(`/admin/wallets/${userId}/reconcile-balance`, {
       method: 'POST',
+      body: JSON.stringify({ reason }),
     });
+  }
+
+  public getAdminWalletAudit(userId: string) {
+    return this.request<{
+      userId: string;
+      userEmail: string;
+      userName: string;
+      currentBalance: number;
+      targetBalance: number;
+      discrepancy: number;
+      totalVerifiedCredits: number;
+      campaignDebits: number;
+      verifiedPayments: Array<{ id: string; gatewayPaymentId: string | null; amount: number; verifiedAt: string | null }>;
+      transactions: WalletTransaction[];
+      isBalanced: boolean;
+    }>(`/admin/wallets/${userId}/audit`);
   }
 
   public getAdminWallets() {

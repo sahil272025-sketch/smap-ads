@@ -996,19 +996,12 @@ apiRouter.post('/wallet/pay-campaign', requireAuth, async (req: AuthenticatedReq
   }
 });
 
-// Reset unverified or test wallet balance to ₹0 (Customer Self-Reset for unverified test funds)
-apiRouter.post('/wallet/reset-test-balance', requireAuth, (req: AuthenticatedRequest, res) => {
-  try {
-    const result = WalletService.resetTestBalance(req.user!.id);
-    res.json({
-      success: true,
-      message: `Wallet balance successfully reset from ₹${result.previousBalance.toFixed(2)} to ₹0.00`,
-      balance: 0,
-      transaction: result.transaction,
-    });
-  } catch (err: any) {
-    res.status(400).json({ error: err.message || 'Failed to reset wallet balance' });
-  }
+// Customer Self-Reset endpoint is PERMANENTLY DISABLED in production
+apiRouter.post('/wallet/reset-test-balance', requireAuth, (_req: AuthenticatedRequest, res) => {
+  res.status(403).json({
+    error: 'Customer self-reset of wallet balance is permanently disabled in production to safeguard verified funds. For balance reconciliation, please contact an authorized administrator.',
+    code: 'FEATURE_DISABLED_IN_PRODUCTION',
+  });
 });
 
 // Admin endpoint: Get full customer wallets overview and transaction ledger
@@ -1021,10 +1014,43 @@ apiRouter.get('/admin/wallets', requireAdmin, (_req, res) => {
   }
 });
 
-// Admin endpoint: Reset customer unverified or test balance to ₹0
+// Admin endpoint: Audit specific customer wallet against verified payment receipts
+apiRouter.get('/admin/wallets/:userId/audit', requireAdmin, (req, res) => {
+  try {
+    const summary = WalletService.getWalletAuditSummary(req.params.userId);
+    res.json(summary);
+  } catch (err: any) {
+    res.status(400).json({ error: err.message || 'Failed to fetch customer wallet audit' });
+  }
+});
+
+// Admin endpoint: Reconcile customer wallet and restore legitimate balance from verified Razorpay payments
+apiRouter.post('/admin/wallets/:userId/reconcile-balance', requireAdmin, (req: AuthenticatedRequest, res) => {
+  try {
+    const adminUserId = req.user?.id || 'admin';
+    const auditReason = req.body?.reason || `Admin ledger reconciliation authorized by ${req.user?.email || adminUserId}`;
+    const result = WalletService.reconcileAndRestoreLegitimateBalance(
+      req.params.userId,
+      adminUserId,
+      auditReason
+    );
+    res.json({
+      success: true,
+      ...result,
+      message: result.status === 'RESTORED'
+        ? `Customer wallet successfully reconciled: restored ₹${result.correctionAmount.toFixed(2)}. New verified balance: ₹${result.restoredBalance.toFixed(2)}.`
+        : `Customer wallet is already in sync with verified payments. Current balance: ₹${result.restoredBalance.toFixed(2)}.`,
+    });
+  } catch (err: any) {
+    res.status(400).json({ error: err.message || 'Failed to reconcile customer wallet balance' });
+  }
+});
+
+// Admin endpoint: Reset customer unverified or test balance to ₹0 (Guarded with safety checks)
 apiRouter.post('/admin/wallets/:userId/reset', requireAdmin, (req, res) => {
   try {
-    const result = WalletService.resetTestBalance(req.params.userId, req.body?.reason || 'Admin reset unverified test balance');
+    const reason = req.body?.reason || 'Admin reset unverified test balance';
+    const result = WalletService.resetTestBalance(req.params.userId, reason);
     res.json({
       success: true,
       message: `Customer balance successfully reset from ₹${result.previousBalance.toFixed(2)} to ₹0.00`,

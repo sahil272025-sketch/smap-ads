@@ -23,7 +23,8 @@ export type WalletTransactionType =
   | 'ADD_FUNDS'
   | 'CAMPAIGN_PAYMENT'
   | 'REFUND'
-  | 'FAILED_PAYMENT';
+  | 'FAILED_PAYMENT'
+  | 'AUDIT_CORRECTION';
 
 export type WalletTransactionStatus = 'SUCCESS' | 'FAILED' | 'PENDING';
 
@@ -279,7 +280,7 @@ class DatabaseService {
     this.ensureDefaultPackages();
   }
 
-  private save() {
+  public save() {
     try {
       const tempFile = `${DB_FILE}.tmp`;
       fs.writeFileSync(tempFile, JSON.stringify(this.db, null, 2), 'utf-8');
@@ -638,6 +639,7 @@ class DatabaseService {
     return this.db.payments;
   }
   public findPaymentById(id: string) { return this.db.payments.find(p => p.id === id); }
+  public findPaymentsByUserId(userId: string): Payment[] { return this.getPayments(userId); }
   public findPaymentByCampaignId(campaignId: string) { return this.db.payments.find(p => p.campaign_id === campaignId); }
   public findPaymentByGatewayOrderId(orderId: string) { return this.db.payments.find(p => p.gateway_order_id === orderId); }
   public findPaymentByGatewayPaymentId(paymentId: string) { return this.db.payments.find(p => p.gateway_payment_id === paymentId); }
@@ -881,6 +883,7 @@ class DatabaseService {
 
   /**
    * Reset/reconcile unverified or test wallet balance back to ₹0 with an audit ledger entry.
+   * Safety guard: Throws if customer has verified PAID payments unless explicitly overridden.
    */
   public resetWalletBalance(userId: string, reason?: string): {
     previousBalance: number;
@@ -890,6 +893,15 @@ class DatabaseService {
     const user = this.findUserById(userId);
     if (!user) {
       throw new Error(`User ${userId} not found`);
+    }
+
+    const verifiedPayments = (this.db.payments || []).filter(
+      (p) => p.user_id === userId && p.status === 'PAID'
+    );
+    if (verifiedPayments.length > 0 && !reason?.includes('CONFIRMED_OVERRIDE')) {
+      throw new Error(
+        `Cannot reset wallet: customer has ${verifiedPayments.length} verified real payment(s). Resetting verified funds is prohibited. Use Admin Balance Reconciliation instead.`
+      );
     }
 
     const currentBalance = typeof user.wallet_balance === 'number' && !isNaN(user.wallet_balance)
@@ -924,6 +936,157 @@ class DatabaseService {
     });
 
     return { previousBalance: currentBalance, newBalance: 0, transaction: tx };
+  }
+
+  /**
+   * Reconciles customer wallet against verified Razorpay payments and debit transactions.
+   * Restores legitimate customer balances if wiped out or undercredited by test resets,
+   * with complete audit logging and transaction traceability.
+   */
+  public reconcileAndRestoreLegitimateBalance(
+    userId: string,
+    adminUserId: string = 'system_admin',
+    auditReason?: string
+  ): {
+    userId: string;
+    previousBalance: number;
+    restoredBalance: number;
+    correctionAmount: number;
+    verifiedPayments: Array<{ id: string; gatewayPaymentId: string | null; amount: number; verifiedAt: string | null }>;
+    totalVerifiedCredits: number;
+    totalLegitimateDebits: number;
+    transaction: WalletTransaction | null;
+    status: 'RESTORED' | 'ALREADY_RECONCILED';
+  } {
+    const user = this.findUserById(userId);
+    if (!user) {
+      throw new Error(`User ${userId} not found`);
+    }
+
+    const currentBalance = typeof user.wallet_balance === 'number' && !isNaN(user.wallet_balance)
+      ? user.wallet_balance
+      : 0;
+
+    // 1. Calculate sum of verified PAID payments (Razorpay live payments)
+    const verifiedPayments = (this.db.payments || [])
+      .filter((p) => p.user_id === userId && p.status === 'PAID')
+      .map((p) => ({
+        id: p.id,
+        gatewayPaymentId: p.gateway_payment_id || null,
+        amount: typeof p.amount === 'number' ? p.amount : 0,
+        verifiedAt: p.verified_at || null,
+      }));
+
+    const totalVerifiedCredits = Math.round(
+      verifiedPayments.reduce((sum, p) => sum + p.amount, 0) * 100
+    ) / 100;
+
+    // 2. Calculate sum of legitimate debits (successful campaign payments)
+    const legitimateDebits = (this.db.wallet_transactions || [])
+      .filter((tx) => tx.user_id === userId && tx.type === 'CAMPAIGN_PAYMENT' && tx.status === 'SUCCESS')
+      .map((tx) => (typeof tx.amount === 'number' ? tx.amount : 0));
+
+    const totalLegitimateDebits = Math.round(
+      legitimateDebits.reduce((sum, amt) => sum + amt, 0) * 100
+    ) / 100;
+
+    // Legitimate ledger target balance
+    const targetLegitimateBalance = Math.max(
+      0,
+      Math.round((totalVerifiedCredits - totalLegitimateDebits) * 100) / 100
+    );
+
+    // If balance is already equal to or greater than target, no upward adjustment needed
+    if (currentBalance >= targetLegitimateBalance) {
+      return {
+        userId,
+        previousBalance: currentBalance,
+        restoredBalance: currentBalance,
+        correctionAmount: 0,
+        verifiedPayments,
+        totalVerifiedCredits,
+        totalLegitimateDebits,
+        transaction: null,
+        status: 'ALREADY_RECONCILED',
+      };
+    }
+
+    const correctionAmount = Math.round((targetLegitimateBalance - currentBalance) * 100) / 100;
+
+    const paymentRefs = verifiedPayments
+      .map((p) => p.gatewayPaymentId || p.id)
+      .filter(Boolean)
+      .join(', ');
+
+    const description =
+      auditReason ||
+      `Admin Ledger Correction: Restored legitimate verified balance of ₹${correctionAmount.toFixed(
+        2
+      )} from Razorpay payment(s) [${paymentRefs || 'VERIFIED_PAYMENTS'}] reversing accidental balance reset.`;
+
+    const latestPayment = verifiedPayments[verifiedPayments.length - 1];
+
+    const tx: WalletTransaction = {
+      id: `wtx_corr_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
+      user_id: userId,
+      type: 'AUDIT_CORRECTION',
+      amount: correctionAmount,
+      balance_before: currentBalance,
+      balance_after: targetLegitimateBalance,
+      description,
+      payment_id: latestPayment?.id || null,
+      gateway_payment_id: latestPayment?.gatewayPaymentId || null,
+      gateway_order_id: null,
+      campaign_id: null,
+      status: 'SUCCESS',
+      created_at: new Date().toISOString(),
+    };
+
+    user.wallet_balance = targetLegitimateBalance;
+    user.updated_at = new Date().toISOString();
+    this.createWalletTransaction(tx);
+    this.save();
+
+    this.log(
+      'PAYMENT',
+      'INFO',
+      `Restored legitimate wallet balance for user ${userId} to ₹${targetLegitimateBalance} (+₹${correctionAmount})`,
+      {
+        userId,
+        adminUserId,
+        previousBalance: currentBalance,
+        restoredBalance: targetLegitimateBalance,
+        correctionAmount,
+        verifiedCredits: totalVerifiedCredits,
+        legitimateDebits: totalLegitimateDebits,
+        paymentCount: verifiedPayments.length,
+        txId: tx.id,
+      }
+    );
+
+    this.log(
+      'ADMIN',
+      'INFO',
+      `Admin ${adminUserId} executed balance reconciliation for user ${userId}. Restored ₹${correctionAmount} to wallet.`,
+      {
+        userId,
+        adminUserId,
+        txId: tx.id,
+        reason: auditReason,
+      }
+    );
+
+    return {
+      userId,
+      previousBalance: currentBalance,
+      restoredBalance: targetLegitimateBalance,
+      correctionAmount,
+      verifiedPayments,
+      totalVerifiedCredits,
+      totalLegitimateDebits,
+      transaction: tx,
+      status: 'RESTORED',
+    };
   }
 
   /**

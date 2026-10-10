@@ -527,6 +527,137 @@ async function runTests() {
   assert(Boolean(resolvedTicket), 'Ticket resolved successfully');
   assert(resolvedTicket!.status === 'RESOLVED', 'Ticket status successfully marked as RESOLVED');
 
+  // ==========================================
+  // TEST 17: Wallet Ledger Protection & Audit Reconciliation
+  // ==========================================
+  console.log('\n--- TEST 17: Wallet Ledger Protection & Audit Reconciliation ---');
+
+  // 1. Create a customer with 2 verified Razorpay payments
+  const auditCustId = `cust_audit_${Date.now()}`;
+  const auditUser = db.createUser({
+    id: auditCustId,
+    email: `audit_${Date.now()}@smap-ads.test`,
+    name: 'Audit Customer',
+    role: 'customer',
+    status: 'ACTIVE',
+    google_sub: `sub_audit_${Date.now()}`,
+    email_verified: true,
+    profile_picture: null,
+    last_login_at: new Date().toISOString(),
+    wallet_balance: 0,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  });
+
+  // Credit Payment 1 (₹1.00)
+  const pay1Id = `pay_rzp_audit_1_${Date.now()}`;
+  db.createPayment({
+    id: `smap_${pay1Id}`,
+    user_id: auditCustId,
+    campaign_id: 'WALLET_TOPUP',
+    package_id: 'wallet_topup',
+    amount: 1,
+    currency: 'INR',
+    payment_method: 'UPI',
+    payee_upi: 'sahil-stp@ybl',
+    upi_intent_url: '',
+    transaction_reference: 'UTR_257178192361',
+    gateway_payment_id: pay1Id,
+    gateway_order_id: `order_audit_1`,
+    status: 'PAID',
+    verified_at: new Date().toISOString(),
+    verification_source: 'GATEWAY_API',
+    notes: 'Verified against Razorpay LIVE captured payment',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  });
+  db.creditWallet(auditCustId, 1, {
+    description: 'Added funds via Razorpay UPI (UTR_257178192361)',
+    gatewayPaymentId: pay1Id,
+  });
+
+  // Credit Payment 2 (₹1.00)
+  const pay2Id = `pay_rzp_audit_2_${Date.now()}`;
+  db.createPayment({
+    id: `smap_${pay2Id}`,
+    user_id: auditCustId,
+    campaign_id: 'WALLET_TOPUP',
+    package_id: 'wallet_topup',
+    amount: 1,
+    currency: 'INR',
+    payment_method: 'UPI',
+    payee_upi: 'sahil-stp@ybl',
+    upi_intent_url: '',
+    transaction_reference: 'UTR_667696542797',
+    gateway_payment_id: pay2Id,
+    gateway_order_id: `order_audit_2`,
+    status: 'PAID',
+    verified_at: new Date().toISOString(),
+    verification_source: 'GATEWAY_API',
+    notes: 'Verified against Razorpay LIVE captured payment',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  });
+  db.creditWallet(auditCustId, 1, {
+    description: 'Added funds via Razorpay UPI (UTR_667696542797)',
+    gatewayPaymentId: pay2Id,
+  });
+
+  const fundedUser = db.findUserById(auditCustId);
+  assert(fundedUser?.wallet_balance === 2, 'Customer successfully funded with ₹2.00 from 2 verified payments');
+
+  // 2. Verified funds cannot be casually reset
+  let resetPrevented = false;
+  try {
+    db.resetWalletBalance(auditCustId, 'Accidental test reset');
+  } catch (err: any) {
+    resetPrevented = true;
+    assert(
+      err.message.includes('verified real payment'),
+      'resetWalletBalance throws protective error when verified payments exist'
+    );
+  }
+  assert(resetPrevented, 'Casual balance reset is strictly blocked when user has verified paid transactions');
+
+  // 3. Simulate accidental zeroing (e.g. override or incident) to test recovery
+  // Manually wipe balance to ₹0 like the incident
+  fundedUser!.wallet_balance = 0;
+  db.save();
+
+  assert(
+    db.findUserById(auditCustId)?.wallet_balance === 0,
+    'Simulated incident: wallet balance became ₹0.00'
+  );
+
+  // 4. Run Audit Reconciliation
+  const reconResult = WalletService.reconcileAndRestoreLegitimateBalance(
+    auditCustId,
+    adminUserId,
+    'Reconciling accidental wallet balance reset against verified payments'
+  );
+
+  assert(reconResult.status === 'RESTORED', 'Reconciliation detects missing funds and marks status RESTORED');
+  assert(reconResult.restoredBalance === 2, 'Reconciliation restores exact verified balance of ₹2.00');
+  assert(reconResult.correctionAmount === 2, 'Correction amount is exactly ₹2.00');
+  assert(reconResult.verifiedPayments.length === 2, 'Reconciliation identifies both verified Razorpay payments');
+  assert(reconResult.transaction?.type === 'AUDIT_CORRECTION', 'Correction creates an AUDIT_CORRECTION transaction');
+  assert(reconResult.transaction?.balance_after === 2, 'Correction transaction records balance_after as ₹2.00');
+
+  // Verify database state
+  const restoredUser = db.findUserById(auditCustId);
+  assert(restoredUser?.wallet_balance === 2, 'User wallet balance is now verified ₹2.00 in database');
+
+  // 5. Subsequent reconciliation is strictly idempotent (no double credit)
+  const secondRecon = WalletService.reconcileAndRestoreLegitimateBalance(
+    auditCustId,
+    adminUserId,
+    'Second reconciliation attempt'
+  );
+  assert(secondRecon.status === 'ALREADY_RECONCILED', 'Second reconciliation recognizes balance is ALREADY_RECONCILED');
+  assert(secondRecon.correctionAmount === 0, 'Second reconciliation applies 0 correction');
+  assert(secondRecon.transaction === null, 'Second reconciliation does NOT generate duplicate transaction');
+  assert(db.findUserById(auditCustId)?.wallet_balance === 2, 'Balance remains strictly ₹2.00 without double crediting');
+
   console.log('\n====================================================');
   console.log(`🎉 ALL ${passedTests}/${totalTests} TESTS PASSED SUCCESSFULLY!`);
   console.log('====================================================\n');
