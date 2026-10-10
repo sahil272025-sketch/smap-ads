@@ -184,6 +184,37 @@ class ApiClient {
     });
   }
 
+  public checkoutCampaign(payload: {
+    packageId: string;
+    objective?: string;
+    creativeUrl: string;
+    creativeType?: 'image' | 'video';
+    businessName: string;
+    primaryText: string;
+    headline: string;
+    description?: string;
+    callToAction?: string;
+    destinationType?: string;
+    destinationUrl: string;
+    placements?: string[];
+    targeting?: any;
+    startDate?: string;
+    idempotencyKey?: string;
+  }) {
+    return this.request<{
+      success: boolean;
+      campaign: Campaign;
+      payment: Payment;
+      walletTransaction: WalletTransaction;
+      newBalance: number;
+      metaResult?: any;
+      metaSubmissionStatus: string;
+    }>('/campaigns/checkout', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  }
+
   public getCampaigns(status?: string) {
     const q = status && status !== 'ALL' ? `?status=${encodeURIComponent(status)}` : '';
     return this.request<{ campaigns: Campaign[] }>(`/campaigns${q}`);

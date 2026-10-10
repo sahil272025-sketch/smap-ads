@@ -148,7 +148,7 @@ export interface Payment {
   idempotency_key?: string | null;
   paid_at?: string | null;
   verified_at: string | null;
-  verification_source: 'GATEWAY_WEBHOOK' | 'GATEWAY_API' | 'ADMIN_MANUAL_VERIFICATION' | null;
+  verification_source: 'GATEWAY_WEBHOOK' | 'GATEWAY_API' | 'ADMIN_MANUAL_VERIFICATION' | 'WALLET_BALANCE' | null;
   notes: string | null;
   created_at: string;
   updated_at: string;
@@ -430,6 +430,53 @@ class DatabaseService {
     if (!this.db.packages || this.db.packages.length === 0) {
       this.seedDefaultPackages();
       this.save();
+      return;
+    }
+
+    // Guarantee exact fixed pricing on canonical packages:
+    // Starter Sprint: ₹200 (5 days)
+    // Growth Accelerate: ₹399 (10 days)
+    // Business Pro: ₹549 (14 days)
+    // Enterprise Scale: ₹749 (30 days)
+    const canonicalMap: Record<string, { name: string; price: number; duration: number }> = {
+      pkg_starter_200: { name: 'Starter Sprint', price: 200, duration: 5 },
+      pkg_growth_399: { name: 'Growth Accelerate', price: 399, duration: 10 },
+      pkg_pro_549: { name: 'Business Pro', price: 549, duration: 14 },
+      pkg_scale_749: { name: 'Enterprise Scale', price: 749, duration: 30 },
+    };
+
+    let updated = false;
+    for (const [id, spec] of Object.entries(canonicalMap)) {
+      const existing = this.db.packages.find((p) => p.id === id);
+      if (existing) {
+        if (existing.price !== spec.price || existing.duration_days !== spec.duration) {
+          existing.price = spec.price;
+          existing.duration_days = spec.duration;
+          existing.name = spec.name;
+          updated = true;
+        }
+      } else {
+        this.db.packages.push({
+          id,
+          name: spec.name,
+          price: spec.price,
+          duration_days: spec.duration,
+          platforms: ['Facebook', 'Instagram'],
+          features: [
+            `${spec.duration} Days duration`,
+            'Facebook + Instagram advertising',
+            'Target audience setup',
+            'Campaign management',
+            'Campaign status tracking',
+          ],
+          active: true,
+          created_at: new Date().toISOString(),
+        });
+        updated = true;
+      }
+    }
+    if (updated) {
+      this.save();
     }
   }
 
@@ -511,7 +558,26 @@ class DatabaseService {
   public getPackages(onlyActive = true) {
     return onlyActive ? this.db.packages.filter(p => p.active) : this.db.packages;
   }
-  public findPackageById(id: string) { return this.db.packages.find(p => p.id === id); }
+  public findPackageById(id: string): Package | undefined {
+    if (!id) return undefined;
+    const direct = this.db.packages.find(p => p.id === id);
+    if (direct) return direct;
+
+    const norm = id.toLowerCase().replace(/[-_]/g, '');
+    if (norm.includes('starter') || norm.includes('sprint')) {
+      return this.db.packages.find(p => p.id === 'pkg_starter_200');
+    }
+    if (norm.includes('growth') || norm.includes('accelerate') || norm.includes('booster')) {
+      return this.db.packages.find(p => p.id === 'pkg_growth_399');
+    }
+    if (norm.includes('business') || norm.includes('pro')) {
+      return this.db.packages.find(p => p.id === 'pkg_pro_549');
+    }
+    if (norm.includes('scale') || norm.includes('enterprise')) {
+      return this.db.packages.find(p => p.id === 'pkg_scale_749');
+    }
+    return undefined;
+  }
   public createPackage(pkg: Package) {
     this.db.packages.push(pkg);
     this.save();
@@ -866,6 +932,22 @@ class DatabaseService {
     const currentBalance = typeof user.wallet_balance === 'number' && !isNaN(user.wallet_balance)
       ? user.wallet_balance
       : 0;
+
+    // Strict Double-Layer Idempotency Guard: Never deduct twice for the same campaign order
+    if (meta.campaignId) {
+      const existingTx = this.db.wallet_transactions.find(
+        (t) => t.campaign_id === meta.campaignId && t.type === 'CAMPAIGN_PAYMENT' && t.status === 'SUCCESS'
+      );
+      if (existingTx) {
+        this.log('PAYMENT', 'WARN', `Idempotency guard prevented double deduction for campaign ${meta.campaignId}`, {
+          userId,
+          campaignId: meta.campaignId,
+          existingTxId: existingTx.id,
+        });
+        return { newBalance: currentBalance, transaction: existingTx };
+      }
+    }
+
     const roundedAmount = Math.max(0, Math.round(amount * 100) / 100);
 
     if (currentBalance < roundedAmount) {

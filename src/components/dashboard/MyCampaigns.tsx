@@ -182,9 +182,9 @@ export const MyCampaigns: React.FC<MyCampaignsProps> = ({ onOpenCampaign, onCrea
                     <td className="py-4">
                       <span className="font-bold text-slate-900 dark:text-white capitalize block">
                         {cmp.package_id
-                          ? cmp.package_id.replace('pkg_', '').replace('_', ' ')
+                          ? String(cmp.package_id).replace('pkg_', '').replace(/_/g, ' ')
                           : cmp.objective
-                          ? `${cmp.objective.toLowerCase()} campaign`
+                          ? `${String(cmp.objective).toLowerCase()} campaign`
                           : 'Custom Campaign'}
                       </span>
                       <span className="text-[11px] text-slate-400">

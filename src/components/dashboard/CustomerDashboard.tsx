@@ -78,7 +78,7 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
 
   const packages = [
     {
-      id: 'starter_sprint',
+      id: 'pkg_starter_200',
       name: 'Starter Sprint',
       price: 200,
       duration: '5 Days Active Run',
@@ -93,7 +93,7 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
       ],
     },
     {
-      id: 'growth_accelerate',
+      id: 'pkg_growth_399',
       name: 'Growth Accelerate',
       price: 399,
       duration: '10 Days Active Run',
@@ -108,7 +108,7 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
       ],
     },
     {
-      id: 'business_pro',
+      id: 'pkg_pro_549',
       name: 'Business Pro',
       price: 549,
       duration: '14 Days Active Run',
@@ -123,7 +123,7 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
       ],
     },
     {
-      id: 'enterprise_scale',
+      id: 'pkg_scale_749',
       name: 'Enterprise Scale',
       price: 749,
       duration: '30 Days Active Run',
@@ -717,9 +717,9 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
                     </td>
                     <td className="py-3 text-slate-600 dark:text-slate-300 capitalize">
                       {cmp.package_id
-                        ? cmp.package_id.replace('pkg_', '').replace('_', ' ')
+                        ? String(cmp.package_id).replace('pkg_', '').replace(/_/g, ' ')
                         : cmp.objective
-                        ? `${cmp.objective.toLowerCase()} campaign`
+                        ? `${String(cmp.objective).toLowerCase()} campaign`
                         : 'Custom Campaign'}
                     </td>
                     <td className="py-3">

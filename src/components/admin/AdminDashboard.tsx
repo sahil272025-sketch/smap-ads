@@ -625,9 +625,9 @@ export const AdminDashboard: React.FC = () => {
                         <td className="py-3 max-w-[200px] truncate">{c.headline}</td>
                         <td className="py-3 capitalize">
                           {c.package_id
-                            ? c.package_id.replace('pkg_', '').replace('_', ' ')
+                            ? String(c.package_id).replace('pkg_', '').replace(/_/g, ' ')
                             : c.objective
-                            ? `${c.objective.toLowerCase()} campaign`
+                            ? `${String(c.objective).toLowerCase()} campaign`
                             : 'Custom Campaign'}
                         </td>
                         <td className="py-3"><StatusBadge status={c.status} /></td>

@@ -663,6 +663,19 @@ apiRouter.post('/campaigns', requireAuth, async (req: AuthenticatedRequest, res)
   }
 });
 
+apiRouter.post('/campaigns/checkout', requireAuth, async (req: AuthenticatedRequest, res) => {
+  try {
+    const result = await CampaignService.checkoutWithWallet(req.user!.id, req.body);
+    res.status(201).json(result);
+  } catch (err: any) {
+    const currentBalance = req.user ? db.getWalletBalance(req.user.id) : 0;
+    res.status(400).json({
+      error: err.message || 'Campaign checkout failed',
+      availableBalance: currentBalance,
+    });
+  }
+});
+
 apiRouter.get('/campaigns', requireAuth, (req: AuthenticatedRequest, res) => {
   const campaigns = db.getCampaigns(req.user!.id);
   const statusFilter = req.query.status as string;

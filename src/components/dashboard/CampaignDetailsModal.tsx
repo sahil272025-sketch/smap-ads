@@ -122,7 +122,7 @@ export const CampaignDetailsModal: React.FC<CampaignDetailsModalProps> = ({ camp
               <div className="rounded-xl border border-slate-800 bg-[#090D18] p-3.5">
                 <span className="block text-slate-500 text-[11px]">Duration & Budget</span>
                 <span className="font-bold text-white text-sm mt-0.5 block">{data.campaign.duration_days || data.package?.duration_days || 5} Days</span>
-                <span className="text-[11px] text-slate-400">Total: ₹{data.campaign.total_budget || data.package?.price || 1000}</span>
+                <span className="text-[11px] text-slate-400">Total: ₹{data.campaign.total_budget || data.package?.price || 200}</span>
               </div>
 
               <div className="rounded-xl border border-slate-800 bg-[#090D18] p-3.5">
@@ -235,10 +235,10 @@ export const CampaignDetailsModal: React.FC<CampaignDetailsModalProps> = ({ camp
                   <div>
                     <span className="text-slate-400 block text-[11px]">Destination</span>
                     <span className="font-semibold text-white capitalize">
-                      {data.campaign.destination_type.replace('_', ' ')}
+                      {String(data.campaign.destination_type || 'website').replace(/_/g, ' ')}
                     </span>
                     <a
-                      href={data.campaign.destination_url.startsWith('http') ? data.campaign.destination_url : `https://${data.campaign.destination_url}`}
+                      href={data.campaign.destination_url ? (data.campaign.destination_url.startsWith('http') ? data.campaign.destination_url : `https://${data.campaign.destination_url}`) : '#'}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-indigo-400 hover:underline block truncate mt-0.5"
@@ -258,8 +258,21 @@ export const CampaignDetailsModal: React.FC<CampaignDetailsModalProps> = ({ camp
                   </div>
                 </div>
 
+                {/* Meta Rejection or Error Banner if present */}
+                {(data.campaign.rejection_reason || data.campaign.error_details) && (
+                  <div className="rounded-xl border border-red-500/30 bg-red-950/40 p-3.5 text-xs text-red-300 space-y-1">
+                    <div className="flex items-center gap-2 font-bold text-red-400">
+                      <AlertCircle className="h-4 w-4" />
+                      <span>Meta Delivery Notice:</span>
+                    </div>
+                    <p className="text-[11px] leading-relaxed">
+                      {data.campaign.rejection_reason || data.campaign.meta_status_message || data.campaign.error_details}
+                    </p>
+                  </div>
+                )}
+
                 {/* Meta Identifiers */}
-                <div className="rounded-lg bg-slate-900/60 p-3 border border-slate-800 space-y-1 font-mono text-[11px]">
+                <div className="rounded-lg bg-slate-900/60 p-3 border border-slate-800 space-y-1.5 font-mono text-[11px]">
                   <div className="flex justify-between">
                     <span className="text-slate-500">Meta Campaign ID:</span>
                     <span className="text-slate-300">{data.campaign.meta_campaign_id || 'Pending Meta creation'}</span>
@@ -269,9 +282,26 @@ export const CampaignDetailsModal: React.FC<CampaignDetailsModalProps> = ({ camp
                     <span className="text-slate-300">{data.campaign.meta_adset_id || '—'}</span>
                   </div>
                   <div className="flex justify-between">
+                    <span className="text-slate-500">Meta Creative ID:</span>
+                    <span className="text-slate-300">{data.campaign.meta_creative_id || '—'}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-500">Meta Ad ID:</span>
+                    <span className="text-slate-300">{data.campaign.meta_ad_id || '—'}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-500">Managed Delivery Assets:</span>
+                    <span className="text-slate-300 font-sans">Sahil Gupta (FB) · @ravi105065 (IG)</span>
+                  </div>
+                  <div className="flex justify-between">
                     <span className="text-slate-500">Scheduled End:</span>
                     <span className="text-slate-300">{data.campaign.end_at ? new Date(data.campaign.end_at).toLocaleString() : 'Upon activation'}</span>
                   </div>
+                </div>
+
+                <div className="p-3 rounded-lg bg-slate-900/40 border border-slate-800 text-[11px] text-slate-400 leading-relaxed">
+                  <span className="font-semibold text-slate-300 block mb-0.5">Asset & App Mode Transparency:</span>
+                  Ads currently run under SMAP verified assets (Facebook Page: Sahil Gupta, Instagram: @ravi105065). Meta Developer App is in Development Mode (live delivery to public requires Meta App Review for ads_management).
                 </div>
 
               </div>

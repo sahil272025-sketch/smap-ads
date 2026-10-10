@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Package, Campaign } from '../../types';
 import { api } from '../../lib/api';
 import { useAuth } from '../../context/AuthContext';
+import { AddFundsModal } from './AddFundsModal';
 import {
   UploadCloud,
   CheckCircle2,
@@ -206,6 +207,88 @@ const CTA_OPTIONS = [
   { value: 'SEND_WHATSAPP_MESSAGE', label: 'Send WhatsApp Message' },
 ];
 
+export interface CampaignPackageOption {
+  id: string;
+  alias: string;
+  name: string;
+  price: number;
+  durationDays: number;
+  tagline: string;
+  popular?: boolean;
+  features: string[];
+}
+
+export const CAMPAIGN_PACKAGES: CampaignPackageOption[] = [
+  {
+    id: 'pkg_starter_200',
+    alias: 'starter_sprint',
+    name: 'Starter Sprint',
+    price: 200,
+    durationDays: 5,
+    tagline: 'Ideal for quick testing & local business reach',
+    popular: false,
+    features: [
+      '5 Consecutive Days duration',
+      '₹200 fixed total package price',
+      'Facebook & Instagram advertising',
+      'Target audience setup & optimization',
+      'Live campaign tracking & status reporting',
+      'UPI instant checkout',
+    ],
+  },
+  {
+    id: 'pkg_growth_399',
+    alias: 'growth_accelerate',
+    name: 'Growth Accelerate',
+    price: 399,
+    durationDays: 10,
+    tagline: 'Most popular for small business growth & leads',
+    popular: true,
+    features: [
+      '10 Consecutive Days duration',
+      '₹399 fixed total package price',
+      'Facebook & Instagram feeds, stories & reels',
+      'Target audience setup & interest matching',
+      'Priority campaign monitoring & analytics',
+      'UPI instant checkout',
+    ],
+  },
+  {
+    id: 'pkg_pro_549',
+    alias: 'business_pro',
+    name: 'Business Pro',
+    price: 549,
+    durationDays: 14,
+    tagline: 'Optimal 2-week continuous sales & traffic run',
+    popular: false,
+    features: [
+      '14 Consecutive Days duration',
+      '₹549 fixed total package price',
+      'High-intent audience segment targeting',
+      'Multi-placement algorithm delivery',
+      'Extended auction reach stability',
+      'UPI instant checkout',
+    ],
+  },
+  {
+    id: 'pkg_scale_749',
+    alias: 'enterprise_scale',
+    name: 'Enterprise Scale',
+    price: 749,
+    durationDays: 30,
+    tagline: 'Full month high-authority brand & sales scale',
+    popular: false,
+    features: [
+      '30 Days full monthly duration',
+      '₹749 fixed total package price',
+      'Pan-India high-frequency authority reach',
+      'Long-term audience learning phase',
+      'Dedicated placement optimization',
+      'UPI instant checkout',
+    ],
+  },
+];
+
 interface CreateAdFlowProps {
   initialPackageId?: string | null;
   onCampaignCreated: (campaignId: string) => void;
@@ -265,40 +348,48 @@ export const CreateAdFlow: React.FC<CreateAdFlowProps> = ({
   ]);
   const [customInterest, setCustomInterest] = useState<string>('');
 
-  // STEP 5: Budget & Schedule
-  const [dailyBudget, setDailyBudget] = useState<number>(200);
-  const [durationDays, setDurationDays] = useState<number>(5);
+  // STEP 5: Plan & Schedule
+  const [selectedPackageId, setSelectedPackageId] = useState<string>('pkg_starter_200');
   const [startDate, setStartDate] = useState<string>(() => new Date().toISOString().split('T')[0]);
 
-  // STEP 6: Review & Confirmation
+  // Selected package helper
+  const selectedPackage =
+    CAMPAIGN_PACKAGES.find((p) => p.id === selectedPackageId || p.alias === selectedPackageId) ||
+    CAMPAIGN_PACKAGES[0];
+  const finalPrice = selectedPackage.price;
+  const durationDays = selectedPackage.durationDays;
+
+  // STEP 6: Review & Checkout State
   const [walletBalance, setWalletBalance] = useState<number>(0);
-  const [isSubmittingDraft, setIsSubmittingDraft] = useState<boolean>(false);
-  const [submitError, setSubmitError] = useState<string | null>(null);
-  const [createdDraftCampaign, setCreatedDraftCampaign] = useState<Campaign | null>(null);
-  const [metaDraftResult, setMetaDraftResult] = useState<any>(null);
+  const [showAddFundsModal, setShowAddFundsModal] = useState<boolean>(false);
+  const [isPlacingOrder, setIsPlacingOrder] = useState<boolean>(false);
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
+  const [completedOrder, setCompletedOrder] = useState<any | null>(null);
+  const idempotencyKeyRef = useRef<string>(`idem_cmp_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`);
 
   // Load wallet balance
-  useEffect(() => {
+  const refreshWalletBalance = () => {
     api.getWalletBalance()
       .then((res) => setWalletBalance(res.balance || 0))
       .catch(() => {});
+  };
+
+  useEffect(() => {
+    refreshWalletBalance();
   }, []);
 
   // Handle Initial Package selection if passed
   useEffect(() => {
     if (initialPackageId) {
-      if (initialPackageId === 'starter_growth' || initialPackageId === 'pkg_starter') {
-        setDailyBudget(200);
-        setDurationDays(5);
-      } else if (initialPackageId === 'business_booster' || initialPackageId === 'pkg_growth') {
-        setDailyBudget(399);
-        setDurationDays(10);
-      } else if (initialPackageId === 'business_pro') {
-        setDailyBudget(500);
-        setDurationDays(14);
-      } else if (initialPackageId === 'enterprise_scale') {
-        setDailyBudget(750);
-        setDurationDays(30);
+      const norm = initialPackageId.toLowerCase();
+      if (norm.includes('starter') || norm.includes('sprint')) {
+        setSelectedPackageId('pkg_starter_200');
+      } else if (norm.includes('growth') || norm.includes('accelerate') || norm.includes('booster')) {
+        setSelectedPackageId('pkg_growth_399');
+      } else if (norm.includes('pro') || norm.includes('business')) {
+        setSelectedPackageId('pkg_pro_549');
+      } else if (norm.includes('scale') || norm.includes('enterprise')) {
+        setSelectedPackageId('pkg_scale_749');
       }
     }
   }, [initialPackageId]);
@@ -313,9 +404,6 @@ export const CreateAdFlow: React.FC<CreateAdFlowProps> = ({
       return '';
     }
   })();
-
-  // Computed Total Budget
-  const totalCost = dailyBudget * durationDays;
 
   // Computed Audience Reach Estimate
   const estimatedReach = (() => {
@@ -402,19 +490,25 @@ export const CreateAdFlow: React.FC<CreateAdFlowProps> = ({
       case 4:
         return (isAllIndia || selectedLocations.length > 0) && minAge < maxAge;
       case 5:
-        return dailyBudget >= 100 && durationDays >= 1;
+        return !!selectedPackageId && durationDays >= 1;
       default:
         return true;
     }
   };
 
-  // Confirm and Create Draft Campaign
-  const handleConfirmCreateDraft = async () => {
-    setIsSubmittingDraft(true);
-    setSubmitError(null);
+  // Place Order & Pay via SMAP Wallet
+  const handlePlaceOrder = async () => {
+    if (walletBalance < finalPrice) {
+      setShowAddFundsModal(true);
+      return;
+    }
+
+    setIsPlacingOrder(true);
+    setCheckoutError(null);
 
     try {
       const payload = {
+        packageId: selectedPackage.id,
         objective,
         businessName: businessName.trim(),
         headline: headline.trim(),
@@ -437,22 +531,23 @@ export const CreateAdFlow: React.FC<CreateAdFlowProps> = ({
           locations: isAllIndia ? ['All India'] : selectedLocations,
           estimated_audience_size: estimatedReach,
         },
-        dailyBudget,
-        durationDays,
         startDate,
-        endDate: computedEndDate,
-        syncToMeta: true, // Calls Meta Marketing API to create safe PAUSED objects
-        status: 'DRAFT',
+        idempotencyKey: idempotencyKeyRef.current,
       };
 
-      const result = await api.createCampaign(payload);
-      setCreatedDraftCampaign(result.campaign);
-      setMetaDraftResult(result.metaResult || null);
+      const result = await api.checkoutCampaign(payload);
+      setCompletedOrder(result);
+      if (typeof result.newBalance === 'number') {
+        setWalletBalance(result.newBalance);
+      } else {
+        refreshWalletBalance();
+      }
       setStep(7); // Show confirmation view
     } catch (err: any) {
-      setSubmitError(err.message || 'Failed to create campaign draft. Please try again.');
+      setCheckoutError(err.message || 'Campaign order checkout failed. Please try again.');
+      refreshWalletBalance();
     } finally {
-      setIsSubmittingDraft(false);
+      setIsPlacingOrder(false);
     }
   };
 
@@ -461,8 +556,8 @@ export const CreateAdFlow: React.FC<CreateAdFlowProps> = ({
     'Ad Creative',
     'Placements',
     'Audience',
-    'Budget & Schedule',
-    'Review & Draft',
+    'Plan & Duration',
+    'Review & Pay',
   ];
 
   return (
@@ -1342,7 +1437,7 @@ export const CreateAdFlow: React.FC<CreateAdFlowProps> = ({
               disabled={!canProceedStep(4)}
               className="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-6 py-2.5 text-xs sm:text-sm font-semibold text-white shadow-md shadow-violet-600/25 hover:bg-violet-500 active:scale-95 transition-all disabled:opacity-50"
             >
-              <span>Continue to Budget</span>
+              <span>Continue to Plan & Duration</span>
               <ArrowRight className="h-4 w-4" />
             </button>
           </div>
@@ -1350,90 +1445,107 @@ export const CreateAdFlow: React.FC<CreateAdFlowProps> = ({
       )}
 
       {/* ======================================================== */}
-      {/* STEP 5: BUDGET & SCHEDULE */}
+      {/* STEP 5: PLAN & DURATION */}
       {/* ======================================================== */}
       {step === 5 && (
         <div className="rounded-2xl border border-card bg-card p-6 sm:p-8 space-y-6 shadow-sm transition-colors">
           <div>
             <h2 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">
-              Budget & Schedule
+              Choose Your Advertising Plan & Duration
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-              Set your daily budget, duration, and campaign launch schedule. Total cost is automatically calculated.
+              Select your fixed advertising package and launch schedule. Every plan has one fixed price for the entire duration — not a daily budget.
             </p>
           </div>
 
-          {/* Daily Budget Selection */}
+          {/* Package Selection Cards */}
           <div className="space-y-3">
             <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
-              Daily Advertising Budget (INR ₹)
+              Select Advertising Package
             </label>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {[200, 399, 500, 1000].map((amt) => (
-                <button
-                  key={amt}
-                  type="button"
-                  onClick={() => setDailyBudget(amt)}
-                  className={`p-3.5 rounded-2xl border-2 text-center transition-all ${
-                    dailyBudget === amt
-                      ? 'border-violet-600 bg-violet-600/10 text-violet-600 dark:text-violet-400 shadow-sm'
-                      : 'border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-slate-300'
-                  }`}
-                >
-                  <span className="block text-lg font-extrabold">₹{amt}</span>
-                  <span className="text-[10px] text-slate-400">per day</span>
-                </button>
-              ))}
-            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {CAMPAIGN_PACKAGES.map((pkg) => {
+                const isSelected = selectedPackageId === pkg.id || selectedPackageId === pkg.alias;
+                return (
+                  <div
+                    key={pkg.id}
+                    onClick={() => setSelectedPackageId(pkg.id)}
+                    className={`relative rounded-2xl p-5 border-2 cursor-pointer transition-all flex flex-col justify-between ${
+                      isSelected
+                        ? 'border-violet-600 bg-violet-600/5 shadow-md shadow-violet-600/10'
+                        : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/40 hover:border-slate-300 dark:hover:border-slate-700'
+                    }`}
+                  >
+                    {pkg.popular && (
+                      <span className="absolute -top-3 right-4 px-2.5 py-0.5 rounded-full bg-violet-600 text-white text-[10px] font-extrabold uppercase tracking-wider shadow-sm">
+                        Most Popular
+                      </span>
+                    )}
 
-            <div className="flex items-center gap-2 mt-2">
-              <span className="text-xs font-medium text-slate-500">Custom Daily Budget:</span>
-              <div className="relative w-40">
-                <span className="absolute left-3 top-2 text-xs font-bold text-slate-400">₹</span>
-                <input
-                  type="number"
-                  min={100}
-                  step={50}
-                  value={dailyBudget}
-                  onChange={(e) => setDailyBudget(Math.max(100, Number(e.target.value)))}
-                  className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 py-1.5 pl-7 pr-3 text-xs font-bold text-slate-900 dark:text-white focus:outline-none"
-                />
-              </div>
-              <span className="text-[11px] text-slate-400">(Min ₹100/day)</span>
-            </div>
-          </div>
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <h3 className="font-extrabold text-sm text-slate-900 dark:text-white">
+                          {pkg.name}
+                        </h3>
+                        <div
+                          className={`h-4 w-4 rounded-full border-2 flex items-center justify-center ${
+                            isSelected
+                              ? 'border-violet-600 bg-violet-600'
+                              : 'border-slate-300 dark:border-slate-600'
+                          }`}
+                        >
+                          {isSelected && <span className="h-1.5 w-1.5 rounded-full bg-white" />}
+                        </div>
+                      </div>
 
-          {/* Duration Days */}
-          <div className="space-y-3">
-            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
-              Campaign Duration
-            </label>
+                      <div>
+                        <div className="flex items-baseline gap-1">
+                          <span className="text-2xl font-black text-slate-900 dark:text-white">
+                            ₹{pkg.price}
+                          </span>
+                          <span className="text-[11px] font-semibold text-slate-400">
+                            total
+                          </span>
+                        </div>
+                        <span className="inline-block mt-0.5 text-xs font-bold text-violet-600 dark:text-violet-400">
+                          {pkg.durationDays} Days Active Run
+                        </span>
+                        <p className="text-[11px] text-slate-500 mt-1 line-clamp-2">
+                          {pkg.tagline}
+                        </p>
+                      </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {[5, 10, 14, 30].map((days) => (
-                <button
-                  key={days}
-                  type="button"
-                  onClick={() => setDurationDays(days)}
-                  className={`p-3 rounded-2xl border-2 text-center transition-all ${
-                    durationDays === days
-                      ? 'border-violet-600 bg-violet-600/10 text-violet-600 dark:text-violet-400 shadow-sm'
-                      : 'border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-slate-300'
-                  }`}
-                >
-                  <span className="block text-base font-extrabold">{days} Days</span>
-                  <span className="text-[10px] text-slate-400">active run</span>
-                </button>
-              ))}
+                      <div className="pt-3 border-t border-slate-100 dark:border-slate-800/80 space-y-1.5">
+                        {pkg.features.map((feat, fIdx) => (
+                          <div key={fIdx} className="flex items-start gap-1.5 text-[11px] text-slate-600 dark:text-slate-400">
+                            <Check className="h-3 w-3 text-emerald-500 shrink-0 mt-0.5" />
+                            <span>{feat}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800/80">
+                      <span className={`block text-center text-xs font-bold py-1.5 rounded-xl transition-all ${
+                        isSelected
+                          ? 'bg-violet-600 text-white'
+                          : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
+                      }`}>
+                        {isSelected ? 'Selected' : 'Select Plan'}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
 
           {/* Schedule Dates */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
             <div>
               <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                Start Date
+                Campaign Start Date
               </label>
               <div className="relative">
                 <Calendar className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
@@ -1448,7 +1560,7 @@ export const CreateAdFlow: React.FC<CreateAdFlowProps> = ({
 
             <div>
               <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                Calculated End Date
+                Calculated End Date ({selectedPackage.durationDays} Days Duration)
               </label>
               <div className="relative">
                 <Calendar className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
@@ -1456,36 +1568,45 @@ export const CreateAdFlow: React.FC<CreateAdFlowProps> = ({
                   type="text"
                   readOnly
                   value={computedEndDate}
-                  className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-900/60 py-2.5 pl-10 pr-3 text-xs text-slate-700 dark:text-slate-300 cursor-not-allowed"
+                  className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-900/60 py-2.5 pl-10 pr-3 text-xs text-slate-700 dark:text-slate-300 cursor-not-allowed font-medium"
                 />
               </div>
             </div>
           </div>
 
-          {/* Total Cost Breakdown Card */}
+          {/* Fixed Price Breakdown Card */}
           <div className="rounded-2xl border border-violet-500/30 bg-violet-500/5 dark:bg-violet-950/20 p-5 space-y-3">
-            <h4 className="font-extrabold text-sm text-slate-900 dark:text-white">
-              Customer Campaign Cost Breakdown
-            </h4>
+            <div className="flex items-center justify-between">
+              <h4 className="font-extrabold text-sm text-slate-900 dark:text-white flex items-center gap-2">
+                <ShieldCheck className="h-4 w-4 text-violet-600 dark:text-violet-400" />
+                <span>Fixed All-Inclusive Package Pricing</span>
+              </h4>
+              <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-[10px] font-bold">
+                No Daily Budget Multiplier
+              </span>
+            </div>
 
             <div className="space-y-1.5 text-xs text-slate-600 dark:text-slate-400">
               <div className="flex justify-between">
-                <span>Daily Advertising Budget:</span>
-                <span className="font-semibold text-slate-900 dark:text-white">₹{dailyBudget} / day</span>
+                <span>Selected Package:</span>
+                <span className="font-bold text-slate-900 dark:text-white">{selectedPackage.name}</span>
               </div>
               <div className="flex justify-between">
-                <span>Duration Period:</span>
-                <span className="font-semibold text-slate-900 dark:text-white">{durationDays} Days</span>
+                <span>Campaign Duration:</span>
+                <span className="font-semibold text-slate-900 dark:text-white">{selectedPackage.durationDays} Days ({startDate} to {computedEndDate})</span>
               </div>
               <div className="flex justify-between">
-                <span>Meta Marketing API Optimization:</span>
-                <span className="font-semibold text-emerald-600 dark:text-emerald-400">Included</span>
+                <span>Targeting & Location Cost:</span>
+                <span className="font-semibold text-emerald-600 dark:text-emerald-400">Included (₹0 additional)</span>
               </div>
               <div className="pt-2 border-t border-violet-500/20 flex justify-between text-sm font-extrabold text-slate-900 dark:text-white">
-                <span>Total Customer Campaign Cost:</span>
-                <span className="text-base text-violet-600 dark:text-violet-400">₹{totalCost.toLocaleString('en-IN')}</span>
+                <span>Final Customer Payable Price:</span>
+                <span className="text-base text-violet-600 dark:text-violet-400">₹{finalPrice.toLocaleString('en-IN')}</span>
               </div>
             </div>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 italic">
+              * The package price remains exactly ₹{finalPrice} across plan selection, review, checkout, and campaign records. Selecting any Indian state or modifying targeting does not change this price.
+            </p>
           </div>
 
           <div className="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-800">
@@ -1504,7 +1625,7 @@ export const CreateAdFlow: React.FC<CreateAdFlowProps> = ({
               disabled={!canProceedStep(5)}
               className="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-6 py-2.5 text-xs sm:text-sm font-semibold text-white shadow-md shadow-violet-600/25 hover:bg-violet-500 active:scale-95 transition-all disabled:opacity-50"
             >
-              <span>Review Campaign</span>
+              <span>Review Campaign & Checkout</span>
               <ArrowRight className="h-4 w-4" />
             </button>
           </div>
@@ -1512,23 +1633,23 @@ export const CreateAdFlow: React.FC<CreateAdFlowProps> = ({
       )}
 
       {/* ======================================================== */}
-      {/* STEP 6: REVIEW SCREEN */}
+      {/* STEP 6: REVIEW SCREEN & WALLET CHECKOUT */}
       {/* ======================================================== */}
       {step === 6 && (
         <div className="rounded-2xl border border-card bg-card p-6 sm:p-8 space-y-6 shadow-sm transition-colors">
           <div>
             <h2 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">
-              Review Campaign Details
+              Review Campaign & Final Checkout
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-              Verify your campaign settings before creating the safe draft campaign.
+              Confirm your creative, targeting, fixed package price, and complete payment via SMAP Wallet.
             </p>
           </div>
 
-          {submitError && (
+          {checkoutError && (
             <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-xs text-red-600 flex items-start gap-2">
               <AlertCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />
-              <span>{submitError}</span>
+              <span>{checkoutError}</span>
             </div>
           )}
 
@@ -1625,98 +1746,157 @@ export const CreateAdFlow: React.FC<CreateAdFlowProps> = ({
               </div>
             </div>
 
-            {/* Box 4: Budget & Wallet */}
+            {/* Box 4: Package & Payable Amount */}
             <div className="rounded-2xl border border-slate-200 dark:border-slate-800 p-4 space-y-2 bg-white dark:bg-slate-900/50">
               <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                Budget & Wallet
+                Selected Package & Balance
               </span>
               <div className="flex justify-between text-xs">
-                <span className="text-slate-500">Daily Budget:</span>
-                <span className="font-semibold text-slate-900 dark:text-white">₹{dailyBudget} / day</span>
+                <span className="text-slate-500">Package Plan:</span>
+                <span className="font-bold text-slate-900 dark:text-white">{selectedPackage.name}</span>
               </div>
               <div className="flex justify-between text-xs">
-                <span className="text-slate-500">Duration:</span>
+                <span className="text-slate-500">Package Duration:</span>
                 <span className="font-semibold text-slate-900 dark:text-white">
                   {durationDays} Days ({startDate} to {computedEndDate})
                 </span>
               </div>
               <div className="flex justify-between text-xs">
-                <span className="text-slate-500">Total Campaign Cost:</span>
-                <span className="font-extrabold text-violet-600 dark:text-violet-400">
-                  ₹{totalCost.toLocaleString('en-IN')}
+                <span className="text-slate-500">Final Payable Amount:</span>
+                <span className="font-black text-violet-600 dark:text-violet-400 text-sm">
+                  ₹{finalPrice.toLocaleString('en-IN')}
                 </span>
               </div>
               <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex justify-between text-xs font-semibold">
                 <span className="text-slate-500 flex items-center gap-1">
                   <Wallet className="h-3.5 w-3.5 text-violet-500" />
-                  SMAP Wallet Balance:
+                  Available SMAP Wallet Balance:
                 </span>
-                <span className="text-slate-900 dark:text-white">₹{walletBalance.toFixed(2)}</span>
+                <span className={`font-bold ${walletBalance >= finalPrice ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}`}>
+                  ₹{walletBalance.toFixed(2)}
+                </span>
               </div>
             </div>
           </div>
 
-          {/* Safety & Non-Spending Banner (Requirement 7 & 11) */}
-          <div className="p-4 rounded-2xl border border-emerald-500/30 bg-emerald-500/5 dark:bg-emerald-950/20 space-y-1.5">
+          {/* Real Meta Advertising Billing Note */}
+          <div className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/40 space-y-1.5">
             <div className="flex items-center gap-2">
-              <ShieldCheck className="h-5 w-5 text-emerald-500" />
-              <h4 className="font-bold text-xs text-emerald-700 dark:text-emerald-400">
-                Safe Draft Mode (Non-Delivering Equivalent)
+              <ShieldCheck className="h-4 w-4 text-violet-600 dark:text-violet-400" />
+              <h4 className="font-bold text-xs text-slate-900 dark:text-white">
+                Meta Advertising Account & Billing Notice
               </h4>
             </div>
             <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-              When you confirm, SMAP will save this campaign in the database and register a strictly <strong>PAUSED</strong> draft in your Meta Ad Account (<code>act_1627260695520511</code>).
-              <strong> No advertising budget will be spent, and your wallet balance will NOT be deducted.</strong>
+              The package price of <strong>₹{finalPrice}</strong> covers SMAP campaign management, audience setup, and Meta Marketing API orchestration. Campaign delivery is orchestrated through SMAP managed delivery assets (Facebook Page: <strong>Sahil Gupta</strong> & Instagram: <strong>@ravi105065</strong>) via connected Ad Account (<code>act_1627260695520511</code>). Meta Developer App is currently in Development Mode (live delivery to public requires Meta App Review for ads_management).
             </p>
           </div>
+
+          {/* Checkout & Payment Action Box */}
+          {walletBalance >= finalPrice ? (
+            /* Sufficient Wallet Balance Flow */
+            <div className="p-4 sm:p-5 rounded-2xl border border-emerald-500/30 bg-emerald-500/5 dark:bg-emerald-950/20 space-y-3">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="h-5 w-5 text-emerald-500 flex-shrink-0" />
+                <div>
+                  <h4 className="font-bold text-xs text-emerald-700 dark:text-emerald-400">
+                    Sufficient SMAP Wallet Balance Available
+                  </h4>
+                  <p className="text-xs text-slate-600 dark:text-slate-400">
+                    Your available balance of <strong>₹{walletBalance.toFixed(2)}</strong> is sufficient to pay the exact fixed package price of <strong>₹{finalPrice}</strong>.
+                  </p>
+                </div>
+              </div>
+            </div>
+          ) : (
+            /* Insufficient Wallet Balance Flow */
+            <div className="p-4 sm:p-5 rounded-2xl border border-amber-500/30 bg-amber-500/5 dark:bg-amber-950/20 space-y-3">
+              <div className="flex items-start gap-2.5">
+                <AlertCircle className="h-5 w-5 text-amber-500 flex-shrink-0 mt-0.5" />
+                <div className="space-y-1">
+                  <h4 className="font-bold text-xs text-amber-700 dark:text-amber-400">
+                    Insufficient SMAP Wallet Balance
+                  </h4>
+                  <p className="text-xs text-slate-600 dark:text-slate-400">
+                    Fixed Package Price: <strong>₹{finalPrice}</strong> • Available Balance: <strong>₹{walletBalance.toFixed(2)}</strong> • Remaining Amount Required: <strong className="text-amber-600 dark:text-amber-400">₹{(finalPrice - walletBalance).toFixed(2)}</strong>.
+                  </p>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                    Add the required funds using Razorpay UPI to complete your campaign order.
+                  </p>
+                </div>
+              </div>
+
+              <div className="pt-2 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowAddFundsModal(true)}
+                  className="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2 text-xs font-bold text-white shadow-md shadow-violet-600/25 hover:bg-violet-500 active:scale-95 transition-all"
+                >
+                  <Plus className="h-4 w-4" />
+                  <span>Add ₹{Math.max(1, Math.ceil(finalPrice - walletBalance))} via Razorpay UPI</span>
+                </button>
+              </div>
+            </div>
+          )}
 
           <div className="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-800">
             <button
               type="button"
               onClick={() => setStep(5)}
-              disabled={isSubmittingDraft}
+              disabled={isPlacingOrder}
               className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-800 px-4 py-2 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-50"
             >
               <ArrowLeft className="h-4 w-4" />
               <span>Back</span>
             </button>
 
-            <button
-              type="button"
-              onClick={handleConfirmCreateDraft}
-              disabled={isSubmittingDraft}
-              className="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-6 py-2.5 text-xs sm:text-sm font-semibold text-white shadow-md shadow-violet-600/25 hover:bg-violet-500 active:scale-95 transition-all disabled:opacity-50"
-            >
-              {isSubmittingDraft ? (
-                <>
-                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                  <span>Registering Draft in Meta...</span>
-                </>
-              ) : (
-                <>
-                  <CheckCircle2 className="h-4 w-4" />
-                  <span>Confirm & Create Draft Campaign</span>
-                </>
-              )}
-            </button>
+            {walletBalance >= finalPrice ? (
+              <button
+                type="button"
+                onClick={handlePlaceOrder}
+                disabled={isPlacingOrder}
+                className="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-6 py-2.5 text-xs sm:text-sm font-semibold text-white shadow-md shadow-violet-600/25 hover:bg-violet-500 active:scale-95 transition-all disabled:opacity-50"
+              >
+                {isPlacingOrder ? (
+                  <>
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                    <span>Deducting Wallet & Activating Meta...</span>
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="h-4 w-4" />
+                    <span>Pay ₹{finalPrice} from Wallet & Place Order</span>
+                  </>
+                )}
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setShowAddFundsModal(true)}
+                className="inline-flex items-center gap-2 rounded-xl bg-amber-600 px-6 py-2.5 text-xs sm:text-sm font-semibold text-white shadow-md shadow-amber-600/25 hover:bg-amber-500 active:scale-95 transition-all"
+              >
+                <Plus className="h-4 w-4" />
+                <span>Add ₹{Math.max(1, Math.ceil(finalPrice - walletBalance))} to Place Order</span>
+              </button>
+            )}
           </div>
         </div>
       )}
 
       {/* ======================================================== */}
-      {/* STEP 7: DRAFT CREATED CONFIRMATION / REPORT VIEW */}
+      {/* STEP 7: ORDER CONFIRMED & META ACTIVATION REPORT VIEW */}
       {/* ======================================================== */}
-      {step === 7 && createdDraftCampaign && (
+      {step === 7 && completedOrder && (
         <div className="rounded-2xl border border-card bg-card p-6 sm:p-8 space-y-6 shadow-sm transition-colors animate-in fade-in zoom-in-95 duration-200">
           <div className="text-center space-y-2 py-4">
             <div className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-500 ring-8 ring-emerald-500/5 mb-1">
               <CheckCircle2 className="h-7 w-7" />
             </div>
             <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">
-              Campaign Draft Created Successfully!
+              Campaign Order Placed Successfully!
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400 max-w-lg mx-auto">
-              Your campaign draft has been registered in the database and synchronized with the Meta Marketing API in a safe, non-delivering paused state.
+              Your fixed package price of ₹{finalPrice} has been deducted from your SMAP Wallet, and your order is confirmed.
             </p>
           </div>
 
@@ -1725,31 +1905,72 @@ export const CreateAdFlow: React.FC<CreateAdFlowProps> = ({
             <div className="p-3.5 flex justify-between items-center">
               <span className="text-slate-500">SMAP Campaign ID</span>
               <span className="font-mono font-bold text-slate-900 dark:text-white">
-                {createdDraftCampaign.id}
+                {completedOrder.campaign?.id}
+              </span>
+            </div>
+
+            <div className="p-3.5 flex justify-between items-center">
+              <span className="text-slate-500">Package & Duration</span>
+              <span className="font-bold text-slate-900 dark:text-white">
+                {selectedPackage.name} • {selectedPackage.durationDays} Days
+              </span>
+            </div>
+
+            <div className="p-3.5 flex justify-between items-center">
+              <span className="text-slate-500">Amount Paid (Wallet Deduction)</span>
+              <span className="font-extrabold text-emerald-600 dark:text-emerald-400">
+                ₹{finalPrice.toFixed(2)} (PAID)
+              </span>
+            </div>
+
+            {completedOrder.walletTransaction?.id && (
+              <div className="p-3.5 flex justify-between items-center">
+                <span className="text-slate-500">Wallet Transaction ID</span>
+                <span className="font-mono text-slate-700 dark:text-slate-300">
+                  {completedOrder.walletTransaction.id}
+                </span>
+              </div>
+            )}
+
+            <div className="p-3.5 flex justify-between items-center">
+              <span className="text-slate-500">Remaining Wallet Balance</span>
+              <span className="font-bold text-slate-900 dark:text-white">
+                ₹{walletBalance.toFixed(2)}
               </span>
             </div>
 
             <div className="p-3.5 flex justify-between items-center">
               <span className="text-slate-500">Meta Campaign ID</span>
               <span className="font-mono font-bold text-violet-600 dark:text-violet-400">
-                {createdDraftCampaign.meta_campaign_id || metaDraftResult?.meta_campaign_id || 'Registered in Draft'}
+                {completedOrder.campaign?.meta_campaign_id || completedOrder.metaResult?.meta_campaign_id || 'Submitted to Meta'}
               </span>
             </div>
 
-            {createdDraftCampaign.meta_adset_id && (
-              <div className="p-3.5 flex justify-between items-center">
-                <span className="text-slate-500">Meta Ad Set ID</span>
-                <span className="font-mono font-bold text-violet-600 dark:text-violet-400">
-                  {createdDraftCampaign.meta_adset_id}
-                </span>
-              </div>
-            )}
-
             <div className="p-3.5 flex justify-between items-center">
               <span className="text-slate-500">Delivery Status</span>
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
-                <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
-                PAUSED (Non-Delivering • ₹0 Spent)
+              <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${
+                completedOrder.campaign?.status === 'ACTIVE'
+                  ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
+                  : completedOrder.campaign?.status === 'UNDER_REVIEW'
+                  ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20'
+                  : completedOrder.campaign?.status === 'FAILED'
+                  ? 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20'
+                  : 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20'
+              }`}>
+                <span className={`h-1.5 w-1.5 rounded-full ${
+                  completedOrder.campaign?.status === 'ACTIVE'
+                    ? 'bg-emerald-500'
+                    : completedOrder.campaign?.status === 'FAILED'
+                    ? 'bg-red-500'
+                    : 'bg-amber-500'
+                }`} />
+                {completedOrder.campaign?.status === 'ACTIVE'
+                  ? 'ACTIVE (Delivering)'
+                  : completedOrder.campaign?.status === 'UNDER_REVIEW'
+                  ? 'UNDER REVIEW (Meta Review Cycle)'
+                  : completedOrder.campaign?.status === 'FAILED'
+                  ? 'FAILED (Meta Configuration / Billing Notice)'
+                  : 'PAYMENT CONFIRMED (Pending Meta Activation)'}
               </span>
             </div>
 
@@ -1759,29 +1980,23 @@ export const CreateAdFlow: React.FC<CreateAdFlowProps> = ({
                 Facebook Page: Sahil Gupta • Instagram: @ravi105065
               </span>
             </div>
-
-            <div className="p-3.5 flex justify-between items-center">
-              <span className="text-slate-500">Wallet Deduction</span>
-              <span className="font-bold text-emerald-600 dark:text-emerald-400">
-                ₹0.00 (Draft mode — No balance deducted)
-              </span>
-            </div>
           </div>
 
           <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 text-[11px] text-slate-500 leading-relaxed space-y-1">
             <div className="flex items-center gap-1.5 font-bold text-slate-700 dark:text-slate-300">
               <Info className="h-3.5 w-3.5 text-violet-500" />
-              <span>Next Stage Readiness:</span>
+              <span>Activation Status Note:</span>
             </div>
             <p>
-              The campaign is safely stored in SMAP with all targeting, placements, and creative assets. Meta objects were created with <code>status: 'PAUSED'</code> ensuring zero delivery and zero spend.
+              {completedOrder.campaign?.meta_status_message ||
+                'Your payment is confirmed and recorded in SMAP. Campaign delivery proceeds according to Meta review standards and ad account billing policies.'}
             </p>
           </div>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
             <button
               type="button"
-              onClick={() => onCampaignCreated(createdDraftCampaign.id)}
+              onClick={() => onCampaignCreated(completedOrder.campaign.id)}
               className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-violet-600 px-6 py-2.5 text-xs sm:text-sm font-semibold text-white shadow-md shadow-violet-600/25 hover:bg-violet-500 active:scale-95 transition-all"
             >
               <span>View in My Campaigns</span>
@@ -1791,8 +2006,7 @@ export const CreateAdFlow: React.FC<CreateAdFlowProps> = ({
             <button
               type="button"
               onClick={() => {
-                setCreatedDraftCampaign(null);
-                setMetaDraftResult(null);
+                setCompletedOrder(null);
                 setStep(1);
               }}
               className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-5 py-2.5 text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all"
@@ -1802,6 +2016,18 @@ export const CreateAdFlow: React.FC<CreateAdFlowProps> = ({
           </div>
         </div>
       )}
+
+      {/* Add Funds Modal */}
+      <AddFundsModal
+        isOpen={showAddFundsModal}
+        onClose={() => setShowAddFundsModal(false)}
+        currentBalance={walletBalance}
+        recommendedAmount={Math.max(1, Math.ceil(finalPrice - walletBalance))}
+        onSuccess={(newBal) => {
+          setWalletBalance(newBal);
+          setShowAddFundsModal(false);
+        }}
+      />
     </div>
   );
 };
