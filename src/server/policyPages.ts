@@ -1,4 +1,4 @@
-export type PolicyKey = 'about' | 'privacy' | 'terms' | 'refund' | 'pricing' | 'contact';
+export type PolicyKey = 'about' | 'privacy' | 'terms' | 'refund' | 'pricing' | 'contact' | 'data-deletion';
 
 interface PageMetadata {
   title: string;
@@ -43,6 +43,12 @@ const META_DATA: Record<PolicyKey, PageMetadata> = {
     description: 'Get in touch with SMAP merchant support operations. Official contact email, customer support telephone, and grievance officer details.',
     heading: 'Contact Us',
     subtitle: 'Customer Support, Merchant Inquiries & Grievance Redressal',
+  },
+  'data-deletion': {
+    title: 'User Data Deletion Instructions - SMAP Advertising',
+    description: 'Clear step-by-step instructions for SMAP Ads users to request deletion of their personal data and disconnect Facebook and Instagram accounts in compliance with Meta Platform Terms and DPDP Act 2023.',
+    heading: 'User Data Deletion Instructions',
+    subtitle: 'Meta Platform Compliance & User Privacy Rights (DPDP Act 2023)',
   },
 };
 
@@ -353,6 +359,119 @@ export function renderPolicyHtml(key: PolicyKey): string {
         </div>
       </section>
     `;
+  } else if (key === 'data-deletion') {
+    bodyContent = `
+      <section class="space-y-6">
+        <div>
+          <h2 class="text-xl font-bold text-slate-900 mb-2">1. Overview & Commitment to Data Privacy</h2>
+          <p class="text-slate-600 leading-relaxed text-sm">
+            At <strong>SMAP (Sahil Marketing Ads Powerful)</strong>, we respect your data privacy and are committed to full compliance with Meta’s Platform Terms, Developer Data Use Policies, and India's <strong>Digital Personal Data Protection (DPDP) Act, 2023</strong>.
+          </p>
+          <p class="text-slate-600 leading-relaxed text-sm mt-2">
+            If you have connected your Facebook Page, Instagram Professional Account, or Meta Ad Account with SMAP, or created an account with us, this page provides transparent, step-by-step instructions on how you can request the deletion of your personal data and disconnect your Meta business assets.
+          </p>
+        </div>
+
+        <div>
+          <h2 class="text-xl font-bold text-slate-900 mb-2">2. What Data SMAP Stores</h2>
+          <p class="text-slate-600 leading-relaxed text-sm mb-2">
+            When you use SMAP, we only store information strictly necessary to manage your advertising campaigns:
+          </p>
+          <ul class="list-disc pl-5 text-sm text-slate-600 space-y-1.5">
+            <li><strong>User Profile Identifiers:</strong> Name, registered email address, and Google OAuth profile identifier.</li>
+            <li><strong>Connected Meta Assets:</strong> Authorized OAuth access tokens, connected Facebook Page IDs, Instagram professional account IDs, and Meta Ad Account IDs.</li>
+            <li><strong>Campaign Assets & History:</strong> Ad headlines, body copy, media URLs (images/videos uploaded for your ads), target demographics, and duration preferences.</li>
+            <li><strong>Payment Logs:</strong> Razorpay order IDs, transaction amounts, timestamps, and 12-digit UPI UTR references.</li>
+          </ul>
+        </div>
+
+        <div>
+          <h2 class="text-xl font-bold text-slate-900 mb-2">3. How to Request Deletion of Your Data</h2>
+          <p class="text-slate-600 leading-relaxed text-sm mb-3">
+            You can request full deletion of your personal data and stored Meta connection credentials using any of the following verified methods:
+          </p>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+            <div class="p-4 rounded-xl border border-purple-200 bg-purple-50/50 space-y-2">
+              <span class="block text-xs font-bold uppercase tracking-wider text-purple-700">Method 1: Email Request (Direct Support)</span>
+              <p class="text-slate-700 text-xs leading-relaxed">
+                Send an email from the email address registered with your SMAP account to our dedicated support inbox:
+              </p>
+              <div class="p-2 rounded-lg bg-white border border-purple-100">
+                <span class="block text-xs text-slate-500 font-medium">To:</span>
+                <a href="mailto:sahilking17341734@gmail.com" class="font-bold text-purple-600 text-sm hover:underline">sahilking17341734@gmail.com</a>
+                <span class="block text-xs text-slate-400 mt-1">Alternate: support@smap.in</span>
+              </div>
+              <div class="text-xs text-slate-600 space-y-1">
+                <p><strong>Subject line:</strong> <code class="bg-purple-100 px-1 py-0.5 rounded text-purple-900 font-mono">SMAP Data Deletion Request</code></p>
+                <p><strong>Details to include:</strong></p>
+                <ul class="list-disc pl-4 text-slate-600 space-y-0.5">
+                  <li>Your full name as registered on SMAP</li>
+                  <li>Your registered Google/SMAP email address</li>
+                  <li>Name of connected Facebook Page or Instagram handle (if applicable)</li>
+                </ul>
+              </div>
+            </div>
+
+            <div class="p-4 rounded-xl border border-slate-200 bg-slate-50 space-y-2">
+              <span class="block text-xs font-bold uppercase tracking-wider text-slate-700">Method 2: In-Dashboard Grievance Ticket</span>
+              <p class="text-slate-700 text-xs leading-relaxed">
+                If you are currently signed in to SMAP:
+              </p>
+              <ol class="list-decimal pl-4 text-xs text-slate-600 space-y-1">
+                <li>Navigate to your SMAP Customer Dashboard.</li>
+                <li>Click the <strong>Support & Grievances</strong> tab from the sidebar.</li>
+                <li>Click <strong>New Support Ticket</strong>.</li>
+                <li>Set subject as <span class="font-medium">"Request for Account & Data Deletion"</span> and submit.</li>
+              </ol>
+              <p class="text-xs text-slate-500 mt-2">
+                A unique tracking ticket will be generated and confirmed in your dashboard immediately.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <h2 class="text-xl font-bold text-slate-900 mb-2">4. How to Disconnect SMAP from Your Facebook & Instagram Account (Self-Service)</h2>
+          <p class="text-slate-600 leading-relaxed text-sm mb-3">
+            You can revoke SMAP’s access to your Facebook and Instagram business assets immediately at any time through your Meta account settings without contacting support:
+          </p>
+          <div class="p-4 rounded-xl border border-slate-200 bg-slate-50 text-xs text-slate-700 space-y-2">
+            <ol class="list-decimal pl-5 space-y-2">
+              <li>Log in to your Facebook account and click your profile picture in the top-right corner.</li>
+              <li>Select <strong>Settings & Privacy</strong>, then click <strong>Settings</strong>.</li>
+              <li>In the left sidebar menu, scroll down to <strong>Your information and permissions</strong> and click <strong>Apps and Websites</strong>.</li>
+              <li>Find <strong>SMAP</strong> (or the SMAP advertising application) in your list of active apps.</li>
+              <li>Click the <strong>Remove</strong> button next to SMAP and confirm your choice.</li>
+            </ol>
+            <p class="text-slate-500 pt-1">
+              <em>Note: Removing SMAP through Facebook immediately revokes all active OAuth tokens, preventing SMAP from accessing your Meta account or Pages.</em>
+            </p>
+          </div>
+        </div>
+
+        <div>
+          <h2 class="text-xl font-bold text-slate-900 mb-2">5. Verification, Processing Timeline & Legal Exceptions</h2>
+          <div class="p-4 rounded-xl border border-amber-200 bg-amber-50/60 text-xs text-slate-700 space-y-2 leading-relaxed">
+            <p><strong>Manual Ownership Verification:</strong> To protect your campaigns from unauthorized or fraudulent deletion, data deletion requests are manually verified by our compliance team before processing.</p>
+            <p><strong>Processing Window:</strong> Once account ownership is verified, all personal details, stored Meta access tokens, uploaded creative media, and campaign draft configurations will be permanently deleted or irreversibly anonymized from our production databases within <strong>30 calendar days</strong>.</p>
+            <p><strong>Statutory Legal Retention Requirements:</strong> Under applicable Indian financial, taxation, and e-commerce laws (including the Information Technology Act, 2000, Goods and Services Tax regulations, and Reserve Bank of India payment aggregator guidelines), transaction records of completed UPI payments (such as transaction timestamps, amounts, and Razorpay 12-digit UTR identifiers) must be retained for the minimum statutory period for accounting and auditing purposes. These records cannot be deleted prior to the expiration of that legally mandated retention period.</p>
+            <p><strong>Confirmation:</strong> Once your data has been purged, you will receive an official confirmation email from <span class="font-semibold text-purple-700">sahilking17341734@gmail.com</span>.</p>
+          </div>
+        </div>
+
+        <div>
+          <h2 class="text-xl font-bold text-slate-900 mb-2">6. Grievance Redressal & Compliance Contact</h2>
+          <div class="p-4 rounded-xl border border-purple-200 bg-purple-50/40 text-xs text-slate-700 space-y-1">
+            <p><strong>Grievance Officer:</strong> Sahil Gupta</p>
+            <p><strong>Operating Entity:</strong> SMAP (Sahil Marketing Ads Powerful)</p>
+            <p><strong>Official Email:</strong> <a href="mailto:sahilking17341734@gmail.com" class="text-purple-600 font-bold hover:underline">sahilking17341734@gmail.com</a></p>
+            <p><strong>Helpline Phone:</strong> +91 98765 43210 (Mon–Sat, 9:00 AM – 7:00 PM IST)</p>
+            <p><strong>Postal Address:</strong> Operational Headquarters, New Delhi, Delhi, India - 110001</p>
+          </div>
+        </div>
+      </section>
+    `;
   }
 
   return `<!doctype html>
@@ -446,6 +565,7 @@ export function renderPolicyHtml(key: PolicyKey): string {
             <li><a href="/terms" class="hover:text-purple-600">Terms & Conditions</a></li>
             <li><a href="/privacy" class="hover:text-purple-600">Privacy Policy</a></li>
             <li><a href="/refund" class="hover:text-purple-600">Refund & Cancellation</a></li>
+            <li><a href="/data-deletion" class="hover:text-purple-600 ${key === 'data-deletion' ? 'text-purple-600 font-bold' : ''}">Data Deletion Instructions</a></li>
             <li><a href="/contact" class="hover:text-purple-600">Grievance Officer</a></li>
           </ul>
         </div>
@@ -467,3 +587,55 @@ export function renderPolicyHtml(key: PolicyKey): string {
 </body>
 </html>`;
 }
+
+/**
+ * Registers all publicly accessible legal & compliance routes directly on Express.
+ * Returns semantic, readable HTML with HTTP 200 for Meta App Review, Razorpay verification,
+ * search engines, and compliance audits prior to any SPA fallback middleware.
+ */
+export function registerPolicyRoutes(app: any): void {
+  app.get(['/about', '/about/', '/about-us', '/about-us/'], (_req: any, res: any) => {
+    res.status(200).type('html').send(renderPolicyHtml('about'));
+  });
+
+  app.get(['/contact', '/contact/', '/contact-us', '/contact-us/'], (_req: any, res: any) => {
+    res.status(200).type('html').send(renderPolicyHtml('contact'));
+  });
+
+  app.get(['/privacy', '/privacy/', '/privacy-policy', '/privacy-policy/'], (_req: any, res: any) => {
+    res.status(200).type('html').send(renderPolicyHtml('privacy'));
+  });
+
+  app.get(['/terms', '/terms/', '/terms-and-conditions', '/terms-and-conditions/', '/terms-of-service', '/terms-of-service/'], (_req: any, res: any) => {
+    res.status(200).type('html').send(renderPolicyHtml('terms'));
+  });
+
+  app.get(['/refund', '/refund/', '/refund-policy', '/refund-policy/', '/cancellation-policy', '/cancellation-policy/'], (_req: any, res: any) => {
+    res.status(200).type('html').send(renderPolicyHtml('refund'));
+  });
+
+  app.get(
+    [
+      '/data-deletion',
+      '/data-deletion/',
+      '/data-deletion-instructions',
+      '/data-deletion-instructions/',
+      '/data-deletion-request',
+      '/data-deletion-request/',
+      '/data_deletion',
+      '/data_deletion/',
+      '/deletion',
+      '/deletion/',
+      '/api/data-deletion',
+      '/api/meta/data-deletion',
+    ],
+    (_req: any, res: any) => {
+      res.status(200).type('html').send(renderPolicyHtml('data-deletion'));
+    }
+  );
+
+  app.get(['/pricing', '/pricing/', '/packages', '/packages/', '/plans', '/plans/'], (_req: any, res: any) => {
+    res.status(200).type('html').send(renderPolicyHtml('pricing'));
+  });
+}
+

@@ -64,8 +64,9 @@ async function run() {
   }
 
   for (const user of targetUsers) {
+    const currentBalance = user.wallet_balance ?? 0;
     console.log(`👤 Customer: ${user.name} (${user.email}) [ID: ${user.id}]`);
-    console.log(`   Current Database Balance: ₹${user.wallet_balance.toFixed(2)}`);
+    console.log(`   Current Database Balance: ₹${currentBalance.toFixed(2)}`);
 
     const payments = db.findPaymentsByUserId(user.id).filter(p => p.status === 'PAID');
     const totalDeposited = payments.reduce((sum, p) => sum + (p.amount || 0), 0);
@@ -80,7 +81,7 @@ async function run() {
     console.log(`   Legitimate Campaign Spend: ₹${totalSpent.toFixed(2)} (${debits.length} campaigns)`);
 
     const legitimateBalance = Math.max(0, totalDeposited - totalSpent);
-    const discrepancy = Number((legitimateBalance - user.wallet_balance).toFixed(2));
+    const discrepancy = Number((legitimateBalance - currentBalance).toFixed(2));
 
     console.log(`   Legitimate Verified Balance: ₹${legitimateBalance.toFixed(2)}`);
     console.log(`   Discrepancy: ${discrepancy > 0 ? `+₹${discrepancy.toFixed(2)} missing` : discrepancy < 0 ? `-₹${Math.abs(discrepancy).toFixed(2)} excess` : '₹0.00 (Balanced)'}`);

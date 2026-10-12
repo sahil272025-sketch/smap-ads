@@ -142,6 +142,15 @@ export const Footer: React.FC<FooterProps> = ({ onOpenLegal, onNavigate }) => {
               </li>
               <li>
                 <a
+                  href="/data-deletion"
+                  onClick={(e) => { e.preventDefault(); onNavigate('data-deletion'); }}
+                  className="hover:text-purple-600 dark:hover:text-purple-400 transition-colors"
+                >
+                  Data Deletion Instructions
+                </a>
+              </li>
+              <li>
+                <a
                   href="/contact"
                   onClick={(e) => { e.preventDefault(); onNavigate('contact'); }}
                   className="hover:text-purple-600 dark:hover:text-purple-400 transition-colors"

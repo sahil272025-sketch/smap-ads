@@ -5,7 +5,7 @@ import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
 import { apiRouter, handleGoogleOAuthCallback } from './src/server/routes.js';
 import { SchedulerService } from './src/server/schedulerService.js';
-import { renderPolicyHtml } from './src/server/policyPages.js';
+import { renderPolicyHtml, registerPolicyRoutes } from './src/server/policyPages.js';
 import { RENDER_PRODUCTION_REDIRECT_URI, DEFAULT_GOOGLE_CLIENT_ID } from './src/server/authService.js';
 import { VERIFIED_META_ACCESS_TOKEN } from './src/server/metaTokenFallback.js';
 
@@ -76,31 +76,9 @@ app.all(['/api/auth/google/callback', '/api/auth/google/callback/', '/auth/googl
 // API routes
 app.use('/api', apiRouter);
 
-// Publicly accessible legal & compliance pages (About, Privacy, Terms, Refund, Pricing, Contact)
-// Directly returns semantic, readable HTML with HTTP 200 for Razorpay verification & external crawlers
-app.get(['/about', '/about-us'], (_req, res) => {
-  res.status(200).type('html').send(renderPolicyHtml('about'));
-});
-
-app.get(['/contact', '/contact-us'], (_req, res) => {
-  res.status(200).type('html').send(renderPolicyHtml('contact'));
-});
-
-app.get(['/privacy', '/privacy-policy'], (_req, res) => {
-  res.status(200).type('html').send(renderPolicyHtml('privacy'));
-});
-
-app.get(['/terms', '/terms-and-conditions', '/terms-of-service'], (_req, res) => {
-  res.status(200).type('html').send(renderPolicyHtml('terms'));
-});
-
-app.get(['/refund', '/refund-policy', '/cancellation-policy'], (_req, res) => {
-  res.status(200).type('html').send(renderPolicyHtml('refund'));
-});
-
-app.get(['/pricing', '/packages', '/plans'], (_req, res) => {
-  res.status(200).type('html').send(renderPolicyHtml('pricing'));
-});
+// Publicly accessible legal & compliance pages (About, Privacy, Terms, Refund, Data Deletion, Pricing, Contact)
+// Directly returns semantic, readable HTML with HTTP 200 for Meta App Review, Razorpay verification & external crawlers
+registerPolicyRoutes(app);
 
 // Explicit robots.txt allowing all web crawlers & verifiers (Razorpay, Googlebot, etc.)
 app.get('/robots.txt', (_req, res) => {

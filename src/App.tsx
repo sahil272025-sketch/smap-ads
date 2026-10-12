@@ -34,19 +34,39 @@ import { ArrowRight, User as UserIcon } from 'lucide-react';
 
 const getInitialTabFromLocation = (): string => {
   try {
-    const path = window.location.pathname.toLowerCase().replace(/\/$/, '');
+    const path = window.location.pathname.toLowerCase().replace(/\/+$/, '');
     if (path === '/about' || path === '/about-us') return 'about';
     if (path === '/contact' || path === '/contact-us') return 'contact';
     if (path === '/privacy' || path === '/privacy-policy') return 'privacy';
     if (path === '/terms' || path === '/terms-and-conditions' || path === '/terms-of-service') return 'terms';
     if (path === '/refund' || path === '/refund-policy' || path === '/cancellation-policy') return 'refund';
     if (path === '/pricing' || path === '/packages' || path === '/plans') return 'pricing';
+    if (
+      path === '/data-deletion' ||
+      path === '/data-deletion-instructions' ||
+      path === '/data-deletion-request' ||
+      path === '/data_deletion' ||
+      path === '/deletion' ||
+      path === '/api/data-deletion'
+    ) {
+      return 'data-deletion';
+    }
     if (path === '/how-it-works') return 'how-it-works';
     if (path === '/features') return 'features';
 
     const params = new URLSearchParams(window.location.search);
     const tabParam = params.get('tab');
-    if (tabParam) return tabParam;
+    if (tabParam) {
+      if (
+        tabParam === 'data-deletion' ||
+        tabParam === 'data-deletion-instructions' ||
+        tabParam === 'data_deletion' ||
+        tabParam === 'deletion'
+      ) {
+        return 'data-deletion';
+      }
+      return tabParam;
+    }
   } catch {
     // ignore
   }
@@ -64,6 +84,16 @@ const MainAppContent: React.FC = () => {
   const [initialPackageForAd, setInitialPackageForAd] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
 
+  // Support browser Back/Forward navigation
+  useEffect(() => {
+    const handlePopState = () => {
+      const tab = getInitialTabFromLocation();
+      setCurrentTab(tab);
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
   // Check URL query parameters (e.g. from Google OAuth redirects)
   useEffect(() => {
     try {
@@ -78,7 +108,16 @@ const MainAppContent: React.FC = () => {
       }
 
       if (tabParam) {
-        setCurrentTab(tabParam);
+        if (
+          tabParam === 'data-deletion' ||
+          tabParam === 'data-deletion-instructions' ||
+          tabParam === 'data_deletion' ||
+          tabParam === 'deletion'
+        ) {
+          setCurrentTab('data-deletion');
+        } else {
+          setCurrentTab(tabParam);
+        }
       } else if (user && currentTab === 'home') {
         setCurrentTab('dashboard');
       }
@@ -366,6 +405,11 @@ const MainAppContent: React.FC = () => {
             {/* PUBLIC TAB: CONTACT */}
             {currentTab === 'contact' && (
               <PolicyPage type="contact" onNavigate={setCurrentTab} onOpenAuth={openAuth} />
+            )}
+
+            {/* PUBLIC TAB: DATA DELETION INSTRUCTIONS */}
+            {currentTab === 'data-deletion' && (
+              <PolicyPage type="data-deletion" onNavigate={setCurrentTab} onOpenAuth={openAuth} />
             )}
 
             {/* Protected Tab accessed while unauthenticated */}

@@ -1,7 +1,7 @@
 import React from 'react';
-import { ArrowLeft, Shield, Mail, Phone, MapPin, CheckCircle2, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Shield, Mail, Phone, MapPin, CheckCircle2, AlertCircle, Trash2, ExternalLink } from 'lucide-react';
 
-export type PolicyType = 'about' | 'privacy' | 'terms' | 'refund' | 'pricing' | 'contact';
+export type PolicyType = 'about' | 'privacy' | 'terms' | 'refund' | 'pricing' | 'contact' | 'data-deletion';
 
 interface PolicyPageProps {
   type: PolicyType;
@@ -439,6 +439,166 @@ export const PolicyPage: React.FC<PolicyPageProps> = ({ type, onNavigate, onOpen
 
               <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-[#0E1424] p-4 text-xs text-slate-500 dark:text-slate-400">
                 <strong>Delivery & Payment Policy:</strong> All packages are delivered digitally upon verified UPI payment through Razorpay. You can pay with Google Pay, PhonePe, Paytm, BHIM, or any UPI app. No recurring credit card charges.
+              </div>
+            </div>
+          )}
+
+          {/* ===================== DATA DELETION INSTRUCTIONS ===================== */}
+          {type === 'data-deletion' && (
+            <div className="space-y-6">
+              <div className="border-b border-slate-200 dark:border-slate-800 pb-5">
+                <span className="text-xs font-bold uppercase tracking-wider text-purple-600 dark:text-purple-400 flex items-center gap-1.5">
+                  <Shield className="h-3.5 w-3.5" />
+                  Meta Platform Compliance & User Privacy Rights
+                </span>
+                <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white mt-1">
+                  User Data Deletion Instructions
+                </h1>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                  Step-by-step instructions on requesting deletion of your personal data and revoking Meta permissions
+                </p>
+              </div>
+
+              <section className="space-y-5 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
+                <div>
+                  <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-2">
+                    1. Overview & Commitment to Privacy
+                  </h2>
+                  <p>
+                    <strong>SMAP (Sahil Marketing Ads Powerful)</strong> respects the privacy of our advertisers and platform users. In accordance with Meta Platform Terms, Developer Data Use Policies, and the <strong>Digital Personal Data Protection (DPDP) Act, 2023</strong> of India, you have full authority to request deletion of your stored account data and disconnect all Facebook and Instagram assets from SMAP.
+                  </p>
+                </div>
+
+                <div>
+                  <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-2">
+                    2. Data Stored by SMAP
+                  </h2>
+                  <p className="mb-2 text-xs sm:text-sm">
+                    SMAP only retains data required to operate your digital ad campaigns:
+                  </p>
+                  <ul className="list-disc pl-5 space-y-1.5 text-xs sm:text-sm">
+                    <li><strong>Account Profile Information:</strong> Name, registered email address, and Google OAuth identifier.</li>
+                    <li><strong>Connected Meta Assets:</strong> Authorized OAuth access tokens, connected Facebook Page IDs, Instagram professional account IDs, and Meta Ad Account IDs.</li>
+                    <li><strong>Campaign Creative Data:</strong> Ad headlines, body copy, creative media URLs, and audience targeting settings.</li>
+                    <li><strong>Payment Records:</strong> Razorpay order IDs, UPI transaction reference (UTR) numbers, and billing amounts.</li>
+                  </ul>
+                </div>
+
+                <div>
+                  <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-3">
+                    3. How to Request Data Deletion from SMAP
+                  </h2>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="p-4 rounded-xl border border-purple-200 dark:border-purple-800/60 bg-purple-50/60 dark:bg-purple-950/20 space-y-2.5">
+                      <div className="flex items-center gap-2 text-purple-700 dark:text-purple-300 font-bold text-xs uppercase tracking-wider">
+                        <Mail className="h-4 w-4" />
+                        Method 1: Direct Email Request
+                      </div>
+                      <p className="text-xs text-slate-700 dark:text-slate-300">
+                        Send an email from your registered SMAP email address to:
+                      </p>
+                      <div className="p-2.5 rounded-lg bg-white dark:bg-[#070B14] border border-purple-200 dark:border-purple-900/50">
+                        <a href="mailto:sahilking17341734@gmail.com" className="font-bold text-purple-600 dark:text-purple-400 text-xs sm:text-sm hover:underline block">
+                          sahilking17341734@gmail.com
+                        </a>
+                        <span className="text-[11px] text-slate-400">Alternate: support@smap.in</span>
+                      </div>
+                      <div className="text-xs text-slate-600 dark:text-slate-400 space-y-1">
+                        <p><strong>Subject:</strong> <code className="bg-purple-100 dark:bg-purple-900/40 px-1 py-0.5 rounded text-purple-800 dark:text-purple-200 font-mono text-[11px]">SMAP Data Deletion Request</code></p>
+                        <p className="text-[11px]">Include your full name, registered email address, and connected Facebook Page name / Instagram handle.</p>
+                      </div>
+                    </div>
+
+                    <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#0E1526] space-y-2.5">
+                      <div className="flex items-center gap-2 text-slate-900 dark:text-white font-bold text-xs uppercase tracking-wider">
+                        <Shield className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                        Method 2: Support Ticket in Dashboard
+                      </div>
+                      <p className="text-xs text-slate-700 dark:text-slate-300">
+                        Logged-in users can initiate a deletion ticket directly:
+                      </p>
+                      <ol className="list-decimal pl-4 text-xs text-slate-600 dark:text-slate-400 space-y-1">
+                        <li>Navigate to your Customer Dashboard.</li>
+                        <li>Click <strong>Support & Grievances</strong> in the sidebar.</li>
+                        <li>Submit a ticket with subject <span className="font-medium text-slate-800 dark:text-slate-200">"Data & Account Deletion"</span>.</li>
+                      </ol>
+                      <p className="text-[11px] text-slate-500 pt-1">
+                        A unique tracking ticket will be registered with 24-hour acknowledgement.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-2">
+                    4. How to Disconnect SMAP from Your Facebook & Instagram Account Directly
+                  </h2>
+                  <p className="mb-3 text-xs sm:text-sm">
+                    You do not have to wait for support to disconnect SMAP. You can immediately revoke all app access tokens from your Facebook profile:
+                  </p>
+                  <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#0E1526] text-xs space-y-2">
+                    <ol className="list-decimal pl-4 space-y-1.5 text-slate-700 dark:text-slate-300">
+                      <li>Log in to Facebook on web or mobile and click your profile picture.</li>
+                      <li>Go to <strong>Settings & privacy</strong> &gt; <strong>Settings</strong>.</li>
+                      <li>In the left sidebar, navigate to <strong>Apps and Websites</strong>.</li>
+                      <li>Locate <strong>SMAP</strong> in your active application list.</li>
+                      <li>Click <strong>Remove</strong> and confirm removal.</li>
+                    </ol>
+                    <p className="text-[11px] text-slate-500 pt-1">
+                      <em>Note: This immediately revokes OAuth authorization tokens, terminating SMAP's access to your Facebook Pages and Instagram accounts.</em>
+                    </p>
+                  </div>
+                </div>
+
+                <div>
+                  <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-2">
+                    5. Manual Verification & Processing Timeline
+                  </h2>
+                  <div className="p-4 rounded-xl border border-amber-200 dark:border-amber-800/60 bg-amber-50/50 dark:bg-amber-950/20 text-xs space-y-2 text-slate-700 dark:text-slate-300">
+                    <p>
+                      <strong>Identity Verification:</strong> To prevent accidental or malicious destruction of active marketing campaigns, all requests are verified by our operations staff before deletion is executed.
+                    </p>
+                    <p>
+                      <strong>Timeline:</strong> Verified account data, stored tokens, uploaded creative media, and campaign setups are permanently deleted or irreversibly anonymized within <strong>30 calendar days</strong>.
+                    </p>
+                    <p>
+                      <strong>Statutory Legal Retention:</strong> Under Indian tax regulations, Goods and Services Tax (GST) laws, and RBI payment aggregator requirements, financial transaction records of completed UPI payments must be retained for the minimum statutory accounting period and cannot be destroyed early.
+                    </p>
+                    <p>
+                      <strong>Confirmation:</strong> An official confirmation email will be dispatched to your registered address upon completion of data purging.
+                    </p>
+                  </div>
+                </div>
+
+                <div>
+                  <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-2">
+                    6. Grievance Officer & Contact Information
+                  </h2>
+                  <div className="p-4 rounded-xl border border-purple-200 dark:border-purple-800/60 bg-purple-50/40 dark:bg-purple-950/20 text-xs text-slate-700 dark:text-slate-300 space-y-1">
+                    <p><strong>Grievance Officer:</strong> Sahil Gupta</p>
+                    <p><strong>Operating Entity:</strong> SMAP (Sahil Marketing Ads Powerful)</p>
+                    <p><strong>Official Email:</strong> <a href="mailto:sahilking17341734@gmail.com" className="text-purple-600 dark:text-purple-400 font-bold hover:underline">sahilking17341734@gmail.com</a></p>
+                    <p><strong>Helpline Phone:</strong> +91 98765 43210 (Mon–Sat, 9:00 AM – 7:00 PM IST)</p>
+                    <p><strong>Headquarters:</strong> New Delhi, Delhi, India - 110001</p>
+                  </div>
+                </div>
+              </section>
+
+              <div className="pt-6 border-t border-slate-200 dark:border-slate-800 flex flex-wrap gap-4">
+                <a
+                  href="mailto:sahilking17341734@gmail.com?subject=SMAP%20Data%20Deletion%20Request"
+                  className="rounded-xl bg-purple-600 px-6 py-2.5 text-xs font-semibold text-white hover:bg-purple-500 shadow-md shadow-purple-600/25 inline-flex items-center gap-2"
+                >
+                  <Mail className="h-4 w-4" />
+                  Email Deletion Request
+                </a>
+                <button
+                  onClick={() => onNavigate('contact')}
+                  className="rounded-xl border border-slate-300 dark:border-slate-700 px-6 py-2.5 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+                >
+                  Contact Support Team
+                </button>
               </div>
             </div>
           )}

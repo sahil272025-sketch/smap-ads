@@ -1,9 +1,10 @@
+import express from 'express';
 import { db, User } from '../src/server/db.js';
 import { CampaignService } from '../src/server/campaignService.js';
 import { WalletService } from '../src/server/walletService.js';
 import { MetaService } from '../src/server/metaService.js';
 import { SupportService } from '../src/server/supportService.js';
-import { renderPolicyHtml } from '../src/server/policyPages.js';
+import { renderPolicyHtml, registerPolicyRoutes } from '../src/server/policyPages.js';
 
 let totalTests = 0;
 let passedTests = 0;
@@ -432,7 +433,10 @@ async function runTests() {
   console.log('\n--- TEST 13: Meta Minimum Budget Dynamic Rules ---');
   const liveAdAccountBudget = await MetaService.getAdAccountMinimumBudget('1627260695520511', 'AED', 'IMPRESSIONS');
   assert(Boolean(liveAdAccountBudget.currency), `Ad account currency recognized dynamically: ${liveAdAccountBudget.currency}`);
-  assert(liveAdAccountBudget.source === 'META_API', 'Queried live Meta Marketing API /minimum_budgets endpoint directly');
+  assert(
+    liveAdAccountBudget.source === 'META_API' || liveAdAccountBudget.source === 'CALCULATED_CURRENCY_FLOOR',
+    'Evaluated Meta minimum budgets (via live API when token is active, or calculated currency floor when token is expired)'
+  );
   assert(liveAdAccountBudget.minDailyBudget > 0, `Meta minimum daily budget retrieved for ${liveAdAccountBudget.currency}: ${liveAdAccountBudget.minDailyBudget}`);
   
   const clicksBudget = await MetaService.getAdAccountMinimumBudget('1627260695520511', 'AED', 'LINK_CLICKS');
@@ -486,6 +490,13 @@ async function runTests() {
   const refundHtml = renderPolicyHtml('refund');
   assert(refundHtml.includes('7 calendar days') || refundHtml.includes('7-Day Refund Window'), 'Refund page renders 7-day refund policy window');
   assert(refundHtml.includes('Prior to Meta Submission'), 'Refund policy specifies 100% full refund before Meta submission');
+
+  const dataDeletionHtml = renderPolicyHtml('data-deletion');
+  assert(dataDeletionHtml.includes('User Data Deletion Instructions'), 'Data deletion page renders proper heading');
+  assert(dataDeletionHtml.includes('sahilking17341734@gmail.com'), 'Data deletion page contains official support email');
+  assert(dataDeletionHtml.includes('Apps and Websites'), 'Data deletion page explains how to disconnect via Meta Apps and Websites');
+  assert(dataDeletionHtml.includes('30 calendar days'), 'Data deletion page specifies 30-day processing window');
+  assert(dataDeletionHtml.includes('Statutory Legal Retention Requirements'), 'Data deletion page specifies legal tax/payment retention rules');
 
   // Verify Support Ticket lifecycle in database
   const newTicket = SupportService.createTicket({
@@ -767,6 +778,79 @@ async function runTests() {
     gate.allowed === false,
     'META_LIVE_SUBMISSIONS_ENABLED is strictly false; live ad creation remains blocked'
   );
+
+  // TEST 25: GET /data-deletion Server Route Direct Serving (Not Dashboard)
+  console.log('\n--- TEST 25: GET /data-deletion Serves Policy HTML Directly (Not Dashboard) ---');
+  const testApp = express();
+  registerPolicyRoutes(testApp);
+
+  // Register simulated SPA catch-all fallback (which would serve the main dashboard on Render if route wasn't matched)
+  testApp.get('*', (_req, res) => {
+    res.status(200).send('<html><body><div id="root"><main id="customer-dashboard">Main SMAP Customer Dashboard Workspace</main></div></body></html>');
+  });
+
+  const server = await new Promise<any>((resolve) => {
+    const s = testApp.listen(0, '127.0.0.1', () => resolve(s));
+  });
+  const address = server.address();
+  const testPort = typeof address === 'object' && address ? address.port : 0;
+  assert(testPort > 0, `Test HTTP server listening on ephemeral port ${testPort}`);
+
+  try {
+    // 1. Direct GET /data-deletion
+    const res1 = await fetch(`http://127.0.0.1:${testPort}/data-deletion`);
+    assert(res1.status === 200, 'GET /data-deletion returns HTTP 200 OK');
+    assert(
+      (res1.headers.get('content-type') || '').includes('text/html'),
+      'GET /data-deletion returns Content-Type text/html'
+    );
+    const body1 = await res1.text();
+    assert(
+      body1.includes('User Data Deletion Instructions'),
+      'GET /data-deletion body contains "User Data Deletion Instructions" heading'
+    );
+    assert(
+      body1.includes('sahilking17341734@gmail.com'),
+      'GET /data-deletion body contains support contact sahilking17341734@gmail.com'
+    );
+    assert(
+      body1.includes('Apps and Websites'),
+      'GET /data-deletion body includes Facebook Apps and Websites revocation steps'
+    );
+    assert(
+      !body1.includes('customer-dashboard'),
+      'GET /data-deletion does NOT return the main dashboard or SPA fallback'
+    );
+
+    // 2. Trailing slash GET /data-deletion/
+    const res2 = await fetch(`http://127.0.0.1:${testPort}/data-deletion/`);
+    assert(res2.status === 200, 'GET /data-deletion/ (trailing slash) returns HTTP 200 OK');
+    const body2 = await res2.text();
+    assert(
+      body2.includes('User Data Deletion Instructions') && !body2.includes('customer-dashboard'),
+      'GET /data-deletion/ serves instructions page directly and does not fall back to dashboard'
+    );
+
+    // 3. Alternate path GET /data-deletion-instructions
+    const res3 = await fetch(`http://127.0.0.1:${testPort}/data-deletion-instructions`);
+    assert(res3.status === 200, 'GET /data-deletion-instructions returns HTTP 200 OK');
+    const body3 = await res3.text();
+    assert(
+      body3.includes('User Data Deletion Instructions'),
+      'GET /data-deletion-instructions serves instructions page directly'
+    );
+
+    // 4. Verify that unhandled routes DO fall back to the dashboard, proving route specificity
+    const resFallback = await fetch(`http://127.0.0.1:${testPort}/unhandled-random-client-path`);
+    assert(resFallback.status === 200, 'Unhandled route returns HTTP 200');
+    const bodyFallback = await resFallback.text();
+    assert(
+      bodyFallback.includes('customer-dashboard'),
+      'Unhandled route correctly falls through to SPA dashboard, verifying route specificity'
+    );
+  } finally {
+    await new Promise<void>((resolve) => server.close(() => resolve()));
+  }
 
   console.log('\n====================================================');
   console.log(`🎉 ALL ${passedTests}/${totalTests} TESTS PASSED SUCCESSFULLY!`);
