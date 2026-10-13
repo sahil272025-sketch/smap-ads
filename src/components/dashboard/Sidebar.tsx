@@ -58,14 +58,21 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <div className="flex items-center justify-between px-2">
           <button
             onClick={() => handleItemClick('dashboard')}
-            className="flex items-center gap-3 text-left focus:outline-none group"
+            className="flex items-center gap-2.5 text-left focus:outline-none group"
           >
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-purple-600 text-white font-extrabold text-lg shadow-lg shadow-purple-600/30">
-              S
+            <img
+              src="/smap-logo.png"
+              alt="SMAP ADS Official Logo"
+              className="h-10 w-10 rounded-full object-cover ring-2 ring-cyan-500/40 shadow-md shadow-cyan-500/20 group-hover:scale-105 transition-all"
+            />
+            <div className="flex flex-col">
+              <span className="text-base font-extrabold tracking-tight text-slate-900 dark:text-white leading-tight">
+                SMAP ADS
+              </span>
+              <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400">
+                Campaign Hub
+              </span>
             </div>
-            <span className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">
-              SMAP
-            </span>
           </button>
 
           {/* Mobile close button */}

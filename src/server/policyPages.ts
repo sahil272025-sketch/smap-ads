@@ -188,6 +188,18 @@ export function renderPolicyHtml(key: PolicyKey): string {
             Under India's Digital Personal Data Protection Act, 2023, you have the right to access, review, correct, or request deletion of your personal data stored on our servers. To exercise your rights, email our Grievance Officer at <strong>sahilking17341734@gmail.com</strong>.
           </p>
         </div>
+
+        <div id="data-deletion" class="p-5 rounded-2xl border border-purple-200 bg-purple-50/50 space-y-3">
+          <h2 class="text-xl font-bold text-slate-900 mb-1">5. User Data Deletion Instructions (Meta Platform Compliance)</h2>
+          <p class="text-slate-600 leading-relaxed text-sm">
+            In compliance with Meta Platform Terms, Developer Data Use Policies, and the DPDP Act 2023, users can request full deletion of their personal data and revoke connected Facebook/Instagram assets through either of the following methods:
+          </p>
+          <ul class="list-disc pl-5 text-sm text-slate-700 space-y-1.5">
+            <li><strong>Email Deletion Request:</strong> Send an email from your registered SMAP email address to <strong>sahilking17341734@gmail.com</strong> (subject: <em>SMAP Data Deletion Request</em>) stating your full name, registered email, and connected Facebook Page or Instagram account. Requests are verified and processed within 30 days.</li>
+            <li><strong>Self-Service Facebook Disconnection:</strong> On Facebook, go to <strong>Settings & Privacy &gt; Settings &gt; Apps and Websites</strong>, find <strong>SMAP</strong>, and click <strong>Remove</strong> to immediately revoke all Meta permissions.</li>
+            <li><strong>Dedicated Deletion Page:</strong> For full step-by-step instructions, visit our <a href="/data-deletion" class="text-purple-600 font-bold hover:underline">User Data Deletion Instructions Page</a>.</li>
+          </ul>
+        </div>
       </section>
     `;
   } else if (key === 'terms') {
@@ -497,10 +509,15 @@ export function renderPolicyHtml(key: PolicyKey): string {
   <header class="sticky top-0 z-50 w-full border-b border-slate-200 bg-white/95 backdrop-blur-md">
     <div class="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
       <a href="/" class="flex items-center gap-2.5">
-        <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-purple-600 text-white font-extrabold text-lg shadow-md shadow-purple-600/30">
-          S
+        <img
+          src="/smap-logo.png"
+          alt="SMAP ADS Official Logo"
+          class="h-10 w-10 rounded-full object-cover ring-2 ring-cyan-500/40 shadow-sm"
+        />
+        <div class="flex flex-col">
+          <span class="text-lg font-extrabold tracking-tight text-slate-900 leading-none">SMAP ADS</span>
+          <span class="text-[10px] font-semibold text-slate-500">Marketing Powerful</span>
         </div>
-        <span class="text-xl font-bold tracking-tight text-slate-900">SMAP</span>
       </a>
 
       <nav class="flex items-center gap-6 text-xs font-semibold text-slate-600">
@@ -540,8 +557,12 @@ export function renderPolicyHtml(key: PolicyKey): string {
       <div class="grid grid-cols-1 md:grid-cols-4 gap-8 text-xs">
         <div>
           <div class="flex items-center gap-2 mb-2">
-            <div class="flex h-7 w-7 items-center justify-center rounded-lg bg-purple-600 text-white font-bold text-sm">S</div>
-            <span class="font-bold text-slate-900 text-base">SMAP</span>
+            <img
+              src="/smap-logo.png"
+              alt="SMAP ADS Official Logo"
+              class="h-8 w-8 rounded-full object-cover ring-2 ring-cyan-500/40"
+            />
+            <span class="font-extrabold text-slate-900 text-base">SMAP ADS</span>
           </div>
           <p class="font-semibold text-purple-600">Sahil Marketing Ads Powerful</p>
           <p class="text-slate-500 mt-1 leading-relaxed">
@@ -594,27 +615,60 @@ export function renderPolicyHtml(key: PolicyKey): string {
  * search engines, and compliance audits prior to any SPA fallback middleware.
  */
 export function registerPolicyRoutes(app: any): void {
+  const sendHtmlWithHeaders = (res: any, html: string) => {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS, POST');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+    res.status(200).type('html').send(html);
+  };
+
+  app.options(
+    [
+      '/data-deletion',
+      '/data-deletion/*',
+      '/about',
+      '/about/*',
+      '/contact',
+      '/contact/*',
+      '/privacy',
+      '/privacy/*',
+      '/terms',
+      '/terms/*',
+      '/refund',
+      '/refund/*',
+      '/pricing',
+      '/pricing/*',
+    ],
+    (_req: any, res: any) => {
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS, POST');
+      res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+      res.status(204).end();
+    }
+  );
+
   app.get(['/about', '/about/', '/about-us', '/about-us/'], (_req: any, res: any) => {
-    res.status(200).type('html').send(renderPolicyHtml('about'));
+    sendHtmlWithHeaders(res, renderPolicyHtml('about'));
   });
 
   app.get(['/contact', '/contact/', '/contact-us', '/contact-us/'], (_req: any, res: any) => {
-    res.status(200).type('html').send(renderPolicyHtml('contact'));
+    sendHtmlWithHeaders(res, renderPolicyHtml('contact'));
   });
 
   app.get(['/privacy', '/privacy/', '/privacy-policy', '/privacy-policy/'], (_req: any, res: any) => {
-    res.status(200).type('html').send(renderPolicyHtml('privacy'));
+    sendHtmlWithHeaders(res, renderPolicyHtml('privacy'));
   });
 
   app.get(['/terms', '/terms/', '/terms-and-conditions', '/terms-and-conditions/', '/terms-of-service', '/terms-of-service/'], (_req: any, res: any) => {
-    res.status(200).type('html').send(renderPolicyHtml('terms'));
+    sendHtmlWithHeaders(res, renderPolicyHtml('terms'));
   });
 
   app.get(['/refund', '/refund/', '/refund-policy', '/refund-policy/', '/cancellation-policy', '/cancellation-policy/'], (_req: any, res: any) => {
-    res.status(200).type('html').send(renderPolicyHtml('refund'));
+    sendHtmlWithHeaders(res, renderPolicyHtml('refund'));
   });
 
-  app.get(
+  app.all(
     [
       '/data-deletion',
       '/data-deletion/',
@@ -629,13 +683,20 @@ export function registerPolicyRoutes(app: any): void {
       '/api/data-deletion',
       '/api/meta/data-deletion',
     ],
-    (_req: any, res: any) => {
-      res.status(200).type('html').send(renderPolicyHtml('data-deletion'));
+    (req: any, res: any) => {
+      if (req.headers['accept']?.includes('application/json') && req.method === 'POST') {
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        return res.status(200).json({
+          url: 'https://smap-ads.onrender.com/data-deletion',
+          confirmation_code: 'smap_deletion_verified',
+        });
+      }
+      sendHtmlWithHeaders(res, renderPolicyHtml('data-deletion'));
     }
   );
 
   app.get(['/pricing', '/pricing/', '/packages', '/packages/', '/plans', '/plans/'], (_req: any, res: any) => {
-    res.status(200).type('html').send(renderPolicyHtml('pricing'));
+    sendHtmlWithHeaders(res, renderPolicyHtml('pricing'));
   });
 }
 

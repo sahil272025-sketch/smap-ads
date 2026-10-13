@@ -11,6 +11,8 @@ import {
   Smartphone,
   Loader2,
   AppWindow,
+  QrCode,
+  Info,
 } from 'lucide-react';
 
 interface AddFundsModalProps {
@@ -54,6 +56,7 @@ export const AddFundsModal: React.FC<AddFundsModalProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [processingMode, setProcessingMode] = useState<'direct' | 'chooser' | null>(null);
+  const [fallbackHelp, setFallbackHelp] = useState<string | null>(null);
   const isProcessing = processingMode !== null;
 
   if (!isOpen) return null;
@@ -62,6 +65,7 @@ export const AddFundsModal: React.FC<AddFundsModalProps> = ({
     setSelectedAmount(amount);
     setCustomAmount(String(amount));
     setError(null);
+    setFallbackHelp(null);
   };
 
   const handleCustomChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -72,6 +76,7 @@ export const AddFundsModal: React.FC<AddFundsModalProps> = ({
       setSelectedAmount(num);
     }
     setError(null);
+    setFallbackHelp(null);
   };
 
   const amountToAdd = Number(customAmount) || selectedAmount;
@@ -83,6 +88,7 @@ export const AddFundsModal: React.FC<AddFundsModalProps> = ({
       return;
     }
     setError(null);
+    setFallbackHelp(null);
     setProcessingMode(mode);
 
     // If currently running in the temporary AI Studio preview environment,
@@ -112,27 +118,18 @@ export const AddFundsModal: React.FC<AddFundsModalProps> = ({
       const sdkReady = await loadRazorpaySdk();
 
       if (sdkReady && keyId) {
-        const upiBlockConfig = mode === 'chooser'
-          ? {
-              name: 'Use Your UPI App',
-              instruments: [
-                {
-                  method: 'upi',
-                  flows: ['intent'],
-                },
-              ],
-            }
-          : {
-              name: 'Pay via UPI',
-              instruments: [{ method: 'upi' }],
-            };
+        // Detect mobile environment
+        const isMobileDevice = typeof navigator !== 'undefined' && /android|iphone|ipad|ipod/i.test(navigator.userAgent);
 
+        // Official Razorpay UPI flow configuration:
+        // - In mode 'direct': Priority intent flow opens installed UPI app chooser (PhonePe, GPay, Paytm) directly
+        // - In mode 'chooser': Presents the native UPI App selection tray / QR code fallback
         const rzpOptions: any = {
           key: keyId,
           amount: Math.round(amountToAdd * 100), // in paise
           currency: 'INR',
           name: 'SMAP Advertising',
-          description: `Add Funds to SMAP Wallet (₹${amountToAdd})`,
+          description: `Wallet Top-Up: ₹${amountToAdd} (SMAP Ads)`,
           prefill: {
             name: user?.name || 'SMAP Customer',
             email: user?.email || '',
@@ -142,16 +139,24 @@ export const AddFundsModal: React.FC<AddFundsModalProps> = ({
           config: {
             display: {
               blocks: {
-                upi: upiBlockConfig,
+                upi: {
+                  name: mode === 'chooser' ? 'Choose Installed UPI App' : 'Pay via UPI App',
+                  instruments: [
+                    {
+                      method: 'upi',
+                      flows: mode === 'direct' ? ['intent', 'qr'] : ['intent', 'qr'],
+                    },
+                  ],
+                },
               },
               sequence: ['block.upi'],
               preferences: {
-                show_default_blocks: true,
+                show_default_blocks: false,
               },
             },
           },
           theme: {
-            color: '#7C3AED',
+            color: '#0891B2', // Cyan neon brand matching SMAP logo
           },
           notes: {
             purpose: 'WALLET_TOPUP',
@@ -184,6 +189,9 @@ export const AddFundsModal: React.FC<AddFundsModalProps> = ({
           modal: {
             ondismiss: () => {
               setProcessingMode(null);
+              if (!isMobileDevice) {
+                setFallbackHelp('On desktop browsers, Razorpay displays a dynamic UPI QR Code to scan with PhonePe, Google Pay, or Paytm.');
+              }
             },
           },
         };
@@ -196,8 +204,13 @@ export const AddFundsModal: React.FC<AddFundsModalProps> = ({
 
         rzp.on('payment.failed', (resp: any) => {
           setProcessingMode(null);
-          const reason = resp.error?.description || resp.error?.reason || 'Payment failed or cancelled in UPI app';
+          const reason = resp.error?.description || resp.error?.reason || 'Payment cancelled or no compatible UPI app selected';
           setError(`UPI Payment Notice: ${reason}`);
+          if (!isMobileDevice) {
+            setFallbackHelp('No UPI apps found directly on this browser? Scan the on-screen QR Code using your phone’s PhonePe, GPay, or Paytm app.');
+          } else {
+            setFallbackHelp('Ensure PhonePe, Google Pay, or Paytm is installed on your mobile device, or select the QR code option inside checkout.');
+          }
         });
 
         rzp.open();
@@ -215,21 +228,21 @@ export const AddFundsModal: React.FC<AddFundsModalProps> = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-in fade-in duration-200">
       <div className="relative w-full max-w-lg rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0B101E] shadow-2xl p-6 sm:p-8 space-y-6 overflow-hidden max-h-[92vh] overflow-y-auto">
         
-        {/* Glow ambient background */}
-        <div className="absolute top-0 right-0 -mt-12 -mr-12 w-48 h-48 bg-purple-600/10 rounded-full blur-3xl pointer-events-none" />
+        {/* Glow ambient background matching cyan brand */}
+        <div className="absolute top-0 right-0 -mt-12 -mr-12 w-48 h-48 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
 
         {/* Modal Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-purple-600/10 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 border border-purple-500/20 shadow-sm">
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-cyan-500/10 dark:bg-cyan-950/30 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20 shadow-sm">
               <Wallet className="h-5 w-5" />
             </div>
             <div>
-              <h2 className="text-lg sm:text-xl font-extrabold text-slate-900 dark:text-white tracking-tight">
-                Add Funds to Wallet
+              <h2 className="text-lg sm:text-xl font-extrabold text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
+                <span>Add Funds to Wallet</span>
               </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Automated Razorpay UPI Payment • Instant Wallet Credit
+                Official Razorpay UPI Intent • Instant Wallet Credit
               </p>
             </div>
           </div>
@@ -243,7 +256,7 @@ export const AddFundsModal: React.FC<AddFundsModalProps> = ({
         </div>
 
         {/* Balance Status Banner */}
-        <div className="grid grid-cols-2 gap-3 p-4 rounded-2xl border border-purple-500/20 bg-purple-50/50 dark:bg-purple-950/20">
+        <div className="grid grid-cols-2 gap-3 p-4 rounded-2xl border border-cyan-500/20 bg-cyan-50/50 dark:bg-cyan-950/20">
           <div>
             <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 block">
               Current Balance
@@ -252,11 +265,11 @@ export const AddFundsModal: React.FC<AddFundsModalProps> = ({
               ₹{currentBalance.toFixed(2)}
             </span>
           </div>
-          <div className="border-l border-purple-500/20 pl-3">
-            <span className="text-[11px] font-medium text-purple-600 dark:text-purple-300 block">
+          <div className="border-l border-cyan-500/20 pl-3">
+            <span className="text-[11px] font-medium text-cyan-600 dark:text-cyan-300 block">
               Projected (After Payment)
             </span>
-            <span className="text-lg sm:text-xl font-extrabold text-purple-600 dark:text-purple-400 tabular-nums">
+            <span className="text-lg sm:text-xl font-extrabold text-cyan-600 dark:text-cyan-400 tabular-nums">
               ₹{projectedBalance.toFixed(2)}
             </span>
           </div>
@@ -277,8 +290,8 @@ export const AddFundsModal: React.FC<AddFundsModalProps> = ({
                   onClick={() => handlePresetSelect(amt)}
                   className={`py-2 px-1 rounded-xl text-xs font-bold transition-all border ${
                     isSelected
-                      ? 'bg-purple-600 text-white border-purple-500 shadow-md shadow-purple-600/30 scale-[1.02]'
-                      : 'bg-slate-50 dark:bg-slate-900/60 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:border-purple-500/40'
+                      ? 'bg-gradient-to-r from-purple-600 to-cyan-600 text-white border-cyan-400 shadow-md shadow-cyan-500/25 scale-[1.02]'
+                      : 'bg-slate-50 dark:bg-slate-900/60 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:border-cyan-500/40'
                   }`}
                 >
                   ₹{amt}
@@ -303,7 +316,7 @@ export const AddFundsModal: React.FC<AddFundsModalProps> = ({
               value={customAmount}
               onChange={handleCustomChange}
               placeholder="Enter amount (e.g. 509)"
-              className="w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#080D1A] py-3 pl-9 pr-4 text-lg font-extrabold text-slate-900 dark:text-white tabular-nums placeholder:text-slate-400 focus:border-purple-500 focus:outline-none transition-colors"
+              className="w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#080D1A] py-3 pl-9 pr-4 text-lg font-extrabold text-slate-900 dark:text-white tabular-nums placeholder:text-slate-400 focus:border-cyan-500 focus:outline-none transition-colors"
             />
           </div>
           <p className="text-[11px] text-slate-400 dark:text-slate-500">
@@ -319,6 +332,13 @@ export const AddFundsModal: React.FC<AddFundsModalProps> = ({
           </div>
         )}
 
+        {fallbackHelp && (
+          <div className="rounded-2xl border border-cyan-500/30 bg-cyan-950/20 p-3 text-xs text-cyan-200 flex items-start gap-2">
+            <Info className="h-4 w-4 shrink-0 mt-0.5 text-cyan-400" />
+            <span className="leading-relaxed">{fallbackHelp}</span>
+          </div>
+        )}
+
         {successMsg && (
           <div className="rounded-2xl border border-emerald-500/30 bg-emerald-50 dark:bg-emerald-950/40 p-3.5 text-xs text-emerald-700 dark:text-emerald-300 flex items-center gap-2">
             <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500" />
@@ -329,7 +349,7 @@ export const AddFundsModal: React.FC<AddFundsModalProps> = ({
         {/* Payment CTA Section - Two Distinct UPI Options */}
         <div className="space-y-3 pt-2">
           {typeof window !== 'undefined' && window.location.hostname.includes('run.app') && (
-            <div className="rounded-2xl border border-purple-500/20 bg-purple-500/10 p-3 text-[11px] text-purple-300">
+            <div className="rounded-2xl border border-cyan-500/20 bg-cyan-500/10 p-3 text-[11px] text-cyan-300">
               <span className="font-semibold block text-white mb-0.5">Production Razorpay Gateway:</span>
               <span>Razorpay requires payments to originate from your registered domain <strong>smap-ads.onrender.com</strong>. Tapping below opens your live site directly.</span>
             </div>
@@ -340,16 +360,16 @@ export const AddFundsModal: React.FC<AddFundsModalProps> = ({
             type="button"
             onClick={() => handleLaunchUpiCheckout('direct')}
             disabled={amountToAdd < 1 || isProcessing}
-            className="w-full flex items-center justify-center gap-2 rounded-2xl bg-purple-600 hover:bg-purple-500 py-3.5 px-6 text-sm font-extrabold text-white shadow-xl shadow-purple-600/35 active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none transition-all"
+            className="w-full flex items-center justify-center gap-2.5 rounded-2xl bg-gradient-to-r from-purple-600 via-indigo-600 to-cyan-600 hover:opacity-95 py-3.5 px-6 text-sm font-extrabold text-white shadow-xl shadow-cyan-600/25 active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none transition-all"
           >
             {processingMode === 'direct' ? (
               <>
-                <Loader2 className="h-5 w-5 animate-spin text-purple-200" />
-                <span>Opening PhonePe / GPay / Paytm...</span>
+                <Loader2 className="h-5 w-5 animate-spin text-cyan-200" />
+                <span>Launching UPI App (PhonePe / GPay / Paytm)...</span>
               </>
             ) : (
               <>
-                <Smartphone className="h-5 w-5 text-emerald-300" />
+                <Smartphone className="h-5 w-5 text-cyan-300" />
                 <span>Launch UPI App (PhonePe / GPay / Paytm)</span>
                 <ArrowRight className="h-4 w-4" />
               </>
@@ -366,22 +386,22 @@ export const AddFundsModal: React.FC<AddFundsModalProps> = ({
             </div>
           </div>
 
-          {/* Option 2: Use Your UPI App */}
+          {/* Option 2: Use Your UPI App / Chooser */}
           <button
             type="button"
             onClick={() => handleLaunchUpiCheckout('chooser')}
             disabled={amountToAdd < 1 || isProcessing}
-            className="w-full flex items-center justify-center gap-2 rounded-2xl border-2 border-purple-500/40 bg-purple-500/10 hover:bg-purple-500/20 py-3.5 px-6 text-sm font-extrabold text-purple-700 dark:text-purple-300 shadow-sm active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none transition-all"
+            className="w-full flex items-center justify-center gap-2.5 rounded-2xl border-2 border-cyan-500/40 bg-cyan-500/10 hover:bg-cyan-500/20 py-3.5 px-6 text-sm font-extrabold text-cyan-700 dark:text-cyan-300 shadow-sm active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none transition-all"
           >
             {processingMode === 'chooser' ? (
               <>
-                <Loader2 className="h-5 w-5 animate-spin text-purple-400" />
+                <Loader2 className="h-5 w-5 animate-spin text-cyan-400" />
                 <span>Opening UPI App Chooser...</span>
               </>
             ) : (
               <>
-                <AppWindow className="h-5 w-5 text-purple-500 dark:text-purple-400" />
-                <span>Use Your UPI App</span>
+                <AppWindow className="h-5 w-5 text-cyan-500 dark:text-cyan-400" />
+                <span>Use Your UPI App (Choose Installed App)</span>
                 <ArrowRight className="h-4 w-4" />
               </>
             )}

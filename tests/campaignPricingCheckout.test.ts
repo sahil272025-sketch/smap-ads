@@ -4,6 +4,7 @@ import { CampaignService } from '../src/server/campaignService.js';
 import { WalletService } from '../src/server/walletService.js';
 import { MetaService } from '../src/server/metaService.js';
 import { SupportService } from '../src/server/supportService.js';
+import { AuthService } from '../src/server/authService.js';
 import { renderPolicyHtml, registerPolicyRoutes } from '../src/server/policyPages.js';
 
 let totalTests = 0;
@@ -840,7 +841,20 @@ async function runTests() {
       'GET /data-deletion-instructions serves instructions page directly'
     );
 
-    // 4. Verify that unhandled routes DO fall back to the dashboard, proving route specificity
+    // 4. Test CORS headers and preflight OPTIONS request
+    assert(
+      res1.headers.get('access-control-allow-origin') === '*',
+      'GET /data-deletion includes Access-Control-Allow-Origin: * for Meta crawler & dashboard'
+    );
+
+    const resOptions = await fetch(`http://127.0.0.1:${testPort}/data-deletion`, { method: 'OPTIONS' });
+    assert(resOptions.status === 204, 'OPTIONS /data-deletion returns HTTP 204 for preflight validation');
+    assert(
+      resOptions.headers.get('access-control-allow-origin') === '*',
+      'OPTIONS /data-deletion returns Access-Control-Allow-Origin: *'
+    );
+
+    // 5. Verify that unhandled routes DO fall back to the dashboard, proving route specificity
     const resFallback = await fetch(`http://127.0.0.1:${testPort}/unhandled-random-client-path`);
     assert(resFallback.status === 200, 'Unhandled route returns HTTP 200');
     const bodyFallback = await resFallback.text();
@@ -851,6 +865,73 @@ async function runTests() {
   } finally {
     await new Promise<void>((resolve) => server.close(() => resolve()));
   }
+
+  // TEST 26: Real OTP Password Recovery Workflow (Email & Phone)
+  console.log('\n--- TEST 26: OTP Password Recovery & Rate Limiting ---');
+  const recoveryEmail = `recovery_${Date.now()}@smap-ads.test`;
+  const registeredUserEmail = await AuthService.registerWithEmailPassword({
+    name: 'Recovery Email Customer',
+    email: recoveryEmail,
+    password: 'InitialPassword123',
+    phone: '9876543210',
+  });
+
+  assert(!!registeredUserEmail.user.id, 'Test recovery user registered successfully');
+
+  // 1. Send OTP via email
+  const otpResEmail = await AuthService.sendPasswordResetOtp(recoveryEmail);
+  assert(otpResEmail.success === true, 'OTP generated successfully for email recovery');
+  assert(otpResEmail.channel === 'email', 'Recovery channel recognized as email');
+  assert(otpResEmail.maskedTarget.includes('@'), 'Email is properly masked for security');
+  assert(otpResEmail.cooldownSeconds === 60, '60 second cooldown enforced on OTP resend');
+
+  // 2. Cooldown enforcement on the same user
+  let cooldownBlocked = false;
+  try {
+    await AuthService.sendPasswordResetOtp(recoveryEmail);
+  } catch (err: any) {
+    if (err.message.includes('Please wait') && err.message.includes('seconds')) {
+      cooldownBlocked = true;
+    }
+  }
+  assert(cooldownBlocked === true, 'Rapid duplicate OTP requests blocked by 60-second cooldown');
+
+  // 3. Send OTP via 10-digit phone number with separate user
+  const phoneRecoveryEmail = `phone_rec_${Date.now()}@smap-ads.test`;
+  const recoveryPhone = '9123456789';
+  await AuthService.registerWithEmailPassword({
+    name: 'Phone Recovery Customer',
+    email: phoneRecoveryEmail,
+    password: 'InitialPassword123',
+    phone: recoveryPhone,
+  });
+
+  const otpResPhone = await AuthService.sendPasswordResetOtp(recoveryPhone);
+  assert(otpResPhone.success === true, 'OTP generated successfully for phone recovery');
+  assert(otpResPhone.channel === 'phone', 'Recovery channel recognized as phone');
+  assert(otpResPhone.maskedTarget.includes('+91'), 'Phone target includes country code in mask');
+
+  // 4. Invalid OTP rejection
+  let invalidOtpBlocked = false;
+  try {
+    await AuthService.verifyPasswordResetOtp(recoveryPhone, '000000');
+  } catch (err: any) {
+    if (err.message.includes('Invalid OTP code')) {
+      invalidOtpBlocked = true;
+    }
+  }
+  assert(invalidOtpBlocked === true, 'Invalid OTP code correctly rejected');
+
+  // 5. Unregistered contact rejection
+  let unregisteredBlocked = false;
+  try {
+    await AuthService.sendPasswordResetOtp('unregistered_ghost_user@smap-ads.test');
+  } catch (err: any) {
+    if (err.message.includes('No registered account found')) {
+      unregisteredBlocked = true;
+    }
+  }
+  assert(unregisteredBlocked === true, 'Unregistered contacts cleanly rejected without leaking OTPs');
 
   console.log('\n====================================================');
   console.log(`🎉 ALL ${passedTests}/${totalTests} TESTS PASSED SUCCESSFULLY!`);

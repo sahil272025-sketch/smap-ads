@@ -22,18 +22,25 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, openA
     <header className="sticky top-0 z-50 w-full border-b border-slate-200 dark:border-slate-800/80 bg-white/95 dark:bg-[#080C14]/95 backdrop-blur-md transition-colors">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         
-        {/* Brand Wordmark */}
+        {/* Brand Wordmark & Official Logo */}
         <div className="flex items-center gap-3">
           <button
             onClick={() => handleNavClick(user ? 'dashboard' : 'home')}
-            className="group flex items-center gap-2 text-left focus:outline-none"
+            className="group flex items-center gap-2.5 text-left focus:outline-none"
           >
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-purple-600 text-white font-extrabold text-lg shadow-md shadow-purple-600/30">
-              S
+            <img
+              src="/smap-logo.png"
+              alt="SMAP ADS Official Logo"
+              className="h-10 w-10 rounded-full object-cover ring-2 ring-cyan-500/40 shadow-md shadow-cyan-500/20 group-hover:scale-105 transition-all"
+            />
+            <div className="flex flex-col">
+              <span className="text-lg font-extrabold tracking-tight text-slate-900 dark:text-white group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition-colors leading-none">
+                SMAP ADS
+              </span>
+              <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 tracking-wider">
+                Marketing Powerful
+              </span>
             </div>
-            <span className="text-xl font-bold tracking-tight text-slate-900 dark:text-white group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
-              SMAP
-            </span>
           </button>
         </div>
 

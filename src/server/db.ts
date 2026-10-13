@@ -576,6 +576,24 @@ class DatabaseService {
     }
     return u;
   }
+  public findUserByPhone(phone: string) {
+    const cleanDigits = phone.replace(/\D/g, '');
+    if (!cleanDigits || cleanDigits.length < 10) return undefined;
+    let u = this.db.users.find(user => {
+      if (!user.phone) return false;
+      const userDigits = user.phone.replace(/\D/g, '');
+      return userDigits.endsWith(cleanDigits.slice(-10)) || cleanDigits.endsWith(userDigits.slice(-10));
+    });
+    if (!u) {
+      this.reloadFromDisk();
+      u = this.db.users.find(user => {
+        if (!user.phone) return false;
+        const userDigits = user.phone.replace(/\D/g, '');
+        return userDigits.endsWith(cleanDigits.slice(-10)) || cleanDigits.endsWith(userDigits.slice(-10));
+      });
+    }
+    return u;
+  }
   public createUser(user: User) {
     this.db.users.push(user);
     this.save();

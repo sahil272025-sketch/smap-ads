@@ -13,12 +13,14 @@ export const Footer: React.FC<FooterProps> = ({ onOpenLegal, onNavigate }) => {
           
           {/* Brand & Mission */}
           <div className="space-y-3">
-            <div className="flex items-center gap-2.5">
-              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-purple-600 font-extrabold text-white text-base shadow-md shadow-purple-600/30">
-                S
-              </div>
-              <span className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">
-                SMAP
+            <div className="flex items-center gap-3">
+              <img
+                src="/smap-logo.png"
+                alt="SMAP ADS Official Logo"
+                className="h-10 w-10 rounded-full object-cover ring-2 ring-cyan-500/40 shadow-md shadow-cyan-500/20"
+              />
+              <span className="text-xl font-extrabold tracking-tight text-slate-900 dark:text-white">
+                SMAP ADS
               </span>
             </div>
             <p className="text-xs font-semibold text-purple-600 dark:text-purple-400">
