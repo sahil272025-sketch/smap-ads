@@ -226,6 +226,7 @@ export class WalletService {
     amount: number;
     gatewayOrderId: string | null;
     gatewayError?: { code: string; description: string } | null;
+    upiIntentUrl?: string;
   }> {
     const user = db.findUserById(userId);
     if (!user) {
@@ -349,6 +350,7 @@ export class WalletService {
       amount: roundedAmount,
       gatewayOrderId,
       gatewayError,
+      upiIntentUrl,
     };
   }
 

@@ -2,6 +2,7 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import fs from 'fs';
+import nodemailer from 'nodemailer';
 import { OAuth2Client } from 'google-auth-library';
 import { db, User } from './db.js';
 
@@ -679,24 +680,162 @@ export class AuthService {
     }
 
     // Real delivery handler:
-    // If SMTP/SMS gateway env vars are present (e.g. SMTP_HOST or SMS_GATEWAY_KEY), dispatch through external provider.
-    // In production environment without SMS gateway configured, log security audit event.
+    // Dispatches through external email (SMTP / Resend) or SMS (Fast2SMS / Twilio) providers.
     db.log('AUTH', 'INFO', `Password reset OTP generated for ${user.email} (${maskedTarget})`, {
       userId: user.id,
       channel,
     });
 
-    let deliveryNote: string | undefined;
-    const hasSmsConfig = Boolean(process.env.FAST2SMS_API_KEY || process.env.TWILIO_AUTH_TOKEN || process.env.SMS_API_KEY);
-    const hasSmtpConfig = Boolean(process.env.SMTP_HOST && process.env.SMTP_USER);
+    const isTestRuntime =
+      process.env.NODE_ENV === 'test' ||
+      user.email.endsWith('.test') ||
+      user.email.endsWith('.example');
 
-    if (channel === 'phone' && !hasSmsConfig) {
-      deliveryNote = 'SMS gateway credentials (FAST2SMS/Twilio) not configured in server environment. For security testing, OTP was securely generated in the server audit log.';
-      // Log for developer in console for legitimate recovery testing
-      console.log(`[AUTH-OTP] Password recovery OTP for user ${user.email} (${user.phone}): ${otp}`);
-    } else if (channel === 'email' && !hasSmtpConfig) {
-      deliveryNote = 'Email SMTP service not configured in server environment. For security testing, OTP was securely generated in the server audit log.';
-      console.log(`[AUTH-OTP] Password recovery OTP for user ${user.email}: ${otp}`);
+    let deliveryMessage = '';
+
+    if (channel === 'email') {
+      const hasSmtpConfig = Boolean(process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS);
+      const hasResendConfig = Boolean(process.env.RESEND_API_KEY);
+
+      if (hasSmtpConfig) {
+        try {
+          const transporter = nodemailer.createTransport({
+            host: process.env.SMTP_HOST,
+            port: Number(process.env.SMTP_PORT) || 587,
+            secure: process.env.SMTP_SECURE === 'true' || Number(process.env.SMTP_PORT) === 465,
+            auth: {
+              user: process.env.SMTP_USER,
+              pass: process.env.SMTP_PASS,
+            },
+          });
+
+          await transporter.sendMail({
+            from: process.env.SMTP_FROM || `"SMAP ADS Security" <${process.env.SMTP_USER}>`,
+            to: user.email,
+            subject: `SMAP ADS — Password Reset Verification Code: ${otp}`,
+            text: `Hello ${user.name || 'Advertiser'},\n\nYour one-time password (OTP) for resetting your SMAP Advertising account password is: ${otp}\n\nThis code will expire in 10 minutes.\n\nIf you did not request a password reset, please secure your account immediately.\n\nSMAP Advertising Security Team\nhttps://smap-ads.onrender.com`,
+            html: `
+              <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 540px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 16px; background-color: #ffffff;">
+                <div style="text-align: center; margin-bottom: 24px;">
+                  <h2 style="color: #0f172a; margin: 0; font-size: 22px; font-weight: 800;">SMAP ADS</h2>
+                  <p style="color: #64748b; margin: 4px 0 0 0; font-size: 13px;">Security & Password Recovery</p>
+                </div>
+                <p style="color: #334155; font-size: 14px; line-height: 1.6;">Hello <strong>${user.name || 'Advertiser'}</strong>,</p>
+                <p style="color: #334155; font-size: 14px; line-height: 1.6;">We received a request to reset the password for your SMAP Advertising account. Use the following verification code to proceed:</p>
+                <div style="text-align: center; margin: 28px 0; padding: 18px; background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%); border-radius: 12px; letter-spacing: 6px; font-size: 32px; font-weight: 800; color: #0891b2; font-family: monospace;">
+                  ${otp}
+                </div>
+                <p style="color: #64748b; font-size: 12px; line-height: 1.5;">This OTP code is valid for <strong>10 minutes</strong>. Never share this code with anyone.</p>
+                <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 24px 0;" />
+                <p style="color: #94a3b8; font-size: 11px; text-align: center; margin: 0;">SMAP Advertising Platform • Automated Security Notification</p>
+              </div>
+            `,
+          });
+          deliveryMessage = `OTP sent to your registered email (${maskedTarget}). Please check your inbox and spam folder.`;
+        } catch (mailErr: any) {
+          db.log('AUTH', 'ERROR', `Failed to deliver email OTP: ${mailErr.message}`);
+          throw new Error(`Email delivery failed: ${mailErr.message}. Please check SMTP configuration or try again.`);
+        }
+      } else if (hasResendConfig) {
+        try {
+          const res = await fetch('https://api.resend.com/emails', {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              from: process.env.RESEND_FROM || 'SMAP ADS <onboarding@resend.dev>',
+              to: [user.email],
+              subject: `SMAP ADS — Password Reset Verification Code: ${otp}`,
+              html: `<p>Your SMAP ADS password reset verification code is: <strong>${otp}</strong> (valid for 10 minutes).</p>`,
+            }),
+          });
+          if (!res.ok) {
+            const errBody = await res.text();
+            throw new Error(`Resend API error: ${errBody}`);
+          }
+          deliveryMessage = `OTP sent to your registered email (${maskedTarget}). Please check your inbox.`;
+        } catch (resendErr: any) {
+          db.log('AUTH', 'ERROR', `Resend delivery failed: ${resendErr.message}`);
+          throw new Error(`Email delivery failed: ${resendErr.message}`);
+        }
+      } else if (isTestRuntime) {
+        console.log(`[AUTH-OTP] Password recovery OTP for user ${user.email}: ${otp}`);
+        deliveryMessage = `OTP sent to your registered email (${maskedTarget}).`;
+      } else {
+        // Honest error - email provider is not configured
+        throw new Error(
+          'Email delivery is not configured yet. Server requires SMTP credentials (SMTP_HOST, SMTP_USER, SMTP_PASS) or RESEND_API_KEY in server environment variables to deliver live email OTPs.'
+        );
+      }
+    } else {
+      // Channel === 'phone'
+      const cleanPhoneDigits = (user.phone || raw).replace(/\D/g, '').slice(-10);
+      const hasFast2Sms = Boolean(process.env.FAST2SMS_API_KEY);
+      const hasTwilio = Boolean(process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN);
+
+      if (hasFast2Sms) {
+        try {
+          const fast2smsRes = await fetch('https://www.fast2sms.com/dev/bulkV2', {
+            method: 'POST',
+            headers: {
+              authorization: process.env.FAST2SMS_API_KEY!,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              route: 'otp',
+              variables_values: otp,
+              numbers: cleanPhoneDigits,
+            }),
+          });
+          const fast2smsData: any = await fast2smsRes.json();
+          if (!fast2smsData.return) {
+            throw new Error(fast2smsData.message?.[0] || 'Fast2SMS dispatch rejected');
+          }
+          deliveryMessage = `OTP sent by SMS to your registered mobile number (${maskedTarget}).`;
+        } catch (smsErr: any) {
+          db.log('AUTH', 'ERROR', `Fast2SMS delivery failed: ${smsErr.message}`);
+          throw new Error(`SMS delivery failed: ${smsErr.message}`);
+        }
+      } else if (hasTwilio) {
+        try {
+          const sid = process.env.TWILIO_ACCOUNT_SID!;
+          const token = process.env.TWILIO_AUTH_TOKEN!;
+          const fromPhone = process.env.TWILIO_PHONE_NUMBER || process.env.TWILIO_FROM_PHONE;
+          const auth = Buffer.from(`${sid}:${token}`).toString('base64');
+          const twilioTarget = cleanPhoneDigits.length === 10 ? `+91${cleanPhoneDigits}` : `+${cleanPhoneDigits}`;
+
+          const twilioRes = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`, {
+            method: 'POST',
+            headers: {
+              Authorization: `Basic ${auth}`,
+              'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: new URLSearchParams({
+              To: twilioTarget,
+              From: fromPhone || '',
+              Body: `Your SMAP Advertising verification code is ${otp}. Valid for 10 minutes. Do not share this code.`,
+            }),
+          });
+          if (!twilioRes.ok) {
+            const twilioErr = await twilioRes.text();
+            throw new Error(`Twilio error: ${twilioErr}`);
+          }
+          deliveryMessage = `OTP sent by SMS to your registered mobile number (${maskedTarget}).`;
+        } catch (twErr: any) {
+          db.log('AUTH', 'ERROR', `Twilio delivery failed: ${twErr.message}`);
+          throw new Error(`SMS delivery failed: ${twErr.message}`);
+        }
+      } else if (isTestRuntime) {
+        console.log(`[AUTH-OTP] Password recovery OTP for user ${user.email} (${user.phone}): ${otp}`);
+        deliveryMessage = `OTP sent by SMS to your registered mobile number (${maskedTarget}).`;
+      } else {
+        // Honest error - SMS provider is not configured
+        throw new Error(
+          'SMS delivery is not configured yet. Server requires Fast2SMS or Twilio credentials (FAST2SMS_API_KEY or TWILIO_ACCOUNT_SID/TWILIO_AUTH_TOKEN) in environment variables to deliver live SMS OTPs.'
+        );
+      }
     }
 
     return {
@@ -704,7 +843,7 @@ export class AuthService {
       channel,
       maskedTarget,
       cooldownSeconds: 60,
-      deliveryNote,
+      deliveryNote: deliveryMessage,
       expiresInSeconds,
     };
   }

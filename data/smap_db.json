@@ -1201,7 +1201,8 @@
       "role": "customer",
       "status": "ACTIVE",
       "created_at": "2026-10-13T07:16:45.895Z",
-      "last_login_at": "2026-10-13T07:16:45.895Z"
+      "last_login_at": "2026-10-13T07:16:45.895Z",
+      "wallet_balance": 0
     },
     {
       "id": "usr_email_1791875806061_1w4bcc",
@@ -1215,7 +1216,477 @@
       "role": "customer",
       "status": "ACTIVE",
       "created_at": "2026-10-13T07:16:46.061Z",
-      "last_login_at": "2026-10-13T07:16:46.061Z"
+      "last_login_at": "2026-10-13T07:16:46.061Z",
+      "wallet_balance": 0
+    },
+    {
+      "id": "test_usr_1791884486783",
+      "email": "test_1791884486783@smap-ads.test",
+      "name": "Test Customer",
+      "role": "customer",
+      "status": "ACTIVE",
+      "google_sub": "sub_1791884486783",
+      "email_verified": true,
+      "profile_picture": null,
+      "last_login_at": "2026-10-13T09:41:26.783Z",
+      "wallet_balance": 300,
+      "created_at": "2026-10-13T09:41:26.784Z",
+      "updated_at": "2026-10-13T09:41:26.859Z"
+    },
+    {
+      "id": "test_admin_1791884488084",
+      "email": "admin@smap-ads.test",
+      "name": "SMAP Admin Support",
+      "role": "admin",
+      "status": "ACTIVE",
+      "google_sub": "sub_admin_1791884488084",
+      "email_verified": true,
+      "profile_picture": null,
+      "last_login_at": "2026-10-13T09:41:28.084Z",
+      "wallet_balance": 0,
+      "created_at": "2026-10-13T09:41:28.084Z",
+      "updated_at": "2026-10-13T09:41:28.084Z"
+    },
+    {
+      "id": "cust_audit_1791884488112",
+      "email": "audit_1791884488112@smap-ads.test",
+      "name": "Audit Customer",
+      "role": "customer",
+      "status": "ACTIVE",
+      "google_sub": "sub_audit_1791884488112",
+      "email_verified": true,
+      "profile_picture": null,
+      "last_login_at": "2026-10-13T09:41:28.112Z",
+      "wallet_balance": 2,
+      "created_at": "2026-10-13T09:41:28.112Z",
+      "updated_at": "2026-10-13T09:41:28.183Z"
+    },
+    {
+      "id": "usr_meta_1791884488206",
+      "email": "meta_1791884488206@test.com",
+      "name": "Customer With Assets",
+      "role": "customer",
+      "status": "ACTIVE",
+      "google_sub": "sub_1791884488206",
+      "email_verified": true,
+      "profile_picture": null,
+      "last_login_at": "2026-10-13T09:41:28.206Z",
+      "wallet_balance": 500,
+      "created_at": "2026-10-13T09:41:28.206Z",
+      "updated_at": "2026-10-13T09:41:28.206Z"
+    },
+    {
+      "id": "usr_email_1791884488617_njglf2",
+      "google_sub": "",
+      "name": "Recovery Email Customer",
+      "email": "recovery_1791884488477@smap-ads.test",
+      "email_verified": false,
+      "profile_picture": null,
+      "phone": "9876543210",
+      "password_hash": "$2b$10$ziJlcpMXutlFglKzNQ/0gOW6wcmctc4XG.z1pmqC2vUNgPNtgcISW",
+      "role": "customer",
+      "status": "ACTIVE",
+      "created_at": "2026-10-13T09:41:28.617Z",
+      "last_login_at": "2026-10-13T09:41:28.617Z",
+      "wallet_balance": 0
+    },
+    {
+      "id": "usr_email_1791884488791_c25hc9",
+      "google_sub": "",
+      "name": "Phone Recovery Customer",
+      "email": "phone_rec_1791884488675@smap-ads.test",
+      "email_verified": false,
+      "profile_picture": null,
+      "phone": "9123456789",
+      "password_hash": "$2b$10$IxRWKQzOxk/Mf2MgCRgEVO7ObujOPHXcBaw.pEXjwoL6pA3SyWs3G",
+      "role": "customer",
+      "status": "ACTIVE",
+      "created_at": "2026-10-13T09:41:28.791Z",
+      "last_login_at": "2026-10-13T09:41:28.791Z",
+      "wallet_balance": 0
+    },
+    {
+      "id": "test_usr_1791884859953",
+      "email": "test_1791884859953@smap-ads.test",
+      "name": "Test Customer",
+      "role": "customer",
+      "status": "ACTIVE",
+      "google_sub": "sub_1791884859953",
+      "email_verified": true,
+      "profile_picture": null,
+      "last_login_at": "2026-10-13T09:47:39.953Z",
+      "wallet_balance": 300,
+      "created_at": "2026-10-13T09:47:39.953Z",
+      "updated_at": "2026-10-13T09:47:40.018Z"
+    },
+    {
+      "id": "test_admin_1791884861408",
+      "email": "admin@smap-ads.test",
+      "name": "SMAP Admin Support",
+      "role": "admin",
+      "status": "ACTIVE",
+      "google_sub": "sub_admin_1791884861408",
+      "email_verified": true,
+      "profile_picture": null,
+      "last_login_at": "2026-10-13T09:47:41.408Z",
+      "wallet_balance": 0,
+      "created_at": "2026-10-13T09:47:41.408Z",
+      "updated_at": "2026-10-13T09:47:41.408Z"
+    },
+    {
+      "id": "cust_audit_1791884861434",
+      "email": "audit_1791884861434@smap-ads.test",
+      "name": "Audit Customer",
+      "role": "customer",
+      "status": "ACTIVE",
+      "google_sub": "sub_audit_1791884861434",
+      "email_verified": true,
+      "profile_picture": null,
+      "last_login_at": "2026-10-13T09:47:41.434Z",
+      "wallet_balance": 2,
+      "created_at": "2026-10-13T09:47:41.434Z",
+      "updated_at": "2026-10-13T09:47:41.496Z"
+    },
+    {
+      "id": "usr_meta_1791884861518",
+      "email": "meta_1791884861518@test.com",
+      "name": "Customer With Assets",
+      "role": "customer",
+      "status": "ACTIVE",
+      "google_sub": "sub_1791884861518",
+      "email_verified": true,
+      "profile_picture": null,
+      "last_login_at": "2026-10-13T09:47:41.518Z",
+      "wallet_balance": 500,
+      "created_at": "2026-10-13T09:47:41.518Z",
+      "updated_at": "2026-10-13T09:47:41.518Z"
+    },
+    {
+      "id": "usr_email_1791884861978_g2mfuz",
+      "google_sub": "",
+      "name": "Recovery Email Customer",
+      "email": "recovery_1791884861835@smap-ads.test",
+      "email_verified": false,
+      "profile_picture": null,
+      "phone": "9876543210",
+      "password_hash": "$2b$10$CXu63v8R4hQ8FobJxZeIVeLqF5zuGit4fgTYM4PLjYvGVQ1z3XZTC",
+      "role": "customer",
+      "status": "ACTIVE",
+      "created_at": "2026-10-13T09:47:41.978Z",
+      "last_login_at": "2026-10-13T09:47:41.978Z",
+      "wallet_balance": 0
+    },
+    {
+      "id": "usr_email_1791884862155_71hpo9",
+      "google_sub": "",
+      "name": "Phone Recovery Customer",
+      "email": "phone_rec_1791884862033@smap-ads.test",
+      "email_verified": false,
+      "profile_picture": null,
+      "phone": "9123456789",
+      "password_hash": "$2b$10$5HQcM5/3IMolJhqpJN4gAuwqtuTK1gHEuS7RU8ziqwApKG7a9NjyG",
+      "role": "customer",
+      "status": "ACTIVE",
+      "created_at": "2026-10-13T09:47:42.155Z",
+      "last_login_at": "2026-10-13T09:47:42.155Z",
+      "wallet_balance": 0
+    },
+    {
+      "id": "test_usr_1791885043426",
+      "email": "test_1791885043426@smap-ads.test",
+      "name": "Test Customer",
+      "role": "customer",
+      "status": "ACTIVE",
+      "google_sub": "sub_1791885043426",
+      "email_verified": true,
+      "profile_picture": null,
+      "last_login_at": "2026-10-13T09:50:43.426Z",
+      "wallet_balance": 300,
+      "created_at": "2026-10-13T09:50:43.426Z",
+      "updated_at": "2026-10-13T09:50:43.496Z"
+    },
+    {
+      "id": "test_admin_1791885044802",
+      "email": "admin@smap-ads.test",
+      "name": "SMAP Admin Support",
+      "role": "admin",
+      "status": "ACTIVE",
+      "google_sub": "sub_admin_1791885044802",
+      "email_verified": true,
+      "profile_picture": null,
+      "last_login_at": "2026-10-13T09:50:44.802Z",
+      "wallet_balance": 0,
+      "created_at": "2026-10-13T09:50:44.802Z",
+      "updated_at": "2026-10-13T09:50:44.802Z"
+    },
+    {
+      "id": "cust_audit_1791885044835",
+      "email": "audit_1791885044835@smap-ads.test",
+      "name": "Audit Customer",
+      "role": "customer",
+      "status": "ACTIVE",
+      "google_sub": "sub_audit_1791885044835",
+      "email_verified": true,
+      "profile_picture": null,
+      "last_login_at": "2026-10-13T09:50:44.835Z",
+      "wallet_balance": 2,
+      "created_at": "2026-10-13T09:50:44.835Z",
+      "updated_at": "2026-10-13T09:50:44.920Z"
+    },
+    {
+      "id": "usr_meta_1791885044953",
+      "email": "meta_1791885044953@test.com",
+      "name": "Customer With Assets",
+      "role": "customer",
+      "status": "ACTIVE",
+      "google_sub": "sub_1791885044953",
+      "email_verified": true,
+      "profile_picture": null,
+      "last_login_at": "2026-10-13T09:50:44.953Z",
+      "wallet_balance": 500,
+      "created_at": "2026-10-13T09:50:44.953Z",
+      "updated_at": "2026-10-13T09:50:44.953Z"
+    },
+    {
+      "id": "usr_email_1791885045384_tthi0e",
+      "google_sub": "",
+      "name": "Recovery Email Customer",
+      "email": "recovery_1791885045255@smap-ads.test",
+      "email_verified": false,
+      "profile_picture": null,
+      "phone": "9876543210",
+      "password_hash": "$2b$10$ewn./Gsm3efr6VAcAQbESu/XKqyb5XqFvO/uLWILbe2XRdCxltrhi",
+      "role": "customer",
+      "status": "ACTIVE",
+      "created_at": "2026-10-13T09:50:45.384Z",
+      "last_login_at": "2026-10-13T09:50:45.384Z",
+      "wallet_balance": 0
+    },
+    {
+      "id": "usr_email_1791885045552_9g8rvs",
+      "google_sub": "",
+      "name": "Phone Recovery Customer",
+      "email": "phone_rec_1791885045438@smap-ads.test",
+      "email_verified": false,
+      "profile_picture": null,
+      "phone": "9123456789",
+      "password_hash": "$2b$10$FTs85rfcsrhOXlz3JwVY1eVsK.HcE7H6LExPD8Ad7xfQvR5vLoFdq",
+      "role": "customer",
+      "status": "ACTIVE",
+      "created_at": "2026-10-13T09:50:45.551Z",
+      "last_login_at": "2026-10-13T09:50:45.551Z",
+      "wallet_balance": 0
+    },
+    {
+      "id": "usr_email_1791885045745_murr6d",
+      "google_sub": "",
+      "name": "Cycle User",
+      "email": "fullcycle_1791885045640@smap-ads.test",
+      "email_verified": false,
+      "profile_picture": null,
+      "password_hash": "$2b$10$kL8F.uH1ZlCWx6Vw2/G9UeNez9b2OlMH9dbgW05/HgaZFJDzSwAQ6",
+      "role": "customer",
+      "status": "ACTIVE",
+      "created_at": "2026-10-13T09:50:45.745Z",
+      "last_login_at": "2026-10-13T09:50:45.745Z",
+      "wallet_balance": 0
+    },
+    {
+      "id": "test_usr_1791885062676",
+      "email": "test_1791885062676@smap-ads.test",
+      "name": "Test Customer",
+      "role": "customer",
+      "status": "ACTIVE",
+      "google_sub": "sub_1791885062676",
+      "email_verified": true,
+      "profile_picture": null,
+      "last_login_at": "2026-10-13T09:51:02.676Z",
+      "wallet_balance": 300,
+      "created_at": "2026-10-13T09:51:02.676Z",
+      "updated_at": "2026-10-13T09:51:02.742Z"
+    },
+    {
+      "id": "test_admin_1791885064029",
+      "email": "admin@smap-ads.test",
+      "name": "SMAP Admin Support",
+      "role": "admin",
+      "status": "ACTIVE",
+      "google_sub": "sub_admin_1791885064029",
+      "email_verified": true,
+      "profile_picture": null,
+      "last_login_at": "2026-10-13T09:51:04.029Z",
+      "wallet_balance": 0,
+      "created_at": "2026-10-13T09:51:04.029Z",
+      "updated_at": "2026-10-13T09:51:04.029Z"
+    },
+    {
+      "id": "cust_audit_1791885064063",
+      "email": "audit_1791885064063@smap-ads.test",
+      "name": "Audit Customer",
+      "role": "customer",
+      "status": "ACTIVE",
+      "google_sub": "sub_audit_1791885064063",
+      "email_verified": true,
+      "profile_picture": null,
+      "last_login_at": "2026-10-13T09:51:04.063Z",
+      "wallet_balance": 2,
+      "created_at": "2026-10-13T09:51:04.063Z",
+      "updated_at": "2026-10-13T09:51:04.156Z"
+    },
+    {
+      "id": "usr_meta_1791885064188",
+      "email": "meta_1791885064188@test.com",
+      "name": "Customer With Assets",
+      "role": "customer",
+      "status": "ACTIVE",
+      "google_sub": "sub_1791885064188",
+      "email_verified": true,
+      "profile_picture": null,
+      "last_login_at": "2026-10-13T09:51:04.188Z",
+      "wallet_balance": 500,
+      "created_at": "2026-10-13T09:51:04.188Z",
+      "updated_at": "2026-10-13T09:51:04.188Z"
+    },
+    {
+      "id": "usr_email_1791885064650_lzrguz",
+      "google_sub": "",
+      "name": "Recovery Email Customer",
+      "email": "recovery_1791885064497@smap-ads.test",
+      "email_verified": false,
+      "profile_picture": null,
+      "phone": "9876543210",
+      "password_hash": "$2b$10$7./qtBO8lqG.Xi2hEK5tJ.GQ90xIXBe6mcSG7zbY5ctt7wYukb9p6",
+      "role": "customer",
+      "status": "ACTIVE",
+      "created_at": "2026-10-13T09:51:04.650Z",
+      "last_login_at": "2026-10-13T09:51:04.650Z",
+      "wallet_balance": 0
+    },
+    {
+      "id": "usr_email_1791885064822_grde1y",
+      "google_sub": "",
+      "name": "Phone Recovery Customer",
+      "email": "phone_rec_1791885064711@smap-ads.test",
+      "email_verified": false,
+      "profile_picture": null,
+      "phone": "9123456789",
+      "password_hash": "$2b$10$uDkzpW0QRvqt3vEumQwSh.W4lzIlfW4LF822UyqAXefn/xsn4ng1G",
+      "role": "customer",
+      "status": "ACTIVE",
+      "created_at": "2026-10-13T09:51:04.822Z",
+      "last_login_at": "2026-10-13T09:51:04.822Z",
+      "wallet_balance": 0
+    },
+    {
+      "id": "usr_email_1791885065049_xyo9a9",
+      "google_sub": "",
+      "name": "Cycle User",
+      "email": "fullcycle_1791885064918@smap-ads.test",
+      "email_verified": false,
+      "profile_picture": null,
+      "password_hash": "$2b$10$JPxCYgRANYpXCjTxONqYcegKfTh0vVvc1kk6euKkum/MzFGLUtv2m",
+      "role": "customer",
+      "status": "ACTIVE",
+      "created_at": "2026-10-13T09:51:05.049Z",
+      "last_login_at": "2026-10-13T09:51:05.049Z",
+      "wallet_balance": 0
+    },
+    {
+      "id": "test_usr_1791885122307",
+      "email": "test_1791885122307@smap-ads.test",
+      "name": "Test Customer",
+      "role": "customer",
+      "status": "ACTIVE",
+      "google_sub": "sub_1791885122307",
+      "email_verified": true,
+      "profile_picture": null,
+      "last_login_at": "2026-10-13T09:52:02.307Z",
+      "wallet_balance": 300,
+      "created_at": "2026-10-13T09:52:02.308Z",
+      "updated_at": "2026-10-13T09:52:02.387Z"
+    },
+    {
+      "id": "test_admin_1791885123759",
+      "email": "admin@smap-ads.test",
+      "name": "SMAP Admin Support",
+      "role": "admin",
+      "status": "ACTIVE",
+      "google_sub": "sub_admin_1791885123759",
+      "email_verified": true,
+      "profile_picture": null,
+      "last_login_at": "2026-10-13T09:52:03.759Z",
+      "wallet_balance": 0,
+      "created_at": "2026-10-13T09:52:03.759Z",
+      "updated_at": "2026-10-13T09:52:03.759Z"
+    },
+    {
+      "id": "cust_audit_1791885123796",
+      "email": "audit_1791885123797@smap-ads.test",
+      "name": "Audit Customer",
+      "role": "customer",
+      "status": "ACTIVE",
+      "google_sub": "sub_audit_1791885123797",
+      "email_verified": true,
+      "profile_picture": null,
+      "last_login_at": "2026-10-13T09:52:03.797Z",
+      "wallet_balance": 2,
+      "created_at": "2026-10-13T09:52:03.797Z",
+      "updated_at": "2026-10-13T09:52:03.871Z"
+    },
+    {
+      "id": "usr_meta_1791885123899",
+      "email": "meta_1791885123899@test.com",
+      "name": "Customer With Assets",
+      "role": "customer",
+      "status": "ACTIVE",
+      "google_sub": "sub_1791885123899",
+      "email_verified": true,
+      "profile_picture": null,
+      "last_login_at": "2026-10-13T09:52:03.899Z",
+      "wallet_balance": 500,
+      "created_at": "2026-10-13T09:52:03.899Z",
+      "updated_at": "2026-10-13T09:52:03.899Z"
+    },
+    {
+      "id": "usr_email_1791885124340_y89hyb",
+      "google_sub": "",
+      "name": "Recovery Email Customer",
+      "email": "recovery_1791885124201@smap-ads.test",
+      "email_verified": false,
+      "profile_picture": null,
+      "phone": "9876543210",
+      "password_hash": "$2b$10$xw8ZwYHgWkuOlLYDvR6MTupViIQyFrrqZ220U6N62kUQACoRfwdm2",
+      "role": "customer",
+      "status": "ACTIVE",
+      "created_at": "2026-10-13T09:52:04.340Z",
+      "last_login_at": "2026-10-13T09:52:04.340Z"
+    },
+    {
+      "id": "usr_email_1791885124502_b5kx0o",
+      "google_sub": "",
+      "name": "Phone Recovery Customer",
+      "email": "phone_rec_1791885124392@smap-ads.test",
+      "email_verified": false,
+      "profile_picture": null,
+      "phone": "9123456789",
+      "password_hash": "$2b$10$KX68auwQvJD0Ax/OJhxtyejvYNz9dzp3pVsA0H9NMgRuoFogucSIm",
+      "role": "customer",
+      "status": "ACTIVE",
+      "created_at": "2026-10-13T09:52:04.502Z",
+      "last_login_at": "2026-10-13T09:52:04.502Z"
+    },
+    {
+      "id": "usr_email_1791885124695_pt80y1",
+      "google_sub": "",
+      "name": "Cycle User",
+      "email": "fullcycle_1791885124590@smap-ads.test",
+      "email_verified": false,
+      "profile_picture": null,
+      "password_hash": "$2b$10$0MMcqnPwg5dqdkeEqtWzfu4Xdv6fRKBPpRL6Jtc3oeSOLGq/JtOru",
+      "role": "customer",
+      "status": "ACTIVE",
+      "created_at": "2026-10-13T09:52:04.695Z",
+      "last_login_at": "2026-10-13T09:52:04.695Z"
     }
   ],
   "packages": [
@@ -1314,6 +1785,1541 @@
     }
   ],
   "campaigns": [
+    {
+      "id": "smap_cmp_1791885123912_65c88x",
+      "user_id": "usr_meta_1791885123899",
+      "package_id": "pkg_starter_200",
+      "objective": "TRAFFIC",
+      "creative_url": "https://example.com/asset.jpg",
+      "creative_type": "image",
+      "business_name": "Customer Brand",
+      "primary_text": "Visit our new store online today!",
+      "headline": "Grand Opening Special",
+      "description": "",
+      "call_to_action": "LEARN_MORE",
+      "destination_type": "website",
+      "destination_url": "https://example.com",
+      "placements": [
+        "facebook_feed",
+        "instagram_feed",
+        "instagram_stories",
+        "instagram_reels"
+      ],
+      "targeting": {
+        "country": "IN",
+        "state": "All States",
+        "city": "All Cities",
+        "min_age": 18,
+        "max_age": 65,
+        "gender": "ALL",
+        "interests": [
+          "Online Shopping",
+          "Small Business"
+        ],
+        "locations": [
+          "All India"
+        ],
+        "estimated_audience_size": "18M - 24M people"
+      },
+      "daily_budget": 40,
+      "duration_days": 5,
+      "total_budget": 200,
+      "start_at": "2026-10-13T09:52:03.912Z",
+      "end_at": "2026-10-18T09:52:03.912Z",
+      "status": "DRAFT",
+      "meta_campaign_id": null,
+      "meta_adset_id": null,
+      "meta_creative_id": null,
+      "meta_ad_id": null,
+      "meta_account_id": "act_1627260695520511",
+      "meta_status_message": "Meta Campaign draft creation error: Malformed access token EAAP_mock_customer_long_lived_token",
+      "rejection_reason": null,
+      "error_details": null,
+      "created_at": "2026-10-13T09:52:03.912Z",
+      "updated_at": "2026-10-13T09:52:03.912Z"
+    },
+    {
+      "id": "cmp_recon_1791885122471",
+      "user_id": "test_usr_1791885122307",
+      "package_id": "pkg_starter_200",
+      "objective": "TRAFFIC",
+      "creative_url": "https://example.com/c.jpg",
+      "creative_type": "image",
+      "business_name": "Reconcile Test",
+      "primary_text": "Reconcile",
+      "headline": "Reconcile",
+      "description": "",
+      "call_to_action": "LEARN_MORE",
+      "destination_type": "website",
+      "destination_url": "https://example.com",
+      "placements": [
+        "facebook_feed"
+      ],
+      "targeting": {
+        "country": "IN",
+        "state": "All India",
+        "city": "All Cities",
+        "min_age": 18,
+        "max_age": 65,
+        "gender": "ALL",
+        "interests": [],
+        "locations": [
+          "All India"
+        ],
+        "estimated_audience_size": "10M"
+      },
+      "daily_budget": 40,
+      "duration_days": 5,
+      "total_budget": 200,
+      "start_at": "2026-10-13T09:52:02.471Z",
+      "end_at": "2026-10-18T09:52:02.471Z",
+      "status": "UNDER_REVIEW",
+      "meta_campaign_id": "120251658136230295",
+      "meta_adset_id": null,
+      "meta_creative_id": null,
+      "meta_ad_id": null,
+      "meta_account_id": "act_1627260695520511",
+      "meta_status_message": "In review",
+      "rejection_reason": null,
+      "error_details": null,
+      "created_at": "2026-10-13T09:52:02.471Z",
+      "updated_at": "2026-10-13T09:52:02.471Z"
+    },
+    {
+      "id": "cmp_fail_1791885122455",
+      "user_id": "test_usr_1791885122307",
+      "package_id": "pkg_starter_200",
+      "objective": "TRAFFIC",
+      "creative_url": "https://example.com/img.jpg",
+      "creative_type": "image",
+      "business_name": "Test Failure",
+      "primary_text": "Ad copy",
+      "headline": "Headline",
+      "description": "",
+      "call_to_action": "LEARN_MORE",
+      "destination_type": "website",
+      "destination_url": "https://example.com",
+      "placements": [
+        "facebook_feed"
+      ],
+      "targeting": {
+        "country": "IN",
+        "state": "All India",
+        "city": "All Cities",
+        "min_age": 18,
+        "max_age": 65,
+        "gender": "ALL",
+        "interests": [],
+        "locations": [
+          "All India"
+        ],
+        "estimated_audience_size": "10M"
+      },
+      "daily_budget": 40,
+      "duration_days": 5,
+      "total_budget": 200,
+      "start_at": "2026-10-13T09:52:02.455Z",
+      "end_at": "2026-10-18T09:52:02.455Z",
+      "status": "PAYMENT_CONFIRMED",
+      "meta_campaign_id": null,
+      "meta_adset_id": null,
+      "meta_creative_id": null,
+      "meta_ad_id": null,
+      "meta_account_id": "act_1627260695520511",
+      "meta_status_message": "Payment confirmed. Meta submission error occurred: Ad account requires active payment method on Meta.",
+      "rejection_reason": null,
+      "error_details": "Ad account requires active payment method on Meta.",
+      "created_at": "2026-10-13T09:52:02.455Z",
+      "updated_at": "2026-10-13T09:52:02.455Z"
+    },
+    {
+      "id": "smap_cmp_1791885122387_o5j1hm",
+      "user_id": "test_usr_1791885122307",
+      "package_id": "pkg_starter_200",
+      "objective": "TRAFFIC",
+      "creative_url": "https://example.com/funded.jpg",
+      "creative_type": "image",
+      "business_name": "Funded Campaign",
+      "primary_text": "Sufficient funds test",
+      "headline": "Successfully Paid",
+      "description": "",
+      "call_to_action": "LEARN_MORE",
+      "destination_type": "website",
+      "destination_url": "https://example.com/funded",
+      "placements": [
+        "facebook_feed",
+        "instagram_feed",
+        "instagram_stories",
+        "instagram_reels"
+      ],
+      "targeting": {
+        "country": "IN",
+        "state": "All States",
+        "city": "All Cities",
+        "min_age": 18,
+        "max_age": 65,
+        "gender": "ALL",
+        "interests": [
+          "Online Shopping",
+          "Small Business"
+        ],
+        "locations": [
+          "All India"
+        ],
+        "estimated_audience_size": "18M - 24M people"
+      },
+      "daily_budget": 40,
+      "duration_days": 5,
+      "total_budget": 200,
+      "start_at": "2026-10-13T09:52:02.387Z",
+      "end_at": "2026-10-18T09:52:02.387Z",
+      "status": "FAILED",
+      "meta_campaign_id": null,
+      "meta_adset_id": null,
+      "meta_creative_id": null,
+      "meta_ad_id": null,
+      "meta_account_id": "act_1627260695520511",
+      "meta_status_message": "Submission Blocked: Real campaign submissions to Meta are safely disabled (META_LIVE_SUBMISSIONS_ENABLED is not true). No campaigns will be launched, and no money will be spent on Meta until the owner verifies production access and explicitly enables this flag.",
+      "rejection_reason": "Submission Blocked: Real campaign submissions to Meta are safely disabled (META_LIVE_SUBMISSIONS_ENABLED is not true). No campaigns will be launched, and no money will be spent on Meta until the owner verifies production access and explicitly enables this flag.",
+      "error_details": "Submission Blocked: Real campaign submissions to Meta are safely disabled (META_LIVE_SUBMISSIONS_ENABLED is not true). No campaigns will be launched, and no money will be spent on Meta until the owner verifies production access and explicitly enables this flag.",
+      "created_at": "2026-10-13T09:52:02.387Z",
+      "updated_at": "2026-10-13T09:52:02.433Z",
+      "idempotency_key": "idem_test_order_1"
+    },
+    {
+      "id": "smap_cmp_1791885122342_dclvkj",
+      "user_id": "test_usr_1791885122307",
+      "package_id": "pkg_starter_200",
+      "objective": "TRAFFIC",
+      "creative_url": "https://example.com/all-india.jpg",
+      "creative_type": "image",
+      "business_name": "All India Store",
+      "primary_text": "Nationwide shipping",
+      "headline": "Nationwide Offer",
+      "description": "",
+      "call_to_action": "LEARN_MORE",
+      "destination_type": "website",
+      "destination_url": "https://example.com/all-india",
+      "placements": [
+        "facebook_feed",
+        "instagram_feed",
+        "instagram_stories",
+        "instagram_reels"
+      ],
+      "targeting": {
+        "country": "IN",
+        "state": "All States",
+        "city": "All Cities",
+        "min_age": 18,
+        "max_age": 65,
+        "gender": "ALL",
+        "interests": [
+          "Online Shopping"
+        ],
+        "locations": [
+          "All India"
+        ],
+        "estimated_audience_size": "22M people"
+      },
+      "daily_budget": 40,
+      "duration_days": 5,
+      "total_budget": 200,
+      "start_at": "2026-10-13T09:52:02.342Z",
+      "end_at": "2026-10-18T09:52:02.342Z",
+      "status": "DRAFT",
+      "meta_campaign_id": null,
+      "meta_adset_id": null,
+      "meta_creative_id": null,
+      "meta_ad_id": null,
+      "meta_account_id": "act_1627260695520511",
+      "meta_status_message": "Draft campaign created safely. Non-delivering, ₹0 spend.",
+      "rejection_reason": null,
+      "error_details": null,
+      "created_at": "2026-10-13T09:52:02.342Z",
+      "updated_at": "2026-10-13T09:52:02.342Z"
+    },
+    {
+      "id": "smap_cmp_1791885122323_f7movv",
+      "user_id": "test_usr_1791885122307",
+      "package_id": "pkg_starter_200",
+      "objective": "TRAFFIC",
+      "creative_url": "https://example.com/mh.jpg",
+      "creative_type": "image",
+      "business_name": "MH Store",
+      "primary_text": "Festive shopping",
+      "headline": "MH Festive Offer",
+      "description": "",
+      "call_to_action": "LEARN_MORE",
+      "destination_type": "website",
+      "destination_url": "https://example.com/mh",
+      "placements": [
+        "facebook_feed",
+        "instagram_feed",
+        "instagram_stories",
+        "instagram_reels"
+      ],
+      "targeting": {
+        "country": "IN",
+        "state": "Maharashtra",
+        "city": "Mumbai",
+        "min_age": 21,
+        "max_age": 45,
+        "gender": "WOMEN",
+        "interests": [
+          "Festive Shopping",
+          "Jewelry"
+        ],
+        "locations": [
+          "Mumbai",
+          "Pune"
+        ],
+        "estimated_audience_size": "4.2M people"
+      },
+      "daily_budget": 40,
+      "duration_days": 5,
+      "total_budget": 200,
+      "start_at": "2026-10-13T09:52:02.323Z",
+      "end_at": "2026-10-18T09:52:02.323Z",
+      "status": "DRAFT",
+      "meta_campaign_id": null,
+      "meta_adset_id": null,
+      "meta_creative_id": null,
+      "meta_ad_id": null,
+      "meta_account_id": "act_1627260695520511",
+      "meta_status_message": "Draft campaign created safely. Non-delivering, ₹0 spend.",
+      "rejection_reason": null,
+      "error_details": null,
+      "created_at": "2026-10-13T09:52:02.323Z",
+      "updated_at": "2026-10-13T09:52:02.323Z"
+    },
+    {
+      "id": "smap_cmp_1791885064207_6sva88",
+      "user_id": "usr_meta_1791885064188",
+      "package_id": "pkg_starter_200",
+      "objective": "TRAFFIC",
+      "creative_url": "https://example.com/asset.jpg",
+      "creative_type": "image",
+      "business_name": "Customer Brand",
+      "primary_text": "Visit our new store online today!",
+      "headline": "Grand Opening Special",
+      "description": "",
+      "call_to_action": "LEARN_MORE",
+      "destination_type": "website",
+      "destination_url": "https://example.com",
+      "placements": [
+        "facebook_feed",
+        "instagram_feed",
+        "instagram_stories",
+        "instagram_reels"
+      ],
+      "targeting": {
+        "country": "IN",
+        "state": "All States",
+        "city": "All Cities",
+        "min_age": 18,
+        "max_age": 65,
+        "gender": "ALL",
+        "interests": [
+          "Online Shopping",
+          "Small Business"
+        ],
+        "locations": [
+          "All India"
+        ],
+        "estimated_audience_size": "18M - 24M people"
+      },
+      "daily_budget": 40,
+      "duration_days": 5,
+      "total_budget": 200,
+      "start_at": "2026-10-13T09:51:04.207Z",
+      "end_at": "2026-10-18T09:51:04.207Z",
+      "status": "DRAFT",
+      "meta_campaign_id": null,
+      "meta_adset_id": null,
+      "meta_creative_id": null,
+      "meta_ad_id": null,
+      "meta_account_id": "act_1627260695520511",
+      "meta_status_message": "Meta Campaign draft creation error: Malformed access token EAAP_mock_customer_long_lived_token",
+      "rejection_reason": null,
+      "error_details": null,
+      "created_at": "2026-10-13T09:51:04.207Z",
+      "updated_at": "2026-10-13T09:51:04.207Z"
+    },
+    {
+      "id": "cmp_recon_1791885062816",
+      "user_id": "test_usr_1791885062676",
+      "package_id": "pkg_starter_200",
+      "objective": "TRAFFIC",
+      "creative_url": "https://example.com/c.jpg",
+      "creative_type": "image",
+      "business_name": "Reconcile Test",
+      "primary_text": "Reconcile",
+      "headline": "Reconcile",
+      "description": "",
+      "call_to_action": "LEARN_MORE",
+      "destination_type": "website",
+      "destination_url": "https://example.com",
+      "placements": [
+        "facebook_feed"
+      ],
+      "targeting": {
+        "country": "IN",
+        "state": "All India",
+        "city": "All Cities",
+        "min_age": 18,
+        "max_age": 65,
+        "gender": "ALL",
+        "interests": [],
+        "locations": [
+          "All India"
+        ],
+        "estimated_audience_size": "10M"
+      },
+      "daily_budget": 40,
+      "duration_days": 5,
+      "total_budget": 200,
+      "start_at": "2026-10-13T09:51:02.816Z",
+      "end_at": "2026-10-18T09:51:02.816Z",
+      "status": "UNDER_REVIEW",
+      "meta_campaign_id": "120251658136230295",
+      "meta_adset_id": null,
+      "meta_creative_id": null,
+      "meta_ad_id": null,
+      "meta_account_id": "act_1627260695520511",
+      "meta_status_message": "In review",
+      "rejection_reason": null,
+      "error_details": null,
+      "created_at": "2026-10-13T09:51:02.816Z",
+      "updated_at": "2026-10-13T09:51:02.816Z"
+    },
+    {
+      "id": "cmp_fail_1791885062803",
+      "user_id": "test_usr_1791885062676",
+      "package_id": "pkg_starter_200",
+      "objective": "TRAFFIC",
+      "creative_url": "https://example.com/img.jpg",
+      "creative_type": "image",
+      "business_name": "Test Failure",
+      "primary_text": "Ad copy",
+      "headline": "Headline",
+      "description": "",
+      "call_to_action": "LEARN_MORE",
+      "destination_type": "website",
+      "destination_url": "https://example.com",
+      "placements": [
+        "facebook_feed"
+      ],
+      "targeting": {
+        "country": "IN",
+        "state": "All India",
+        "city": "All Cities",
+        "min_age": 18,
+        "max_age": 65,
+        "gender": "ALL",
+        "interests": [],
+        "locations": [
+          "All India"
+        ],
+        "estimated_audience_size": "10M"
+      },
+      "daily_budget": 40,
+      "duration_days": 5,
+      "total_budget": 200,
+      "start_at": "2026-10-13T09:51:02.803Z",
+      "end_at": "2026-10-18T09:51:02.803Z",
+      "status": "PAYMENT_CONFIRMED",
+      "meta_campaign_id": null,
+      "meta_adset_id": null,
+      "meta_creative_id": null,
+      "meta_ad_id": null,
+      "meta_account_id": "act_1627260695520511",
+      "meta_status_message": "Payment confirmed. Meta submission error occurred: Ad account requires active payment method on Meta.",
+      "rejection_reason": null,
+      "error_details": "Ad account requires active payment method on Meta.",
+      "created_at": "2026-10-13T09:51:02.804Z",
+      "updated_at": "2026-10-13T09:51:02.804Z"
+    },
+    {
+      "id": "smap_cmp_1791885062742_acylw3",
+      "user_id": "test_usr_1791885062676",
+      "package_id": "pkg_starter_200",
+      "objective": "TRAFFIC",
+      "creative_url": "https://example.com/funded.jpg",
+      "creative_type": "image",
+      "business_name": "Funded Campaign",
+      "primary_text": "Sufficient funds test",
+      "headline": "Successfully Paid",
+      "description": "",
+      "call_to_action": "LEARN_MORE",
+      "destination_type": "website",
+      "destination_url": "https://example.com/funded",
+      "placements": [
+        "facebook_feed",
+        "instagram_feed",
+        "instagram_stories",
+        "instagram_reels"
+      ],
+      "targeting": {
+        "country": "IN",
+        "state": "All States",
+        "city": "All Cities",
+        "min_age": 18,
+        "max_age": 65,
+        "gender": "ALL",
+        "interests": [
+          "Online Shopping",
+          "Small Business"
+        ],
+        "locations": [
+          "All India"
+        ],
+        "estimated_audience_size": "18M - 24M people"
+      },
+      "daily_budget": 40,
+      "duration_days": 5,
+      "total_budget": 200,
+      "start_at": "2026-10-13T09:51:02.742Z",
+      "end_at": "2026-10-18T09:51:02.742Z",
+      "status": "FAILED",
+      "meta_campaign_id": null,
+      "meta_adset_id": null,
+      "meta_creative_id": null,
+      "meta_ad_id": null,
+      "meta_account_id": "act_1627260695520511",
+      "meta_status_message": "Submission Blocked: Real campaign submissions to Meta are safely disabled (META_LIVE_SUBMISSIONS_ENABLED is not true). No campaigns will be launched, and no money will be spent on Meta until the owner verifies production access and explicitly enables this flag.",
+      "rejection_reason": "Submission Blocked: Real campaign submissions to Meta are safely disabled (META_LIVE_SUBMISSIONS_ENABLED is not true). No campaigns will be launched, and no money will be spent on Meta until the owner verifies production access and explicitly enables this flag.",
+      "error_details": "Submission Blocked: Real campaign submissions to Meta are safely disabled (META_LIVE_SUBMISSIONS_ENABLED is not true). No campaigns will be launched, and no money will be spent on Meta until the owner verifies production access and explicitly enables this flag.",
+      "created_at": "2026-10-13T09:51:02.742Z",
+      "updated_at": "2026-10-13T09:51:02.784Z",
+      "idempotency_key": "idem_test_order_1"
+    },
+    {
+      "id": "smap_cmp_1791885062704_s63vj5",
+      "user_id": "test_usr_1791885062676",
+      "package_id": "pkg_starter_200",
+      "objective": "TRAFFIC",
+      "creative_url": "https://example.com/all-india.jpg",
+      "creative_type": "image",
+      "business_name": "All India Store",
+      "primary_text": "Nationwide shipping",
+      "headline": "Nationwide Offer",
+      "description": "",
+      "call_to_action": "LEARN_MORE",
+      "destination_type": "website",
+      "destination_url": "https://example.com/all-india",
+      "placements": [
+        "facebook_feed",
+        "instagram_feed",
+        "instagram_stories",
+        "instagram_reels"
+      ],
+      "targeting": {
+        "country": "IN",
+        "state": "All States",
+        "city": "All Cities",
+        "min_age": 18,
+        "max_age": 65,
+        "gender": "ALL",
+        "interests": [
+          "Online Shopping"
+        ],
+        "locations": [
+          "All India"
+        ],
+        "estimated_audience_size": "22M people"
+      },
+      "daily_budget": 40,
+      "duration_days": 5,
+      "total_budget": 200,
+      "start_at": "2026-10-13T09:51:02.704Z",
+      "end_at": "2026-10-18T09:51:02.704Z",
+      "status": "DRAFT",
+      "meta_campaign_id": null,
+      "meta_adset_id": null,
+      "meta_creative_id": null,
+      "meta_ad_id": null,
+      "meta_account_id": "act_1627260695520511",
+      "meta_status_message": "Draft campaign created safely. Non-delivering, ₹0 spend.",
+      "rejection_reason": null,
+      "error_details": null,
+      "created_at": "2026-10-13T09:51:02.704Z",
+      "updated_at": "2026-10-13T09:51:02.704Z"
+    },
+    {
+      "id": "smap_cmp_1791885062690_nqgr2g",
+      "user_id": "test_usr_1791885062676",
+      "package_id": "pkg_starter_200",
+      "objective": "TRAFFIC",
+      "creative_url": "https://example.com/mh.jpg",
+      "creative_type": "image",
+      "business_name": "MH Store",
+      "primary_text": "Festive shopping",
+      "headline": "MH Festive Offer",
+      "description": "",
+      "call_to_action": "LEARN_MORE",
+      "destination_type": "website",
+      "destination_url": "https://example.com/mh",
+      "placements": [
+        "facebook_feed",
+        "instagram_feed",
+        "instagram_stories",
+        "instagram_reels"
+      ],
+      "targeting": {
+        "country": "IN",
+        "state": "Maharashtra",
+        "city": "Mumbai",
+        "min_age": 21,
+        "max_age": 45,
+        "gender": "WOMEN",
+        "interests": [
+          "Festive Shopping",
+          "Jewelry"
+        ],
+        "locations": [
+          "Mumbai",
+          "Pune"
+        ],
+        "estimated_audience_size": "4.2M people"
+      },
+      "daily_budget": 40,
+      "duration_days": 5,
+      "total_budget": 200,
+      "start_at": "2026-10-13T09:51:02.690Z",
+      "end_at": "2026-10-18T09:51:02.690Z",
+      "status": "DRAFT",
+      "meta_campaign_id": null,
+      "meta_adset_id": null,
+      "meta_creative_id": null,
+      "meta_ad_id": null,
+      "meta_account_id": "act_1627260695520511",
+      "meta_status_message": "Draft campaign created safely. Non-delivering, ₹0 spend.",
+      "rejection_reason": null,
+      "error_details": null,
+      "created_at": "2026-10-13T09:51:02.690Z",
+      "updated_at": "2026-10-13T09:51:02.690Z"
+    },
+    {
+      "id": "smap_cmp_1791885044969_umfxor",
+      "user_id": "usr_meta_1791885044953",
+      "package_id": "pkg_starter_200",
+      "objective": "TRAFFIC",
+      "creative_url": "https://example.com/asset.jpg",
+      "creative_type": "image",
+      "business_name": "Customer Brand",
+      "primary_text": "Visit our new store online today!",
+      "headline": "Grand Opening Special",
+      "description": "",
+      "call_to_action": "LEARN_MORE",
+      "destination_type": "website",
+      "destination_url": "https://example.com",
+      "placements": [
+        "facebook_feed",
+        "instagram_feed",
+        "instagram_stories",
+        "instagram_reels"
+      ],
+      "targeting": {
+        "country": "IN",
+        "state": "All States",
+        "city": "All Cities",
+        "min_age": 18,
+        "max_age": 65,
+        "gender": "ALL",
+        "interests": [
+          "Online Shopping",
+          "Small Business"
+        ],
+        "locations": [
+          "All India"
+        ],
+        "estimated_audience_size": "18M - 24M people"
+      },
+      "daily_budget": 40,
+      "duration_days": 5,
+      "total_budget": 200,
+      "start_at": "2026-10-13T09:50:44.969Z",
+      "end_at": "2026-10-18T09:50:44.969Z",
+      "status": "DRAFT",
+      "meta_campaign_id": null,
+      "meta_adset_id": null,
+      "meta_creative_id": null,
+      "meta_ad_id": null,
+      "meta_account_id": "act_1627260695520511",
+      "meta_status_message": "Meta Campaign draft creation error: Malformed access token EAAP_mock_customer_long_lived_token",
+      "rejection_reason": null,
+      "error_details": null,
+      "created_at": "2026-10-13T09:50:44.969Z",
+      "updated_at": "2026-10-13T09:50:44.969Z"
+    },
+    {
+      "id": "cmp_recon_1791885043577",
+      "user_id": "test_usr_1791885043426",
+      "package_id": "pkg_starter_200",
+      "objective": "TRAFFIC",
+      "creative_url": "https://example.com/c.jpg",
+      "creative_type": "image",
+      "business_name": "Reconcile Test",
+      "primary_text": "Reconcile",
+      "headline": "Reconcile",
+      "description": "",
+      "call_to_action": "LEARN_MORE",
+      "destination_type": "website",
+      "destination_url": "https://example.com",
+      "placements": [
+        "facebook_feed"
+      ],
+      "targeting": {
+        "country": "IN",
+        "state": "All India",
+        "city": "All Cities",
+        "min_age": 18,
+        "max_age": 65,
+        "gender": "ALL",
+        "interests": [],
+        "locations": [
+          "All India"
+        ],
+        "estimated_audience_size": "10M"
+      },
+      "daily_budget": 40,
+      "duration_days": 5,
+      "total_budget": 200,
+      "start_at": "2026-10-13T09:50:43.577Z",
+      "end_at": "2026-10-18T09:50:43.577Z",
+      "status": "UNDER_REVIEW",
+      "meta_campaign_id": "120251658136230295",
+      "meta_adset_id": null,
+      "meta_creative_id": null,
+      "meta_ad_id": null,
+      "meta_account_id": "act_1627260695520511",
+      "meta_status_message": "In review",
+      "rejection_reason": null,
+      "error_details": null,
+      "created_at": "2026-10-13T09:50:43.577Z",
+      "updated_at": "2026-10-13T09:50:43.577Z"
+    },
+    {
+      "id": "cmp_fail_1791885043563",
+      "user_id": "test_usr_1791885043426",
+      "package_id": "pkg_starter_200",
+      "objective": "TRAFFIC",
+      "creative_url": "https://example.com/img.jpg",
+      "creative_type": "image",
+      "business_name": "Test Failure",
+      "primary_text": "Ad copy",
+      "headline": "Headline",
+      "description": "",
+      "call_to_action": "LEARN_MORE",
+      "destination_type": "website",
+      "destination_url": "https://example.com",
+      "placements": [
+        "facebook_feed"
+      ],
+      "targeting": {
+        "country": "IN",
+        "state": "All India",
+        "city": "All Cities",
+        "min_age": 18,
+        "max_age": 65,
+        "gender": "ALL",
+        "interests": [],
+        "locations": [
+          "All India"
+        ],
+        "estimated_audience_size": "10M"
+      },
+      "daily_budget": 40,
+      "duration_days": 5,
+      "total_budget": 200,
+      "start_at": "2026-10-13T09:50:43.563Z",
+      "end_at": "2026-10-18T09:50:43.563Z",
+      "status": "PAYMENT_CONFIRMED",
+      "meta_campaign_id": null,
+      "meta_adset_id": null,
+      "meta_creative_id": null,
+      "meta_ad_id": null,
+      "meta_account_id": "act_1627260695520511",
+      "meta_status_message": "Payment confirmed. Meta submission error occurred: Ad account requires active payment method on Meta.",
+      "rejection_reason": null,
+      "error_details": "Ad account requires active payment method on Meta.",
+      "created_at": "2026-10-13T09:50:43.563Z",
+      "updated_at": "2026-10-13T09:50:43.563Z"
+    },
+    {
+      "id": "smap_cmp_1791885043495_5moe3p",
+      "user_id": "test_usr_1791885043426",
+      "package_id": "pkg_starter_200",
+      "objective": "TRAFFIC",
+      "creative_url": "https://example.com/funded.jpg",
+      "creative_type": "image",
+      "business_name": "Funded Campaign",
+      "primary_text": "Sufficient funds test",
+      "headline": "Successfully Paid",
+      "description": "",
+      "call_to_action": "LEARN_MORE",
+      "destination_type": "website",
+      "destination_url": "https://example.com/funded",
+      "placements": [
+        "facebook_feed",
+        "instagram_feed",
+        "instagram_stories",
+        "instagram_reels"
+      ],
+      "targeting": {
+        "country": "IN",
+        "state": "All States",
+        "city": "All Cities",
+        "min_age": 18,
+        "max_age": 65,
+        "gender": "ALL",
+        "interests": [
+          "Online Shopping",
+          "Small Business"
+        ],
+        "locations": [
+          "All India"
+        ],
+        "estimated_audience_size": "18M - 24M people"
+      },
+      "daily_budget": 40,
+      "duration_days": 5,
+      "total_budget": 200,
+      "start_at": "2026-10-13T09:50:43.495Z",
+      "end_at": "2026-10-18T09:50:43.495Z",
+      "status": "FAILED",
+      "meta_campaign_id": null,
+      "meta_adset_id": null,
+      "meta_creative_id": null,
+      "meta_ad_id": null,
+      "meta_account_id": "act_1627260695520511",
+      "meta_status_message": "Submission Blocked: Real campaign submissions to Meta are safely disabled (META_LIVE_SUBMISSIONS_ENABLED is not true). No campaigns will be launched, and no money will be spent on Meta until the owner verifies production access and explicitly enables this flag.",
+      "rejection_reason": "Submission Blocked: Real campaign submissions to Meta are safely disabled (META_LIVE_SUBMISSIONS_ENABLED is not true). No campaigns will be launched, and no money will be spent on Meta until the owner verifies production access and explicitly enables this flag.",
+      "error_details": "Submission Blocked: Real campaign submissions to Meta are safely disabled (META_LIVE_SUBMISSIONS_ENABLED is not true). No campaigns will be launched, and no money will be spent on Meta until the owner verifies production access and explicitly enables this flag.",
+      "created_at": "2026-10-13T09:50:43.495Z",
+      "updated_at": "2026-10-13T09:50:43.535Z",
+      "idempotency_key": "idem_test_order_1"
+    },
+    {
+      "id": "smap_cmp_1791885043455_w15j5d",
+      "user_id": "test_usr_1791885043426",
+      "package_id": "pkg_starter_200",
+      "objective": "TRAFFIC",
+      "creative_url": "https://example.com/all-india.jpg",
+      "creative_type": "image",
+      "business_name": "All India Store",
+      "primary_text": "Nationwide shipping",
+      "headline": "Nationwide Offer",
+      "description": "",
+      "call_to_action": "LEARN_MORE",
+      "destination_type": "website",
+      "destination_url": "https://example.com/all-india",
+      "placements": [
+        "facebook_feed",
+        "instagram_feed",
+        "instagram_stories",
+        "instagram_reels"
+      ],
+      "targeting": {
+        "country": "IN",
+        "state": "All States",
+        "city": "All Cities",
+        "min_age": 18,
+        "max_age": 65,
+        "gender": "ALL",
+        "interests": [
+          "Online Shopping"
+        ],
+        "locations": [
+          "All India"
+        ],
+        "estimated_audience_size": "22M people"
+      },
+      "daily_budget": 40,
+      "duration_days": 5,
+      "total_budget": 200,
+      "start_at": "2026-10-13T09:50:43.455Z",
+      "end_at": "2026-10-18T09:50:43.455Z",
+      "status": "DRAFT",
+      "meta_campaign_id": null,
+      "meta_adset_id": null,
+      "meta_creative_id": null,
+      "meta_ad_id": null,
+      "meta_account_id": "act_1627260695520511",
+      "meta_status_message": "Draft campaign created safely. Non-delivering, ₹0 spend.",
+      "rejection_reason": null,
+      "error_details": null,
+      "created_at": "2026-10-13T09:50:43.455Z",
+      "updated_at": "2026-10-13T09:50:43.455Z"
+    },
+    {
+      "id": "smap_cmp_1791885043440_ykq9fz",
+      "user_id": "test_usr_1791885043426",
+      "package_id": "pkg_starter_200",
+      "objective": "TRAFFIC",
+      "creative_url": "https://example.com/mh.jpg",
+      "creative_type": "image",
+      "business_name": "MH Store",
+      "primary_text": "Festive shopping",
+      "headline": "MH Festive Offer",
+      "description": "",
+      "call_to_action": "LEARN_MORE",
+      "destination_type": "website",
+      "destination_url": "https://example.com/mh",
+      "placements": [
+        "facebook_feed",
+        "instagram_feed",
+        "instagram_stories",
+        "instagram_reels"
+      ],
+      "targeting": {
+        "country": "IN",
+        "state": "Maharashtra",
+        "city": "Mumbai",
+        "min_age": 21,
+        "max_age": 45,
+        "gender": "WOMEN",
+        "interests": [
+          "Festive Shopping",
+          "Jewelry"
+        ],
+        "locations": [
+          "Mumbai",
+          "Pune"
+        ],
+        "estimated_audience_size": "4.2M people"
+      },
+      "daily_budget": 40,
+      "duration_days": 5,
+      "total_budget": 200,
+      "start_at": "2026-10-13T09:50:43.440Z",
+      "end_at": "2026-10-18T09:50:43.440Z",
+      "status": "DRAFT",
+      "meta_campaign_id": null,
+      "meta_adset_id": null,
+      "meta_creative_id": null,
+      "meta_ad_id": null,
+      "meta_account_id": "act_1627260695520511",
+      "meta_status_message": "Draft campaign created safely. Non-delivering, ₹0 spend.",
+      "rejection_reason": null,
+      "error_details": null,
+      "created_at": "2026-10-13T09:50:43.440Z",
+      "updated_at": "2026-10-13T09:50:43.440Z"
+    },
+    {
+      "id": "smap_cmp_1791884861530_3pqd9t",
+      "user_id": "usr_meta_1791884861518",
+      "package_id": "pkg_starter_200",
+      "objective": "TRAFFIC",
+      "creative_url": "https://example.com/asset.jpg",
+      "creative_type": "image",
+      "business_name": "Customer Brand",
+      "primary_text": "Visit our new store online today!",
+      "headline": "Grand Opening Special",
+      "description": "",
+      "call_to_action": "LEARN_MORE",
+      "destination_type": "website",
+      "destination_url": "https://example.com",
+      "placements": [
+        "facebook_feed",
+        "instagram_feed",
+        "instagram_stories",
+        "instagram_reels"
+      ],
+      "targeting": {
+        "country": "IN",
+        "state": "All States",
+        "city": "All Cities",
+        "min_age": 18,
+        "max_age": 65,
+        "gender": "ALL",
+        "interests": [
+          "Online Shopping",
+          "Small Business"
+        ],
+        "locations": [
+          "All India"
+        ],
+        "estimated_audience_size": "18M - 24M people"
+      },
+      "daily_budget": 40,
+      "duration_days": 5,
+      "total_budget": 200,
+      "start_at": "2026-10-13T09:47:41.530Z",
+      "end_at": "2026-10-18T09:47:41.530Z",
+      "status": "DRAFT",
+      "meta_campaign_id": null,
+      "meta_adset_id": null,
+      "meta_creative_id": null,
+      "meta_ad_id": null,
+      "meta_account_id": "act_1627260695520511",
+      "meta_status_message": "Meta Campaign draft creation error: Malformed access token EAAP_mock_customer_long_lived_token",
+      "rejection_reason": null,
+      "error_details": null,
+      "created_at": "2026-10-13T09:47:41.530Z",
+      "updated_at": "2026-10-13T09:47:41.530Z"
+    },
+    {
+      "id": "cmp_recon_1791884860099",
+      "user_id": "test_usr_1791884859953",
+      "package_id": "pkg_starter_200",
+      "objective": "TRAFFIC",
+      "creative_url": "https://example.com/c.jpg",
+      "creative_type": "image",
+      "business_name": "Reconcile Test",
+      "primary_text": "Reconcile",
+      "headline": "Reconcile",
+      "description": "",
+      "call_to_action": "LEARN_MORE",
+      "destination_type": "website",
+      "destination_url": "https://example.com",
+      "placements": [
+        "facebook_feed"
+      ],
+      "targeting": {
+        "country": "IN",
+        "state": "All India",
+        "city": "All Cities",
+        "min_age": 18,
+        "max_age": 65,
+        "gender": "ALL",
+        "interests": [],
+        "locations": [
+          "All India"
+        ],
+        "estimated_audience_size": "10M"
+      },
+      "daily_budget": 40,
+      "duration_days": 5,
+      "total_budget": 200,
+      "start_at": "2026-10-13T09:47:40.099Z",
+      "end_at": "2026-10-18T09:47:40.099Z",
+      "status": "UNDER_REVIEW",
+      "meta_campaign_id": "120251658136230295",
+      "meta_adset_id": null,
+      "meta_creative_id": null,
+      "meta_ad_id": null,
+      "meta_account_id": "act_1627260695520511",
+      "meta_status_message": "In review",
+      "rejection_reason": null,
+      "error_details": null,
+      "created_at": "2026-10-13T09:47:40.099Z",
+      "updated_at": "2026-10-13T09:47:40.099Z"
+    },
+    {
+      "id": "cmp_fail_1791884860087",
+      "user_id": "test_usr_1791884859953",
+      "package_id": "pkg_starter_200",
+      "objective": "TRAFFIC",
+      "creative_url": "https://example.com/img.jpg",
+      "creative_type": "image",
+      "business_name": "Test Failure",
+      "primary_text": "Ad copy",
+      "headline": "Headline",
+      "description": "",
+      "call_to_action": "LEARN_MORE",
+      "destination_type": "website",
+      "destination_url": "https://example.com",
+      "placements": [
+        "facebook_feed"
+      ],
+      "targeting": {
+        "country": "IN",
+        "state": "All India",
+        "city": "All Cities",
+        "min_age": 18,
+        "max_age": 65,
+        "gender": "ALL",
+        "interests": [],
+        "locations": [
+          "All India"
+        ],
+        "estimated_audience_size": "10M"
+      },
+      "daily_budget": 40,
+      "duration_days": 5,
+      "total_budget": 200,
+      "start_at": "2026-10-13T09:47:40.087Z",
+      "end_at": "2026-10-18T09:47:40.087Z",
+      "status": "PAYMENT_CONFIRMED",
+      "meta_campaign_id": null,
+      "meta_adset_id": null,
+      "meta_creative_id": null,
+      "meta_ad_id": null,
+      "meta_account_id": "act_1627260695520511",
+      "meta_status_message": "Payment confirmed. Meta submission error occurred: Ad account requires active payment method on Meta.",
+      "rejection_reason": null,
+      "error_details": "Ad account requires active payment method on Meta.",
+      "created_at": "2026-10-13T09:47:40.087Z",
+      "updated_at": "2026-10-13T09:47:40.087Z"
+    },
+    {
+      "id": "smap_cmp_1791884860017_t00nve",
+      "user_id": "test_usr_1791884859953",
+      "package_id": "pkg_starter_200",
+      "objective": "TRAFFIC",
+      "creative_url": "https://example.com/funded.jpg",
+      "creative_type": "image",
+      "business_name": "Funded Campaign",
+      "primary_text": "Sufficient funds test",
+      "headline": "Successfully Paid",
+      "description": "",
+      "call_to_action": "LEARN_MORE",
+      "destination_type": "website",
+      "destination_url": "https://example.com/funded",
+      "placements": [
+        "facebook_feed",
+        "instagram_feed",
+        "instagram_stories",
+        "instagram_reels"
+      ],
+      "targeting": {
+        "country": "IN",
+        "state": "All States",
+        "city": "All Cities",
+        "min_age": 18,
+        "max_age": 65,
+        "gender": "ALL",
+        "interests": [
+          "Online Shopping",
+          "Small Business"
+        ],
+        "locations": [
+          "All India"
+        ],
+        "estimated_audience_size": "18M - 24M people"
+      },
+      "daily_budget": 40,
+      "duration_days": 5,
+      "total_budget": 200,
+      "start_at": "2026-10-13T09:47:40.017Z",
+      "end_at": "2026-10-18T09:47:40.017Z",
+      "status": "FAILED",
+      "meta_campaign_id": null,
+      "meta_adset_id": null,
+      "meta_creative_id": null,
+      "meta_ad_id": null,
+      "meta_account_id": "act_1627260695520511",
+      "meta_status_message": "Submission Blocked: Real campaign submissions to Meta are safely disabled (META_LIVE_SUBMISSIONS_ENABLED is not true). No campaigns will be launched, and no money will be spent on Meta until the owner verifies production access and explicitly enables this flag.",
+      "rejection_reason": "Submission Blocked: Real campaign submissions to Meta are safely disabled (META_LIVE_SUBMISSIONS_ENABLED is not true). No campaigns will be launched, and no money will be spent on Meta until the owner verifies production access and explicitly enables this flag.",
+      "error_details": "Submission Blocked: Real campaign submissions to Meta are safely disabled (META_LIVE_SUBMISSIONS_ENABLED is not true). No campaigns will be launched, and no money will be spent on Meta until the owner verifies production access and explicitly enables this flag.",
+      "created_at": "2026-10-13T09:47:40.017Z",
+      "updated_at": "2026-10-13T09:47:40.062Z",
+      "idempotency_key": "idem_test_order_1"
+    },
+    {
+      "id": "smap_cmp_1791884859982_f3yx4j",
+      "user_id": "test_usr_1791884859953",
+      "package_id": "pkg_starter_200",
+      "objective": "TRAFFIC",
+      "creative_url": "https://example.com/all-india.jpg",
+      "creative_type": "image",
+      "business_name": "All India Store",
+      "primary_text": "Nationwide shipping",
+      "headline": "Nationwide Offer",
+      "description": "",
+      "call_to_action": "LEARN_MORE",
+      "destination_type": "website",
+      "destination_url": "https://example.com/all-india",
+      "placements": [
+        "facebook_feed",
+        "instagram_feed",
+        "instagram_stories",
+        "instagram_reels"
+      ],
+      "targeting": {
+        "country": "IN",
+        "state": "All States",
+        "city": "All Cities",
+        "min_age": 18,
+        "max_age": 65,
+        "gender": "ALL",
+        "interests": [
+          "Online Shopping"
+        ],
+        "locations": [
+          "All India"
+        ],
+        "estimated_audience_size": "22M people"
+      },
+      "daily_budget": 40,
+      "duration_days": 5,
+      "total_budget": 200,
+      "start_at": "2026-10-13T09:47:39.982Z",
+      "end_at": "2026-10-18T09:47:39.982Z",
+      "status": "DRAFT",
+      "meta_campaign_id": null,
+      "meta_adset_id": null,
+      "meta_creative_id": null,
+      "meta_ad_id": null,
+      "meta_account_id": "act_1627260695520511",
+      "meta_status_message": "Draft campaign created safely. Non-delivering, ₹0 spend.",
+      "rejection_reason": null,
+      "error_details": null,
+      "created_at": "2026-10-13T09:47:39.982Z",
+      "updated_at": "2026-10-13T09:47:39.982Z"
+    },
+    {
+      "id": "smap_cmp_1791884859966_7nylt1",
+      "user_id": "test_usr_1791884859953",
+      "package_id": "pkg_starter_200",
+      "objective": "TRAFFIC",
+      "creative_url": "https://example.com/mh.jpg",
+      "creative_type": "image",
+      "business_name": "MH Store",
+      "primary_text": "Festive shopping",
+      "headline": "MH Festive Offer",
+      "description": "",
+      "call_to_action": "LEARN_MORE",
+      "destination_type": "website",
+      "destination_url": "https://example.com/mh",
+      "placements": [
+        "facebook_feed",
+        "instagram_feed",
+        "instagram_stories",
+        "instagram_reels"
+      ],
+      "targeting": {
+        "country": "IN",
+        "state": "Maharashtra",
+        "city": "Mumbai",
+        "min_age": 21,
+        "max_age": 45,
+        "gender": "WOMEN",
+        "interests": [
+          "Festive Shopping",
+          "Jewelry"
+        ],
+        "locations": [
+          "Mumbai",
+          "Pune"
+        ],
+        "estimated_audience_size": "4.2M people"
+      },
+      "daily_budget": 40,
+      "duration_days": 5,
+      "total_budget": 200,
+      "start_at": "2026-10-13T09:47:39.966Z",
+      "end_at": "2026-10-18T09:47:39.966Z",
+      "status": "DRAFT",
+      "meta_campaign_id": null,
+      "meta_adset_id": null,
+      "meta_creative_id": null,
+      "meta_ad_id": null,
+      "meta_account_id": "act_1627260695520511",
+      "meta_status_message": "Draft campaign created safely. Non-delivering, ₹0 spend.",
+      "rejection_reason": null,
+      "error_details": null,
+      "created_at": "2026-10-13T09:47:39.966Z",
+      "updated_at": "2026-10-13T09:47:39.966Z"
+    },
+    {
+      "id": "smap_cmp_1791884488225_lpl91g",
+      "user_id": "usr_meta_1791884488206",
+      "package_id": "pkg_starter_200",
+      "objective": "TRAFFIC",
+      "creative_url": "https://example.com/asset.jpg",
+      "creative_type": "image",
+      "business_name": "Customer Brand",
+      "primary_text": "Visit our new store online today!",
+      "headline": "Grand Opening Special",
+      "description": "",
+      "call_to_action": "LEARN_MORE",
+      "destination_type": "website",
+      "destination_url": "https://example.com",
+      "placements": [
+        "facebook_feed",
+        "instagram_feed",
+        "instagram_stories",
+        "instagram_reels"
+      ],
+      "targeting": {
+        "country": "IN",
+        "state": "All States",
+        "city": "All Cities",
+        "min_age": 18,
+        "max_age": 65,
+        "gender": "ALL",
+        "interests": [
+          "Online Shopping",
+          "Small Business"
+        ],
+        "locations": [
+          "All India"
+        ],
+        "estimated_audience_size": "18M - 24M people"
+      },
+      "daily_budget": 40,
+      "duration_days": 5,
+      "total_budget": 200,
+      "start_at": "2026-10-13T09:41:28.225Z",
+      "end_at": "2026-10-18T09:41:28.225Z",
+      "status": "DRAFT",
+      "meta_campaign_id": null,
+      "meta_adset_id": null,
+      "meta_creative_id": null,
+      "meta_ad_id": null,
+      "meta_account_id": "act_1627260695520511",
+      "meta_status_message": "Meta Campaign draft creation error: Malformed access token EAAP_mock_customer_long_lived_token",
+      "rejection_reason": null,
+      "error_details": null,
+      "created_at": "2026-10-13T09:41:28.225Z",
+      "updated_at": "2026-10-13T09:41:28.225Z"
+    },
+    {
+      "id": "cmp_recon_1791884486944",
+      "user_id": "test_usr_1791884486783",
+      "package_id": "pkg_starter_200",
+      "objective": "TRAFFIC",
+      "creative_url": "https://example.com/c.jpg",
+      "creative_type": "image",
+      "business_name": "Reconcile Test",
+      "primary_text": "Reconcile",
+      "headline": "Reconcile",
+      "description": "",
+      "call_to_action": "LEARN_MORE",
+      "destination_type": "website",
+      "destination_url": "https://example.com",
+      "placements": [
+        "facebook_feed"
+      ],
+      "targeting": {
+        "country": "IN",
+        "state": "All India",
+        "city": "All Cities",
+        "min_age": 18,
+        "max_age": 65,
+        "gender": "ALL",
+        "interests": [],
+        "locations": [
+          "All India"
+        ],
+        "estimated_audience_size": "10M"
+      },
+      "daily_budget": 40,
+      "duration_days": 5,
+      "total_budget": 200,
+      "start_at": "2026-10-13T09:41:26.944Z",
+      "end_at": "2026-10-18T09:41:26.944Z",
+      "status": "UNDER_REVIEW",
+      "meta_campaign_id": "120251658136230295",
+      "meta_adset_id": null,
+      "meta_creative_id": null,
+      "meta_ad_id": null,
+      "meta_account_id": "act_1627260695520511",
+      "meta_status_message": "In review",
+      "rejection_reason": null,
+      "error_details": null,
+      "created_at": "2026-10-13T09:41:26.944Z",
+      "updated_at": "2026-10-13T09:41:26.944Z"
+    },
+    {
+      "id": "cmp_fail_1791884486925",
+      "user_id": "test_usr_1791884486783",
+      "package_id": "pkg_starter_200",
+      "objective": "TRAFFIC",
+      "creative_url": "https://example.com/img.jpg",
+      "creative_type": "image",
+      "business_name": "Test Failure",
+      "primary_text": "Ad copy",
+      "headline": "Headline",
+      "description": "",
+      "call_to_action": "LEARN_MORE",
+      "destination_type": "website",
+      "destination_url": "https://example.com",
+      "placements": [
+        "facebook_feed"
+      ],
+      "targeting": {
+        "country": "IN",
+        "state": "All India",
+        "city": "All Cities",
+        "min_age": 18,
+        "max_age": 65,
+        "gender": "ALL",
+        "interests": [],
+        "locations": [
+          "All India"
+        ],
+        "estimated_audience_size": "10M"
+      },
+      "daily_budget": 40,
+      "duration_days": 5,
+      "total_budget": 200,
+      "start_at": "2026-10-13T09:41:26.925Z",
+      "end_at": "2026-10-18T09:41:26.925Z",
+      "status": "PAYMENT_CONFIRMED",
+      "meta_campaign_id": null,
+      "meta_adset_id": null,
+      "meta_creative_id": null,
+      "meta_ad_id": null,
+      "meta_account_id": "act_1627260695520511",
+      "meta_status_message": "Payment confirmed. Meta submission error occurred: Ad account requires active payment method on Meta.",
+      "rejection_reason": null,
+      "error_details": "Ad account requires active payment method on Meta.",
+      "created_at": "2026-10-13T09:41:26.925Z",
+      "updated_at": "2026-10-13T09:41:26.925Z"
+    },
+    {
+      "id": "smap_cmp_1791884486859_k5hgdp",
+      "user_id": "test_usr_1791884486783",
+      "package_id": "pkg_starter_200",
+      "objective": "TRAFFIC",
+      "creative_url": "https://example.com/funded.jpg",
+      "creative_type": "image",
+      "business_name": "Funded Campaign",
+      "primary_text": "Sufficient funds test",
+      "headline": "Successfully Paid",
+      "description": "",
+      "call_to_action": "LEARN_MORE",
+      "destination_type": "website",
+      "destination_url": "https://example.com/funded",
+      "placements": [
+        "facebook_feed",
+        "instagram_feed",
+        "instagram_stories",
+        "instagram_reels"
+      ],
+      "targeting": {
+        "country": "IN",
+        "state": "All States",
+        "city": "All Cities",
+        "min_age": 18,
+        "max_age": 65,
+        "gender": "ALL",
+        "interests": [
+          "Online Shopping",
+          "Small Business"
+        ],
+        "locations": [
+          "All India"
+        ],
+        "estimated_audience_size": "18M - 24M people"
+      },
+      "daily_budget": 40,
+      "duration_days": 5,
+      "total_budget": 200,
+      "start_at": "2026-10-13T09:41:26.859Z",
+      "end_at": "2026-10-18T09:41:26.859Z",
+      "status": "FAILED",
+      "meta_campaign_id": null,
+      "meta_adset_id": null,
+      "meta_creative_id": null,
+      "meta_ad_id": null,
+      "meta_account_id": "act_1627260695520511",
+      "meta_status_message": "Submission Blocked: Real campaign submissions to Meta are safely disabled (META_LIVE_SUBMISSIONS_ENABLED is not true). No campaigns will be launched, and no money will be spent on Meta until the owner verifies production access and explicitly enables this flag.",
+      "rejection_reason": "Submission Blocked: Real campaign submissions to Meta are safely disabled (META_LIVE_SUBMISSIONS_ENABLED is not true). No campaigns will be launched, and no money will be spent on Meta until the owner verifies production access and explicitly enables this flag.",
+      "error_details": "Submission Blocked: Real campaign submissions to Meta are safely disabled (META_LIVE_SUBMISSIONS_ENABLED is not true). No campaigns will be launched, and no money will be spent on Meta until the owner verifies production access and explicitly enables this flag.",
+      "created_at": "2026-10-13T09:41:26.859Z",
+      "updated_at": "2026-10-13T09:41:26.905Z",
+      "idempotency_key": "idem_test_order_1"
+    },
+    {
+      "id": "smap_cmp_1791884486816_2chgis",
+      "user_id": "test_usr_1791884486783",
+      "package_id": "pkg_starter_200",
+      "objective": "TRAFFIC",
+      "creative_url": "https://example.com/all-india.jpg",
+      "creative_type": "image",
+      "business_name": "All India Store",
+      "primary_text": "Nationwide shipping",
+      "headline": "Nationwide Offer",
+      "description": "",
+      "call_to_action": "LEARN_MORE",
+      "destination_type": "website",
+      "destination_url": "https://example.com/all-india",
+      "placements": [
+        "facebook_feed",
+        "instagram_feed",
+        "instagram_stories",
+        "instagram_reels"
+      ],
+      "targeting": {
+        "country": "IN",
+        "state": "All States",
+        "city": "All Cities",
+        "min_age": 18,
+        "max_age": 65,
+        "gender": "ALL",
+        "interests": [
+          "Online Shopping"
+        ],
+        "locations": [
+          "All India"
+        ],
+        "estimated_audience_size": "22M people"
+      },
+      "daily_budget": 40,
+      "duration_days": 5,
+      "total_budget": 200,
+      "start_at": "2026-10-13T09:41:26.816Z",
+      "end_at": "2026-10-18T09:41:26.816Z",
+      "status": "DRAFT",
+      "meta_campaign_id": null,
+      "meta_adset_id": null,
+      "meta_creative_id": null,
+      "meta_ad_id": null,
+      "meta_account_id": "act_1627260695520511",
+      "meta_status_message": "Draft campaign created safely. Non-delivering, ₹0 spend.",
+      "rejection_reason": null,
+      "error_details": null,
+      "created_at": "2026-10-13T09:41:26.816Z",
+      "updated_at": "2026-10-13T09:41:26.816Z"
+    },
+    {
+      "id": "smap_cmp_1791884486799_nbyp9c",
+      "user_id": "test_usr_1791884486783",
+      "package_id": "pkg_starter_200",
+      "objective": "TRAFFIC",
+      "creative_url": "https://example.com/mh.jpg",
+      "creative_type": "image",
+      "business_name": "MH Store",
+      "primary_text": "Festive shopping",
+      "headline": "MH Festive Offer",
+      "description": "",
+      "call_to_action": "LEARN_MORE",
+      "destination_type": "website",
+      "destination_url": "https://example.com/mh",
+      "placements": [
+        "facebook_feed",
+        "instagram_feed",
+        "instagram_stories",
+        "instagram_reels"
+      ],
+      "targeting": {
+        "country": "IN",
+        "state": "Maharashtra",
+        "city": "Mumbai",
+        "min_age": 21,
+        "max_age": 45,
+        "gender": "WOMEN",
+        "interests": [
+          "Festive Shopping",
+          "Jewelry"
+        ],
+        "locations": [
+          "Mumbai",
+          "Pune"
+        ],
+        "estimated_audience_size": "4.2M people"
+      },
+      "daily_budget": 40,
+      "duration_days": 5,
+      "total_budget": 200,
+      "start_at": "2026-10-13T09:41:26.799Z",
+      "end_at": "2026-10-18T09:41:26.799Z",
+      "status": "DRAFT",
+      "meta_campaign_id": null,
+      "meta_adset_id": null,
+      "meta_creative_id": null,
+      "meta_ad_id": null,
+      "meta_account_id": "act_1627260695520511",
+      "meta_status_message": "Draft campaign created safely. Non-delivering, ₹0 spend.",
+      "rejection_reason": null,
+      "error_details": null,
+      "created_at": "2026-10-13T09:41:26.799Z",
+      "updated_at": "2026-10-13T09:41:26.799Z"
+    },
     {
       "id": "smap_cmp_1791875805477_9d84hw",
       "user_id": "usr_meta_1791875805465",
@@ -9687,6 +11693,556 @@
   ],
   "payments": [
     {
+      "id": "smap_fund_1791885125047_22b4ts",
+      "user_id": "usr_email_1791885124340_y89hyb",
+      "campaign_id": "WALLET_TOPUP",
+      "package_id": "wallet_topup",
+      "amount": 250.75,
+      "currency": "INR",
+      "payment_method": "UPI",
+      "payee_upi": "sahil-stp@ybl",
+      "upi_intent_url": "upi://pay?pa=sahil-stp%40ybl&pn=SMAP&am=250.75&cu=INR&tn=SMAP%20Campaign%20et_topup&tr=smap_fund_1791885125047_22b4ts",
+      "transaction_reference": null,
+      "gateway_payment_id": null,
+      "gateway_order_id": "order_TnLji0o9MYfOnx",
+      "gateway_key_id": "rzp_live_Tky7id9ihMcNqC",
+      "status": "PENDING",
+      "webhook_status": "PENDING",
+      "failure_reason": null,
+      "idempotency_key": null,
+      "paid_at": null,
+      "verified_at": null,
+      "verification_source": null,
+      "notes": "Add Funds to SMAP Customer Wallet",
+      "created_at": "2026-10-13T09:52:05.047Z",
+      "updated_at": "2026-10-13T09:52:05.047Z"
+    },
+    {
+      "id": "smap_fund_1791885124768_jt9f9k",
+      "user_id": "usr_email_1791885124340_y89hyb",
+      "campaign_id": "WALLET_TOPUP",
+      "package_id": "wallet_topup",
+      "amount": 500,
+      "currency": "INR",
+      "payment_method": "UPI",
+      "payee_upi": "sahil-stp@ybl",
+      "upi_intent_url": "upi://pay?pa=sahil-stp%40ybl&pn=SMAP&am=500.00&cu=INR&tn=SMAP%20Campaign%20et_topup&tr=smap_fund_1791885124768_jt9f9k",
+      "transaction_reference": null,
+      "gateway_payment_id": null,
+      "gateway_order_id": "order_TnLjhi5Mv57Bkx",
+      "gateway_key_id": "rzp_live_Tky7id9ihMcNqC",
+      "status": "PENDING",
+      "webhook_status": "PENDING",
+      "failure_reason": null,
+      "idempotency_key": null,
+      "paid_at": null,
+      "verified_at": null,
+      "verification_source": null,
+      "notes": "Add Funds to SMAP Customer Wallet",
+      "created_at": "2026-10-13T09:52:04.768Z",
+      "updated_at": "2026-10-13T09:52:04.768Z"
+    },
+    {
+      "id": "smap_pay_rzp_audit_2_1791885123833",
+      "user_id": "cust_audit_1791885123796",
+      "campaign_id": "WALLET_TOPUP",
+      "package_id": "wallet_topup",
+      "amount": 1,
+      "currency": "INR",
+      "payment_method": "UPI",
+      "payee_upi": "sahil-stp@ybl",
+      "upi_intent_url": "",
+      "transaction_reference": "UTR_667696542797",
+      "gateway_payment_id": "pay_rzp_audit_2_1791885123833",
+      "gateway_order_id": "order_audit_2",
+      "status": "PAID",
+      "verified_at": "2026-10-13T09:52:03.833Z",
+      "verification_source": "GATEWAY_API",
+      "notes": "Verified against Razorpay LIVE captured payment",
+      "created_at": "2026-10-13T09:52:03.833Z",
+      "updated_at": "2026-10-13T09:52:03.833Z"
+    },
+    {
+      "id": "smap_pay_rzp_audit_1_1791885123805",
+      "user_id": "cust_audit_1791885123796",
+      "campaign_id": "WALLET_TOPUP",
+      "package_id": "wallet_topup",
+      "amount": 1,
+      "currency": "INR",
+      "payment_method": "UPI",
+      "payee_upi": "sahil-stp@ybl",
+      "upi_intent_url": "",
+      "transaction_reference": "UTR_257178192361",
+      "gateway_payment_id": "pay_rzp_audit_1_1791885123805",
+      "gateway_order_id": "order_audit_1",
+      "status": "PAID",
+      "verified_at": "2026-10-13T09:52:03.805Z",
+      "verification_source": "GATEWAY_API",
+      "notes": "Verified against Razorpay LIVE captured payment",
+      "created_at": "2026-10-13T09:52:03.805Z",
+      "updated_at": "2026-10-13T09:52:03.805Z"
+    },
+    {
+      "id": "pay_unverified_1791885122440",
+      "user_id": "test_usr_1791885122307",
+      "campaign_id": "smap_cmp_1791885122323_f7movv",
+      "package_id": "pkg_starter_200",
+      "amount": 200,
+      "currency": "INR",
+      "payment_method": "UPI",
+      "payee_upi": "sahil-stp@ybl",
+      "upi_intent_url": "",
+      "transaction_reference": null,
+      "gateway_payment_id": null,
+      "gateway_order_id": null,
+      "gateway_key_id": null,
+      "status": "PENDING",
+      "webhook_status": "PENDING",
+      "failure_reason": null,
+      "idempotency_key": null,
+      "paid_at": null,
+      "verified_at": null,
+      "verification_source": null,
+      "notes": "Unverified test payment",
+      "created_at": "2026-10-13T09:52:02.440Z",
+      "updated_at": "2026-10-13T09:52:02.440Z"
+    },
+    {
+      "id": "smap_pay_1791885122387_7lez2w",
+      "user_id": "test_usr_1791885122307",
+      "campaign_id": "smap_cmp_1791885122387_o5j1hm",
+      "package_id": "pkg_starter_200",
+      "amount": 200,
+      "currency": "INR",
+      "payment_method": "UPI",
+      "payee_upi": "sahil-stp@ybl",
+      "upi_intent_url": "",
+      "transaction_reference": "wtx_1791885122387_rf8ojw",
+      "gateway_payment_id": null,
+      "gateway_order_id": null,
+      "gateway_key_id": null,
+      "status": "PAID",
+      "webhook_status": "PROCESSED",
+      "failure_reason": null,
+      "idempotency_key": "idem_test_order_1",
+      "paid_at": "2026-10-13T09:52:02.387Z",
+      "verified_at": "2026-10-13T09:52:02.387Z",
+      "verification_source": "WALLET_BALANCE",
+      "notes": "Verified payment of ₹200 deducted from SMAP Wallet (wtx_1791885122387_rf8ojw)",
+      "created_at": "2026-10-13T09:52:02.387Z",
+      "updated_at": "2026-10-13T09:52:02.387Z"
+    },
+    {
+      "id": "smap_fund_1791885065435_guum80",
+      "user_id": "usr_email_1791885064650_lzrguz",
+      "campaign_id": "WALLET_TOPUP",
+      "package_id": "wallet_topup",
+      "amount": 250.75,
+      "currency": "INR",
+      "payment_method": "UPI",
+      "payee_upi": "sahil-stp@ybl",
+      "upi_intent_url": "upi://pay?pa=sahil-stp%40ybl&pn=SMAP&am=250.75&cu=INR&tn=SMAP%20Campaign%20et_topup&tr=smap_fund_1791885065435_guum80",
+      "transaction_reference": null,
+      "gateway_payment_id": null,
+      "gateway_order_id": "order_TnLiewCJisFsyc",
+      "gateway_key_id": "rzp_live_Tky7id9ihMcNqC",
+      "status": "PENDING",
+      "webhook_status": "PENDING",
+      "failure_reason": null,
+      "idempotency_key": null,
+      "paid_at": null,
+      "verified_at": null,
+      "verification_source": null,
+      "notes": "Add Funds to SMAP Customer Wallet",
+      "created_at": "2026-10-13T09:51:05.435Z",
+      "updated_at": "2026-10-13T09:51:05.435Z"
+    },
+    {
+      "id": "smap_fund_1791885065142_zex54y",
+      "user_id": "usr_email_1791885064650_lzrguz",
+      "campaign_id": "WALLET_TOPUP",
+      "package_id": "wallet_topup",
+      "amount": 500,
+      "currency": "INR",
+      "payment_method": "UPI",
+      "payee_upi": "sahil-stp@ybl",
+      "upi_intent_url": "upi://pay?pa=sahil-stp%40ybl&pn=SMAP&am=500.00&cu=INR&tn=SMAP%20Campaign%20et_topup&tr=smap_fund_1791885065142_zex54y",
+      "transaction_reference": null,
+      "gateway_payment_id": null,
+      "gateway_order_id": "order_TnLieeNS6IZ31W",
+      "gateway_key_id": "rzp_live_Tky7id9ihMcNqC",
+      "status": "PENDING",
+      "webhook_status": "PENDING",
+      "failure_reason": null,
+      "idempotency_key": null,
+      "paid_at": null,
+      "verified_at": null,
+      "verification_source": null,
+      "notes": "Add Funds to SMAP Customer Wallet",
+      "created_at": "2026-10-13T09:51:05.142Z",
+      "updated_at": "2026-10-13T09:51:05.142Z"
+    },
+    {
+      "id": "smap_pay_rzp_audit_2_1791885064110",
+      "user_id": "cust_audit_1791885064063",
+      "campaign_id": "WALLET_TOPUP",
+      "package_id": "wallet_topup",
+      "amount": 1,
+      "currency": "INR",
+      "payment_method": "UPI",
+      "payee_upi": "sahil-stp@ybl",
+      "upi_intent_url": "",
+      "transaction_reference": "UTR_667696542797",
+      "gateway_payment_id": "pay_rzp_audit_2_1791885064110",
+      "gateway_order_id": "order_audit_2",
+      "status": "PAID",
+      "verified_at": "2026-10-13T09:51:04.110Z",
+      "verification_source": "GATEWAY_API",
+      "notes": "Verified against Razorpay LIVE captured payment",
+      "created_at": "2026-10-13T09:51:04.110Z",
+      "updated_at": "2026-10-13T09:51:04.110Z"
+    },
+    {
+      "id": "smap_pay_rzp_audit_1_1791885064069",
+      "user_id": "cust_audit_1791885064063",
+      "campaign_id": "WALLET_TOPUP",
+      "package_id": "wallet_topup",
+      "amount": 1,
+      "currency": "INR",
+      "payment_method": "UPI",
+      "payee_upi": "sahil-stp@ybl",
+      "upi_intent_url": "",
+      "transaction_reference": "UTR_257178192361",
+      "gateway_payment_id": "pay_rzp_audit_1_1791885064069",
+      "gateway_order_id": "order_audit_1",
+      "status": "PAID",
+      "verified_at": "2026-10-13T09:51:04.069Z",
+      "verification_source": "GATEWAY_API",
+      "notes": "Verified against Razorpay LIVE captured payment",
+      "created_at": "2026-10-13T09:51:04.069Z",
+      "updated_at": "2026-10-13T09:51:04.069Z"
+    },
+    {
+      "id": "pay_unverified_1791885062791",
+      "user_id": "test_usr_1791885062676",
+      "campaign_id": "smap_cmp_1791885062690_nqgr2g",
+      "package_id": "pkg_starter_200",
+      "amount": 200,
+      "currency": "INR",
+      "payment_method": "UPI",
+      "payee_upi": "sahil-stp@ybl",
+      "upi_intent_url": "",
+      "transaction_reference": null,
+      "gateway_payment_id": null,
+      "gateway_order_id": null,
+      "gateway_key_id": null,
+      "status": "PENDING",
+      "webhook_status": "PENDING",
+      "failure_reason": null,
+      "idempotency_key": null,
+      "paid_at": null,
+      "verified_at": null,
+      "verification_source": null,
+      "notes": "Unverified test payment",
+      "created_at": "2026-10-13T09:51:02.791Z",
+      "updated_at": "2026-10-13T09:51:02.791Z"
+    },
+    {
+      "id": "smap_pay_1791885062742_t2aubk",
+      "user_id": "test_usr_1791885062676",
+      "campaign_id": "smap_cmp_1791885062742_acylw3",
+      "package_id": "pkg_starter_200",
+      "amount": 200,
+      "currency": "INR",
+      "payment_method": "UPI",
+      "payee_upi": "sahil-stp@ybl",
+      "upi_intent_url": "",
+      "transaction_reference": "wtx_1791885062742_wmynd2",
+      "gateway_payment_id": null,
+      "gateway_order_id": null,
+      "gateway_key_id": null,
+      "status": "PAID",
+      "webhook_status": "PROCESSED",
+      "failure_reason": null,
+      "idempotency_key": "idem_test_order_1",
+      "paid_at": "2026-10-13T09:51:02.742Z",
+      "verified_at": "2026-10-13T09:51:02.742Z",
+      "verification_source": "WALLET_BALANCE",
+      "notes": "Verified payment of ₹200 deducted from SMAP Wallet (wtx_1791885062742_wmynd2)",
+      "created_at": "2026-10-13T09:51:02.742Z",
+      "updated_at": "2026-10-13T09:51:02.742Z"
+    },
+    {
+      "id": "smap_pay_rzp_audit_2_1791885044874",
+      "user_id": "cust_audit_1791885044835",
+      "campaign_id": "WALLET_TOPUP",
+      "package_id": "wallet_topup",
+      "amount": 1,
+      "currency": "INR",
+      "payment_method": "UPI",
+      "payee_upi": "sahil-stp@ybl",
+      "upi_intent_url": "",
+      "transaction_reference": "UTR_667696542797",
+      "gateway_payment_id": "pay_rzp_audit_2_1791885044874",
+      "gateway_order_id": "order_audit_2",
+      "status": "PAID",
+      "verified_at": "2026-10-13T09:50:44.874Z",
+      "verification_source": "GATEWAY_API",
+      "notes": "Verified against Razorpay LIVE captured payment",
+      "created_at": "2026-10-13T09:50:44.874Z",
+      "updated_at": "2026-10-13T09:50:44.874Z"
+    },
+    {
+      "id": "smap_pay_rzp_audit_1_1791885044842",
+      "user_id": "cust_audit_1791885044835",
+      "campaign_id": "WALLET_TOPUP",
+      "package_id": "wallet_topup",
+      "amount": 1,
+      "currency": "INR",
+      "payment_method": "UPI",
+      "payee_upi": "sahil-stp@ybl",
+      "upi_intent_url": "",
+      "transaction_reference": "UTR_257178192361",
+      "gateway_payment_id": "pay_rzp_audit_1_1791885044842",
+      "gateway_order_id": "order_audit_1",
+      "status": "PAID",
+      "verified_at": "2026-10-13T09:50:44.842Z",
+      "verification_source": "GATEWAY_API",
+      "notes": "Verified against Razorpay LIVE captured payment",
+      "created_at": "2026-10-13T09:50:44.842Z",
+      "updated_at": "2026-10-13T09:50:44.842Z"
+    },
+    {
+      "id": "pay_unverified_1791885043541",
+      "user_id": "test_usr_1791885043426",
+      "campaign_id": "smap_cmp_1791885043440_ykq9fz",
+      "package_id": "pkg_starter_200",
+      "amount": 200,
+      "currency": "INR",
+      "payment_method": "UPI",
+      "payee_upi": "sahil-stp@ybl",
+      "upi_intent_url": "",
+      "transaction_reference": null,
+      "gateway_payment_id": null,
+      "gateway_order_id": null,
+      "gateway_key_id": null,
+      "status": "PENDING",
+      "webhook_status": "PENDING",
+      "failure_reason": null,
+      "idempotency_key": null,
+      "paid_at": null,
+      "verified_at": null,
+      "verification_source": null,
+      "notes": "Unverified test payment",
+      "created_at": "2026-10-13T09:50:43.541Z",
+      "updated_at": "2026-10-13T09:50:43.541Z"
+    },
+    {
+      "id": "smap_pay_1791885043495_ksczpe",
+      "user_id": "test_usr_1791885043426",
+      "campaign_id": "smap_cmp_1791885043495_5moe3p",
+      "package_id": "pkg_starter_200",
+      "amount": 200,
+      "currency": "INR",
+      "payment_method": "UPI",
+      "payee_upi": "sahil-stp@ybl",
+      "upi_intent_url": "",
+      "transaction_reference": "wtx_1791885043496_zago4f",
+      "gateway_payment_id": null,
+      "gateway_order_id": null,
+      "gateway_key_id": null,
+      "status": "PAID",
+      "webhook_status": "PROCESSED",
+      "failure_reason": null,
+      "idempotency_key": "idem_test_order_1",
+      "paid_at": "2026-10-13T09:50:43.495Z",
+      "verified_at": "2026-10-13T09:50:43.495Z",
+      "verification_source": "WALLET_BALANCE",
+      "notes": "Verified payment of ₹200 deducted from SMAP Wallet (wtx_1791885043496_zago4f)",
+      "created_at": "2026-10-13T09:50:43.495Z",
+      "updated_at": "2026-10-13T09:50:43.495Z"
+    },
+    {
+      "id": "smap_pay_rzp_audit_2_1791884861463",
+      "user_id": "cust_audit_1791884861434",
+      "campaign_id": "WALLET_TOPUP",
+      "package_id": "wallet_topup",
+      "amount": 1,
+      "currency": "INR",
+      "payment_method": "UPI",
+      "payee_upi": "sahil-stp@ybl",
+      "upi_intent_url": "",
+      "transaction_reference": "UTR_667696542797",
+      "gateway_payment_id": "pay_rzp_audit_2_1791884861463",
+      "gateway_order_id": "order_audit_2",
+      "status": "PAID",
+      "verified_at": "2026-10-13T09:47:41.463Z",
+      "verification_source": "GATEWAY_API",
+      "notes": "Verified against Razorpay LIVE captured payment",
+      "created_at": "2026-10-13T09:47:41.463Z",
+      "updated_at": "2026-10-13T09:47:41.463Z"
+    },
+    {
+      "id": "smap_pay_rzp_audit_1_1791884861440",
+      "user_id": "cust_audit_1791884861434",
+      "campaign_id": "WALLET_TOPUP",
+      "package_id": "wallet_topup",
+      "amount": 1,
+      "currency": "INR",
+      "payment_method": "UPI",
+      "payee_upi": "sahil-stp@ybl",
+      "upi_intent_url": "",
+      "transaction_reference": "UTR_257178192361",
+      "gateway_payment_id": "pay_rzp_audit_1_1791884861440",
+      "gateway_order_id": "order_audit_1",
+      "status": "PAID",
+      "verified_at": "2026-10-13T09:47:41.440Z",
+      "verification_source": "GATEWAY_API",
+      "notes": "Verified against Razorpay LIVE captured payment",
+      "created_at": "2026-10-13T09:47:41.440Z",
+      "updated_at": "2026-10-13T09:47:41.440Z"
+    },
+    {
+      "id": "pay_unverified_1791884860072",
+      "user_id": "test_usr_1791884859953",
+      "campaign_id": "smap_cmp_1791884859966_7nylt1",
+      "package_id": "pkg_starter_200",
+      "amount": 200,
+      "currency": "INR",
+      "payment_method": "UPI",
+      "payee_upi": "sahil-stp@ybl",
+      "upi_intent_url": "",
+      "transaction_reference": null,
+      "gateway_payment_id": null,
+      "gateway_order_id": null,
+      "gateway_key_id": null,
+      "status": "PENDING",
+      "webhook_status": "PENDING",
+      "failure_reason": null,
+      "idempotency_key": null,
+      "paid_at": null,
+      "verified_at": null,
+      "verification_source": null,
+      "notes": "Unverified test payment",
+      "created_at": "2026-10-13T09:47:40.072Z",
+      "updated_at": "2026-10-13T09:47:40.072Z"
+    },
+    {
+      "id": "smap_pay_1791884860017_xwfhjf",
+      "user_id": "test_usr_1791884859953",
+      "campaign_id": "smap_cmp_1791884860017_t00nve",
+      "package_id": "pkg_starter_200",
+      "amount": 200,
+      "currency": "INR",
+      "payment_method": "UPI",
+      "payee_upi": "sahil-stp@ybl",
+      "upi_intent_url": "",
+      "transaction_reference": "wtx_1791884860017_j758t6",
+      "gateway_payment_id": null,
+      "gateway_order_id": null,
+      "gateway_key_id": null,
+      "status": "PAID",
+      "webhook_status": "PROCESSED",
+      "failure_reason": null,
+      "idempotency_key": "idem_test_order_1",
+      "paid_at": "2026-10-13T09:47:40.017Z",
+      "verified_at": "2026-10-13T09:47:40.017Z",
+      "verification_source": "WALLET_BALANCE",
+      "notes": "Verified payment of ₹200 deducted from SMAP Wallet (wtx_1791884860017_j758t6)",
+      "created_at": "2026-10-13T09:47:40.017Z",
+      "updated_at": "2026-10-13T09:47:40.017Z"
+    },
+    {
+      "id": "smap_pay_rzp_audit_2_1791884488148",
+      "user_id": "cust_audit_1791884488112",
+      "campaign_id": "WALLET_TOPUP",
+      "package_id": "wallet_topup",
+      "amount": 1,
+      "currency": "INR",
+      "payment_method": "UPI",
+      "payee_upi": "sahil-stp@ybl",
+      "upi_intent_url": "",
+      "transaction_reference": "UTR_667696542797",
+      "gateway_payment_id": "pay_rzp_audit_2_1791884488148",
+      "gateway_order_id": "order_audit_2",
+      "status": "PAID",
+      "verified_at": "2026-10-13T09:41:28.148Z",
+      "verification_source": "GATEWAY_API",
+      "notes": "Verified against Razorpay LIVE captured payment",
+      "created_at": "2026-10-13T09:41:28.148Z",
+      "updated_at": "2026-10-13T09:41:28.148Z"
+    },
+    {
+      "id": "smap_pay_rzp_audit_1_1791884488120",
+      "user_id": "cust_audit_1791884488112",
+      "campaign_id": "WALLET_TOPUP",
+      "package_id": "wallet_topup",
+      "amount": 1,
+      "currency": "INR",
+      "payment_method": "UPI",
+      "payee_upi": "sahil-stp@ybl",
+      "upi_intent_url": "",
+      "transaction_reference": "UTR_257178192361",
+      "gateway_payment_id": "pay_rzp_audit_1_1791884488120",
+      "gateway_order_id": "order_audit_1",
+      "status": "PAID",
+      "verified_at": "2026-10-13T09:41:28.120Z",
+      "verification_source": "GATEWAY_API",
+      "notes": "Verified against Razorpay LIVE captured payment",
+      "created_at": "2026-10-13T09:41:28.120Z",
+      "updated_at": "2026-10-13T09:41:28.120Z"
+    },
+    {
+      "id": "pay_unverified_1791884486910",
+      "user_id": "test_usr_1791884486783",
+      "campaign_id": "smap_cmp_1791884486799_nbyp9c",
+      "package_id": "pkg_starter_200",
+      "amount": 200,
+      "currency": "INR",
+      "payment_method": "UPI",
+      "payee_upi": "sahil-stp@ybl",
+      "upi_intent_url": "",
+      "transaction_reference": null,
+      "gateway_payment_id": null,
+      "gateway_order_id": null,
+      "gateway_key_id": null,
+      "status": "PENDING",
+      "webhook_status": "PENDING",
+      "failure_reason": null,
+      "idempotency_key": null,
+      "paid_at": null,
+      "verified_at": null,
+      "verification_source": null,
+      "notes": "Unverified test payment",
+      "created_at": "2026-10-13T09:41:26.911Z",
+      "updated_at": "2026-10-13T09:41:26.911Z"
+    },
+    {
+      "id": "smap_pay_1791884486859_etjt5n",
+      "user_id": "test_usr_1791884486783",
+      "campaign_id": "smap_cmp_1791884486859_k5hgdp",
+      "package_id": "pkg_starter_200",
+      "amount": 200,
+      "currency": "INR",
+      "payment_method": "UPI",
+      "payee_upi": "sahil-stp@ybl",
+      "upi_intent_url": "",
+      "transaction_reference": "wtx_1791884486859_xcfdi9",
+      "gateway_payment_id": null,
+      "gateway_order_id": null,
+      "gateway_key_id": null,
+      "status": "PAID",
+      "webhook_status": "PROCESSED",
+      "failure_reason": null,
+      "idempotency_key": "idem_test_order_1",
+      "paid_at": "2026-10-13T09:41:26.859Z",
+      "verified_at": "2026-10-13T09:41:26.859Z",
+      "verification_source": "WALLET_BALANCE",
+      "notes": "Verified payment of ₹200 deducted from SMAP Wallet (wtx_1791884486859_xcfdi9)",
+      "created_at": "2026-10-13T09:41:26.859Z",
+      "updated_at": "2026-10-13T09:41:26.859Z"
+    },
+    {
       "id": "smap_pay_rzp_audit_2_1791875805406",
       "user_id": "cust_audit_1791875805352",
       "campaign_id": "WALLET_TOPUP",
@@ -12735,9 +15291,399 @@
       "instagram_username": "customerbrand",
       "created_at": "2026-10-13T07:16:45.470Z",
       "updated_at": "2026-10-13T07:16:45.470Z"
+    },
+    {
+      "id": "conn_1791884488217",
+      "user_id": "usr_meta_1791884488206",
+      "meta_user_id": "998877665544",
+      "meta_user_name": "Customer Business Owner",
+      "access_token": "EAAP_mock_customer_long_lived_token",
+      "token_expires_at": "2026-12-12T09:41:28.217Z",
+      "token_type": "long_lived",
+      "ad_accounts": [
+        {
+          "id": "act_9988112233",
+          "account_id": "9988112233",
+          "name": "Customer Custom Ad Account",
+          "currency": "INR",
+          "account_status": 1
+        }
+      ],
+      "selected_ad_account_id": "act_9988112233",
+      "pages": [
+        {
+          "id": "page_cust_111",
+          "name": "Customer Brand Store",
+          "category": "Retail",
+          "tasks": [
+            "MANAGE",
+            "ADVERTISE"
+          ],
+          "instagram_account_id": "ig_cust_222",
+          "instagram_username": "customerbrand"
+        },
+        {
+          "id": "page_cust_333",
+          "name": "Secondary Brand Page",
+          "category": "Services",
+          "tasks": [
+            "ADVERTISE"
+          ]
+        }
+      ],
+      "selected_page_id": "page_cust_111",
+      "page_id": "page_cust_111",
+      "page_name": "Customer Brand Store",
+      "instagram_accounts": [
+        {
+          "id": "ig_cust_222",
+          "username": "customerbrand",
+          "name": "Customer Brand",
+          "page_id": "page_cust_111"
+        }
+      ],
+      "selected_instagram_id": "ig_cust_222",
+      "instagram_id": "ig_cust_222",
+      "instagram_username": "customerbrand",
+      "created_at": "2026-10-13T09:41:28.217Z",
+      "updated_at": "2026-10-13T09:41:28.217Z"
+    },
+    {
+      "id": "conn_1791884861524",
+      "user_id": "usr_meta_1791884861518",
+      "meta_user_id": "998877665544",
+      "meta_user_name": "Customer Business Owner",
+      "access_token": "EAAP_mock_customer_long_lived_token",
+      "token_expires_at": "2026-12-12T09:47:41.524Z",
+      "token_type": "long_lived",
+      "ad_accounts": [
+        {
+          "id": "act_9988112233",
+          "account_id": "9988112233",
+          "name": "Customer Custom Ad Account",
+          "currency": "INR",
+          "account_status": 1
+        }
+      ],
+      "selected_ad_account_id": "act_9988112233",
+      "pages": [
+        {
+          "id": "page_cust_111",
+          "name": "Customer Brand Store",
+          "category": "Retail",
+          "tasks": [
+            "MANAGE",
+            "ADVERTISE"
+          ],
+          "instagram_account_id": "ig_cust_222",
+          "instagram_username": "customerbrand"
+        },
+        {
+          "id": "page_cust_333",
+          "name": "Secondary Brand Page",
+          "category": "Services",
+          "tasks": [
+            "ADVERTISE"
+          ]
+        }
+      ],
+      "selected_page_id": "page_cust_111",
+      "page_id": "page_cust_111",
+      "page_name": "Customer Brand Store",
+      "instagram_accounts": [
+        {
+          "id": "ig_cust_222",
+          "username": "customerbrand",
+          "name": "Customer Brand",
+          "page_id": "page_cust_111"
+        }
+      ],
+      "selected_instagram_id": "ig_cust_222",
+      "instagram_id": "ig_cust_222",
+      "instagram_username": "customerbrand",
+      "created_at": "2026-10-13T09:47:41.524Z",
+      "updated_at": "2026-10-13T09:47:41.524Z"
+    },
+    {
+      "id": "conn_1791885044961",
+      "user_id": "usr_meta_1791885044953",
+      "meta_user_id": "998877665544",
+      "meta_user_name": "Customer Business Owner",
+      "access_token": "EAAP_mock_customer_long_lived_token",
+      "token_expires_at": "2026-12-12T09:50:44.961Z",
+      "token_type": "long_lived",
+      "ad_accounts": [
+        {
+          "id": "act_9988112233",
+          "account_id": "9988112233",
+          "name": "Customer Custom Ad Account",
+          "currency": "INR",
+          "account_status": 1
+        }
+      ],
+      "selected_ad_account_id": "act_9988112233",
+      "pages": [
+        {
+          "id": "page_cust_111",
+          "name": "Customer Brand Store",
+          "category": "Retail",
+          "tasks": [
+            "MANAGE",
+            "ADVERTISE"
+          ],
+          "instagram_account_id": "ig_cust_222",
+          "instagram_username": "customerbrand"
+        },
+        {
+          "id": "page_cust_333",
+          "name": "Secondary Brand Page",
+          "category": "Services",
+          "tasks": [
+            "ADVERTISE"
+          ]
+        }
+      ],
+      "selected_page_id": "page_cust_111",
+      "page_id": "page_cust_111",
+      "page_name": "Customer Brand Store",
+      "instagram_accounts": [
+        {
+          "id": "ig_cust_222",
+          "username": "customerbrand",
+          "name": "Customer Brand",
+          "page_id": "page_cust_111"
+        }
+      ],
+      "selected_instagram_id": "ig_cust_222",
+      "instagram_id": "ig_cust_222",
+      "instagram_username": "customerbrand",
+      "created_at": "2026-10-13T09:50:44.961Z",
+      "updated_at": "2026-10-13T09:50:44.961Z"
+    },
+    {
+      "id": "conn_1791885064198",
+      "user_id": "usr_meta_1791885064188",
+      "meta_user_id": "998877665544",
+      "meta_user_name": "Customer Business Owner",
+      "access_token": "EAAP_mock_customer_long_lived_token",
+      "token_expires_at": "2026-12-12T09:51:04.198Z",
+      "token_type": "long_lived",
+      "ad_accounts": [
+        {
+          "id": "act_9988112233",
+          "account_id": "9988112233",
+          "name": "Customer Custom Ad Account",
+          "currency": "INR",
+          "account_status": 1
+        }
+      ],
+      "selected_ad_account_id": "act_9988112233",
+      "pages": [
+        {
+          "id": "page_cust_111",
+          "name": "Customer Brand Store",
+          "category": "Retail",
+          "tasks": [
+            "MANAGE",
+            "ADVERTISE"
+          ],
+          "instagram_account_id": "ig_cust_222",
+          "instagram_username": "customerbrand"
+        },
+        {
+          "id": "page_cust_333",
+          "name": "Secondary Brand Page",
+          "category": "Services",
+          "tasks": [
+            "ADVERTISE"
+          ]
+        }
+      ],
+      "selected_page_id": "page_cust_111",
+      "page_id": "page_cust_111",
+      "page_name": "Customer Brand Store",
+      "instagram_accounts": [
+        {
+          "id": "ig_cust_222",
+          "username": "customerbrand",
+          "name": "Customer Brand",
+          "page_id": "page_cust_111"
+        }
+      ],
+      "selected_instagram_id": "ig_cust_222",
+      "instagram_id": "ig_cust_222",
+      "instagram_username": "customerbrand",
+      "created_at": "2026-10-13T09:51:04.198Z",
+      "updated_at": "2026-10-13T09:51:04.198Z"
+    },
+    {
+      "id": "conn_1791885123905",
+      "user_id": "usr_meta_1791885123899",
+      "meta_user_id": "998877665544",
+      "meta_user_name": "Customer Business Owner",
+      "access_token": "EAAP_mock_customer_long_lived_token",
+      "token_expires_at": "2026-12-12T09:52:03.905Z",
+      "token_type": "long_lived",
+      "ad_accounts": [
+        {
+          "id": "act_9988112233",
+          "account_id": "9988112233",
+          "name": "Customer Custom Ad Account",
+          "currency": "INR",
+          "account_status": 1
+        }
+      ],
+      "selected_ad_account_id": "act_9988112233",
+      "pages": [
+        {
+          "id": "page_cust_111",
+          "name": "Customer Brand Store",
+          "category": "Retail",
+          "tasks": [
+            "MANAGE",
+            "ADVERTISE"
+          ],
+          "instagram_account_id": "ig_cust_222",
+          "instagram_username": "customerbrand"
+        },
+        {
+          "id": "page_cust_333",
+          "name": "Secondary Brand Page",
+          "category": "Services",
+          "tasks": [
+            "ADVERTISE"
+          ]
+        }
+      ],
+      "selected_page_id": "page_cust_111",
+      "page_id": "page_cust_111",
+      "page_name": "Customer Brand Store",
+      "instagram_accounts": [
+        {
+          "id": "ig_cust_222",
+          "username": "customerbrand",
+          "name": "Customer Brand",
+          "page_id": "page_cust_111"
+        }
+      ],
+      "selected_instagram_id": "ig_cust_222",
+      "instagram_id": "ig_cust_222",
+      "instagram_username": "customerbrand",
+      "created_at": "2026-10-13T09:52:03.905Z",
+      "updated_at": "2026-10-13T09:52:03.905Z"
     }
   ],
   "support_tickets": [
+    {
+      "id": "tkt_1791885123742_j58444",
+      "user_id": "test_usr_1791885122307",
+      "user_name": "Test Customer",
+      "user_email": "test_1791885122307@smap-ads.test",
+      "campaign_id": null,
+      "subject": "Campaign Budget Clarification",
+      "message": "How is my ₹200 Starter Sprint allocated between SMAP and Meta?",
+      "attachment_url": null,
+      "status": "RESOLVED",
+      "created_at": "2026-10-13T09:52:03.742Z",
+      "updated_at": "2026-10-13T09:52:03.784Z",
+      "replies": [
+        {
+          "id": "rep_1791885123767_b53b",
+          "sender": "admin",
+          "sender_name": "SMAP Admin Support",
+          "message": "Your Starter Sprint includes ₹100 platform management and ₹100 Meta media budget.",
+          "created_at": "2026-10-13T09:52:03.767Z"
+        }
+      ]
+    },
+    {
+      "id": "tkt_1791885064012_35v6i8",
+      "user_id": "test_usr_1791885062676",
+      "user_name": "Test Customer",
+      "user_email": "test_1791885062676@smap-ads.test",
+      "campaign_id": null,
+      "subject": "Campaign Budget Clarification",
+      "message": "How is my ₹200 Starter Sprint allocated between SMAP and Meta?",
+      "attachment_url": null,
+      "status": "RESOLVED",
+      "created_at": "2026-10-13T09:51:04.012Z",
+      "updated_at": "2026-10-13T09:51:04.056Z",
+      "replies": [
+        {
+          "id": "rep_1791885064038_r9nv",
+          "sender": "admin",
+          "sender_name": "SMAP Admin Support",
+          "message": "Your Starter Sprint includes ₹100 platform management and ₹100 Meta media budget.",
+          "created_at": "2026-10-13T09:51:04.038Z"
+        }
+      ]
+    },
+    {
+      "id": "tkt_1791885044787_lxgb8c",
+      "user_id": "test_usr_1791885043426",
+      "user_name": "Test Customer",
+      "user_email": "test_1791885043426@smap-ads.test",
+      "campaign_id": null,
+      "subject": "Campaign Budget Clarification",
+      "message": "How is my ₹200 Starter Sprint allocated between SMAP and Meta?",
+      "attachment_url": null,
+      "status": "RESOLVED",
+      "created_at": "2026-10-13T09:50:44.787Z",
+      "updated_at": "2026-10-13T09:50:44.828Z",
+      "replies": [
+        {
+          "id": "rep_1791885044810_oxsd",
+          "sender": "admin",
+          "sender_name": "SMAP Admin Support",
+          "message": "Your Starter Sprint includes ₹100 platform management and ₹100 Meta media budget.",
+          "created_at": "2026-10-13T09:50:44.810Z"
+        }
+      ]
+    },
+    {
+      "id": "tkt_1791884861395_avj1js",
+      "user_id": "test_usr_1791884859953",
+      "user_name": "Test Customer",
+      "user_email": "test_1791884859953@smap-ads.test",
+      "campaign_id": null,
+      "subject": "Campaign Budget Clarification",
+      "message": "How is my ₹200 Starter Sprint allocated between SMAP and Meta?",
+      "attachment_url": null,
+      "status": "RESOLVED",
+      "created_at": "2026-10-13T09:47:41.395Z",
+      "updated_at": "2026-10-13T09:47:41.428Z",
+      "replies": [
+        {
+          "id": "rep_1791884861413_x7y6",
+          "sender": "admin",
+          "sender_name": "SMAP Admin Support",
+          "message": "Your Starter Sprint includes ₹100 platform management and ₹100 Meta media budget.",
+          "created_at": "2026-10-13T09:47:41.413Z"
+        }
+      ]
+    },
+    {
+      "id": "tkt_1791884488071_jbhebw",
+      "user_id": "test_usr_1791884486783",
+      "user_name": "Test Customer",
+      "user_email": "test_1791884486783@smap-ads.test",
+      "campaign_id": null,
+      "subject": "Campaign Budget Clarification",
+      "message": "How is my ₹200 Starter Sprint allocated between SMAP and Meta?",
+      "attachment_url": null,
+      "status": "RESOLVED",
+      "created_at": "2026-10-13T09:41:28.071Z",
+      "updated_at": "2026-10-13T09:41:28.105Z",
+      "replies": [
+        {
+          "id": "rep_1791884488089_apus",
+          "sender": "admin",
+          "sender_name": "SMAP Admin Support",
+          "message": "Your Starter Sprint includes ₹100 platform management and ₹100 Meta media budget.",
+          "created_at": "2026-10-13T09:41:28.089Z"
+        }
+      ]
+    },
     {
       "id": "tkt_1791875805273_pr8404",
       "user_id": "test_usr_1791875803678",
@@ -13238,6 +16184,1416 @@
     }
   ],
   "system_logs": [
+    {
+      "id": "log_1791885125317_gezo4s",
+      "category": "PAYMENT",
+      "level": "INFO",
+      "message": "Created Add Funds payment request smap_fund_1791885125047_22b4ts for ₹250.75",
+      "details": {
+        "userId": "usr_email_1791885124340_y89hyb",
+        "paymentId": "smap_fund_1791885125047_22b4ts",
+        "amount": 250.75,
+        "gatewayOrderId": "order_TnLji0o9MYfOnx"
+      },
+      "created_at": "2026-10-13T09:52:05.317Z"
+    },
+    {
+      "id": "log_1791885125295_5s8szf",
+      "category": "PAYMENT",
+      "level": "INFO",
+      "message": "Created Razorpay Order order_TnLji0o9MYfOnx for Add Funds ₹250.75",
+      "details": {
+        "paymentId": "smap_fund_1791885125047_22b4ts",
+        "userId": "usr_email_1791885124340_y89hyb",
+        "gatewayOrderId": "order_TnLji0o9MYfOnx"
+      },
+      "created_at": "2026-10-13T09:52:05.295Z"
+    },
+    {
+      "id": "log_1791885125035_ub0ook",
+      "category": "PAYMENT",
+      "level": "INFO",
+      "message": "Created Add Funds payment request smap_fund_1791885124768_jt9f9k for ₹500",
+      "details": {
+        "userId": "usr_email_1791885124340_y89hyb",
+        "paymentId": "smap_fund_1791885124768_jt9f9k",
+        "amount": 500,
+        "gatewayOrderId": "order_TnLjhi5Mv57Bkx"
+      },
+      "created_at": "2026-10-13T09:52:05.035Z"
+    },
+    {
+      "id": "log_1791885125018_te1vtl",
+      "category": "PAYMENT",
+      "level": "INFO",
+      "message": "Created Razorpay Order order_TnLjhi5Mv57Bkx for Add Funds ₹500",
+      "details": {
+        "paymentId": "smap_fund_1791885124768_jt9f9k",
+        "userId": "usr_email_1791885124340_y89hyb",
+        "gatewayOrderId": "order_TnLjhi5Mv57Bkx"
+      },
+      "created_at": "2026-10-13T09:52:05.018Z"
+    },
+    {
+      "id": "log_1791885124735_g9m6zo",
+      "category": "AUTH",
+      "level": "INFO",
+      "message": "Password reset OTP generated for fullcycle_1791885124590@smap-ads.test (f***0@smap-ads.test)",
+      "details": {
+        "userId": "usr_email_1791885124695_pt80y1",
+        "channel": "email"
+      },
+      "created_at": "2026-10-13T09:52:04.735Z"
+    },
+    {
+      "id": "log_1791885124702_7an3l1",
+      "category": "AUTH",
+      "level": "INFO",
+      "message": "New user registered with email/password: fullcycle_1791885124590@smap-ads.test",
+      "details": {
+        "userId": "usr_email_1791885124695_pt80y1"
+      },
+      "created_at": "2026-10-13T09:52:04.702Z"
+    },
+    {
+      "id": "log_1791885124547_uo0yo9",
+      "category": "AUTH",
+      "level": "INFO",
+      "message": "Password reset OTP generated for phone_rec_1791875805950@smap-ads.test (+91 ******6789)",
+      "details": {
+        "userId": "usr_email_1791875806061_1w4bcc",
+        "channel": "phone"
+      },
+      "created_at": "2026-10-13T09:52:04.547Z"
+    },
+    {
+      "id": "log_1791885124511_ix6t8r",
+      "category": "AUTH",
+      "level": "INFO",
+      "message": "New user registered with email/password: phone_rec_1791885124392@smap-ads.test",
+      "details": {
+        "userId": "usr_email_1791885124502_b5kx0o"
+      },
+      "created_at": "2026-10-13T09:52:04.511Z"
+    },
+    {
+      "id": "log_1791885124384_fogul8",
+      "category": "AUTH",
+      "level": "INFO",
+      "message": "Password reset OTP generated for recovery_1791885124201@smap-ads.test (r***1@smap-ads.test)",
+      "details": {
+        "userId": "usr_email_1791885124340_y89hyb",
+        "channel": "email"
+      },
+      "created_at": "2026-10-13T09:52:04.384Z"
+    },
+    {
+      "id": "log_1791885124348_6ize7n",
+      "category": "AUTH",
+      "level": "INFO",
+      "message": "New user registered with email/password: recovery_1791885124201@smap-ads.test",
+      "details": {
+        "userId": "usr_email_1791885124340_y89hyb"
+      },
+      "created_at": "2026-10-13T09:52:04.348Z"
+    },
+    {
+      "id": "log_1791885124148_habn1f",
+      "category": "CAMPAIGN",
+      "level": "INFO",
+      "message": "Created campaign draft smap_cmp_1791885123912_65c88x for user usr_meta_1791885123899",
+      "details": {
+        "campaignId": "smap_cmp_1791885123912_65c88x",
+        "objective": "TRAFFIC",
+        "metaCampaignId": null,
+        "metaAdsetId": null,
+        "dailyBudget": 40,
+        "durationDays": 5,
+        "totalBudget": 200,
+        "status": "DRAFT"
+      },
+      "created_at": "2026-10-13T09:52:04.148Z"
+    },
+    {
+      "id": "log_1791885124128_4ffc5b",
+      "category": "META_API",
+      "level": "ERROR",
+      "message": "Meta draft campaign error: Malformed access token EAAP_mock_customer_long_lived_token",
+      "details": {
+        "response": {
+          "error": {
+            "message": "Malformed access token EAAP_mock_customer_long_lived_token",
+            "type": "OAuthException",
+            "code": 190,
+            "fbtrace_id": "ABlXWRE3mgyDwWvy2DP0U9_"
+          }
+        }
+      },
+      "created_at": "2026-10-13T09:52:04.128Z"
+    },
+    {
+      "id": "log_1791885123913_q46ay0",
+      "category": "META_API",
+      "level": "INFO",
+      "message": "Creating non-delivering draft campaign on Meta for SMAP campaign smap_cmp_1791885123912_65c88x",
+      "created_at": "2026-10-13T09:52:03.913Z"
+    },
+    {
+      "id": "log_1791885123892_r2csdf",
+      "category": "ADMIN",
+      "level": "INFO",
+      "message": "Admin test_admin_1791885123759 executed balance reconciliation for user cust_audit_1791885123796. Restored ₹2 to wallet.",
+      "details": {
+        "userId": "cust_audit_1791885123796",
+        "adminUserId": "test_admin_1791885123759",
+        "txId": "wtx_corr_1791885123871_119umh",
+        "reason": "Reconciling accidental wallet balance reset against verified payments"
+      },
+      "created_at": "2026-10-13T09:52:03.892Z"
+    },
+    {
+      "id": "log_1791885123885_dipdsj",
+      "category": "PAYMENT",
+      "level": "INFO",
+      "message": "Restored legitimate wallet balance for user cust_audit_1791885123796 to ₹2 (+₹2)",
+      "details": {
+        "userId": "cust_audit_1791885123796",
+        "adminUserId": "test_admin_1791885123759",
+        "previousBalance": 0,
+        "restoredBalance": 2,
+        "correctionAmount": 2,
+        "verifiedCredits": 2,
+        "legitimateDebits": 0,
+        "paymentCount": 2,
+        "txId": "wtx_corr_1791885123871_119umh"
+      },
+      "created_at": "2026-10-13T09:52:03.885Z"
+    },
+    {
+      "id": "log_1791885123854_nqkyh2",
+      "category": "PAYMENT",
+      "level": "INFO",
+      "message": "Credited ₹1 to wallet for user cust_audit_1791885123796. New balance: ₹2",
+      "details": {
+        "userId": "cust_audit_1791885123796",
+        "amount": 1,
+        "balanceBefore": 1,
+        "balanceAfter": 2,
+        "txId": "wtx_1791885123840_3sp6q0"
+      },
+      "created_at": "2026-10-13T09:52:03.854Z"
+    },
+    {
+      "id": "log_1791885123826_89t62y",
+      "category": "PAYMENT",
+      "level": "INFO",
+      "message": "Credited ₹1 to wallet for user cust_audit_1791885123796. New balance: ₹1",
+      "details": {
+        "userId": "cust_audit_1791885123796",
+        "amount": 1,
+        "balanceBefore": 0,
+        "balanceAfter": 1,
+        "txId": "wtx_1791885123812_nk8ndc"
+      },
+      "created_at": "2026-10-13T09:52:03.826Z"
+    },
+    {
+      "id": "log_1791885123751_pnyxco",
+      "category": "ADMIN",
+      "level": "INFO",
+      "message": "New support ticket opened: Campaign Budget Clarification by test_1791885122307@smap-ads.test",
+      "details": {
+        "ticketId": "tkt_1791885123742_j58444"
+      },
+      "created_at": "2026-10-13T09:52:03.751Z"
+    },
+    {
+      "id": "log_1791885123731_yhfto5",
+      "category": "META_API",
+      "level": "INFO",
+      "message": "Campaign submission blocked by safety gate for campaign cmp_dummy_1791885122463: Real campaign submissions to Meta are safely disabled (META_LIVE_SUBMISSIONS_ENABLED is not true). No campaigns will be launched, and no money will be spent on Meta until the owner verifies production access and explicitly enables this flag.",
+      "created_at": "2026-10-13T09:52:03.731Z"
+    },
+    {
+      "id": "log_1791885122464_7vz1k6",
+      "category": "META_API",
+      "level": "INFO",
+      "message": "Campaign submission blocked by safety gate for campaign cmp_dummy_1791885122463: Real campaign submissions to Meta are safely disabled (META_LIVE_SUBMISSIONS_ENABLED is not true). No campaigns will be launched, and no money will be spent on Meta until the owner verifies production access and explicitly enables this flag.",
+      "created_at": "2026-10-13T09:52:02.464Z"
+    },
+    {
+      "id": "log_1791885122448_tpu058",
+      "category": "PAYMENT",
+      "level": "WARN",
+      "message": "Idempotency guard prevented double deduction for campaign smap_cmp_1791885122387_o5j1hm",
+      "details": {
+        "userId": "test_usr_1791885122307",
+        "campaignId": "smap_cmp_1791885122387_o5j1hm",
+        "existingTxId": "wtx_1791885122387_rf8ojw"
+      },
+      "created_at": "2026-10-13T09:52:02.448Z"
+    },
+    {
+      "id": "log_1791885122427_p8av7t",
+      "category": "META_API",
+      "level": "INFO",
+      "message": "Campaign submission blocked by safety gate for campaign smap_cmp_1791885122387_o5j1hm: Real campaign submissions to Meta are safely disabled (META_LIVE_SUBMISSIONS_ENABLED is not true). No campaigns will be launched, and no money will be spent on Meta until the owner verifies production access and explicitly enables this flag.",
+      "created_at": "2026-10-13T09:52:02.427Z"
+    },
+    {
+      "id": "log_1791885122405_tjh04z",
+      "category": "PAYMENT",
+      "level": "INFO",
+      "message": "Deducted ₹200 from wallet for user test_usr_1791885122307. New balance: ₹300",
+      "details": {
+        "userId": "test_usr_1791885122307",
+        "amount": 200,
+        "balanceBefore": 500,
+        "balanceAfter": 300,
+        "campaignId": "smap_cmp_1791885122387_o5j1hm",
+        "txId": "wtx_1791885122387_rf8ojw"
+      },
+      "created_at": "2026-10-13T09:52:02.405Z"
+    },
+    {
+      "id": "log_1791885122379_izzhgh",
+      "category": "PAYMENT",
+      "level": "INFO",
+      "message": "Credited ₹500 to wallet for user test_usr_1791885122307. New balance: ₹500",
+      "details": {
+        "userId": "test_usr_1791885122307",
+        "amount": 500,
+        "balanceBefore": 0,
+        "balanceAfter": 500,
+        "txId": "wtx_1791885122363_g1ald0"
+      },
+      "created_at": "2026-10-13T09:52:02.379Z"
+    },
+    {
+      "id": "log_1791885122350_qlsgcd",
+      "category": "CAMPAIGN",
+      "level": "INFO",
+      "message": "Created campaign draft smap_cmp_1791885122342_dclvkj for user test_usr_1791885122307",
+      "details": {
+        "campaignId": "smap_cmp_1791885122342_dclvkj",
+        "objective": "TRAFFIC",
+        "metaCampaignId": null,
+        "metaAdsetId": null,
+        "dailyBudget": 40,
+        "durationDays": 5,
+        "totalBudget": 200,
+        "status": "DRAFT"
+      },
+      "created_at": "2026-10-13T09:52:02.350Z"
+    },
+    {
+      "id": "log_1791885122334_g0bank",
+      "category": "CAMPAIGN",
+      "level": "INFO",
+      "message": "Created campaign draft smap_cmp_1791885122323_f7movv for user test_usr_1791885122307",
+      "details": {
+        "campaignId": "smap_cmp_1791885122323_f7movv",
+        "objective": "TRAFFIC",
+        "metaCampaignId": null,
+        "metaAdsetId": null,
+        "dailyBudget": 40,
+        "durationDays": 5,
+        "totalBudget": 200,
+        "status": "DRAFT"
+      },
+      "created_at": "2026-10-13T09:52:02.334Z"
+    },
+    {
+      "id": "log_1791885065691_vynszh",
+      "category": "PAYMENT",
+      "level": "INFO",
+      "message": "Created Add Funds payment request smap_fund_1791885065435_guum80 for ₹250.75",
+      "details": {
+        "userId": "usr_email_1791885064650_lzrguz",
+        "paymentId": "smap_fund_1791885065435_guum80",
+        "amount": 250.75,
+        "gatewayOrderId": "order_TnLiewCJisFsyc"
+      },
+      "created_at": "2026-10-13T09:51:05.691Z"
+    },
+    {
+      "id": "log_1791885065676_qj0hec",
+      "category": "PAYMENT",
+      "level": "INFO",
+      "message": "Created Razorpay Order order_TnLiewCJisFsyc for Add Funds ₹250.75",
+      "details": {
+        "paymentId": "smap_fund_1791885065435_guum80",
+        "userId": "usr_email_1791885064650_lzrguz",
+        "gatewayOrderId": "order_TnLiewCJisFsyc"
+      },
+      "created_at": "2026-10-13T09:51:05.676Z"
+    },
+    {
+      "id": "log_1791885065429_xofmif",
+      "category": "PAYMENT",
+      "level": "INFO",
+      "message": "Created Add Funds payment request smap_fund_1791885065142_zex54y for ₹500",
+      "details": {
+        "userId": "usr_email_1791885064650_lzrguz",
+        "paymentId": "smap_fund_1791885065142_zex54y",
+        "amount": 500,
+        "gatewayOrderId": "order_TnLieeNS6IZ31W"
+      },
+      "created_at": "2026-10-13T09:51:05.429Z"
+    },
+    {
+      "id": "log_1791885065414_9nf0e9",
+      "category": "PAYMENT",
+      "level": "INFO",
+      "message": "Created Razorpay Order order_TnLieeNS6IZ31W for Add Funds ₹500",
+      "details": {
+        "paymentId": "smap_fund_1791885065142_zex54y",
+        "userId": "usr_email_1791885064650_lzrguz",
+        "gatewayOrderId": "order_TnLieeNS6IZ31W"
+      },
+      "created_at": "2026-10-13T09:51:05.414Z"
+    },
+    {
+      "id": "log_1791885065106_exl5we",
+      "category": "AUTH",
+      "level": "INFO",
+      "message": "Password reset OTP generated for fullcycle_1791885064918@smap-ads.test (f***8@smap-ads.test)",
+      "details": {
+        "userId": "usr_email_1791885065049_xyo9a9",
+        "channel": "email"
+      },
+      "created_at": "2026-10-13T09:51:05.106Z"
+    },
+    {
+      "id": "log_1791885065063_71zkun",
+      "category": "AUTH",
+      "level": "INFO",
+      "message": "New user registered with email/password: fullcycle_1791885064918@smap-ads.test",
+      "details": {
+        "userId": "usr_email_1791885065049_xyo9a9"
+      },
+      "created_at": "2026-10-13T09:51:05.063Z"
+    },
+    {
+      "id": "log_1791885064867_6ya98j",
+      "category": "AUTH",
+      "level": "INFO",
+      "message": "Password reset OTP generated for phone_rec_1791875805950@smap-ads.test (+91 ******6789)",
+      "details": {
+        "userId": "usr_email_1791875806061_1w4bcc",
+        "channel": "phone"
+      },
+      "created_at": "2026-10-13T09:51:04.867Z"
+    },
+    {
+      "id": "log_1791885064831_cchr51",
+      "category": "AUTH",
+      "level": "INFO",
+      "message": "New user registered with email/password: phone_rec_1791885064711@smap-ads.test",
+      "details": {
+        "userId": "usr_email_1791885064822_grde1y"
+      },
+      "created_at": "2026-10-13T09:51:04.831Z"
+    },
+    {
+      "id": "log_1791885064703_6onnvy",
+      "category": "AUTH",
+      "level": "INFO",
+      "message": "Password reset OTP generated for recovery_1791885064497@smap-ads.test (r***7@smap-ads.test)",
+      "details": {
+        "userId": "usr_email_1791885064650_lzrguz",
+        "channel": "email"
+      },
+      "created_at": "2026-10-13T09:51:04.703Z"
+    },
+    {
+      "id": "log_1791885064663_jdh4sd",
+      "category": "AUTH",
+      "level": "INFO",
+      "message": "New user registered with email/password: recovery_1791885064497@smap-ads.test",
+      "details": {
+        "userId": "usr_email_1791885064650_lzrguz"
+      },
+      "created_at": "2026-10-13T09:51:04.663Z"
+    },
+    {
+      "id": "log_1791885064441_9dq9u3",
+      "category": "CAMPAIGN",
+      "level": "INFO",
+      "message": "Created campaign draft smap_cmp_1791885064207_6sva88 for user usr_meta_1791885064188",
+      "details": {
+        "campaignId": "smap_cmp_1791885064207_6sva88",
+        "objective": "TRAFFIC",
+        "metaCampaignId": null,
+        "metaAdsetId": null,
+        "dailyBudget": 40,
+        "durationDays": 5,
+        "totalBudget": 200,
+        "status": "DRAFT"
+      },
+      "created_at": "2026-10-13T09:51:04.441Z"
+    },
+    {
+      "id": "log_1791885064424_acn1mn",
+      "category": "META_API",
+      "level": "ERROR",
+      "message": "Meta draft campaign error: Malformed access token EAAP_mock_customer_long_lived_token",
+      "details": {
+        "response": {
+          "error": {
+            "message": "Malformed access token EAAP_mock_customer_long_lived_token",
+            "type": "OAuthException",
+            "code": 190,
+            "fbtrace_id": "ASrGr2zbyjgsDCnwMWHdsvA"
+          }
+        }
+      },
+      "created_at": "2026-10-13T09:51:04.424Z"
+    },
+    {
+      "id": "log_1791885064208_v9dmli",
+      "category": "META_API",
+      "level": "INFO",
+      "message": "Creating non-delivering draft campaign on Meta for SMAP campaign smap_cmp_1791885064207_6sva88",
+      "created_at": "2026-10-13T09:51:04.208Z"
+    },
+    {
+      "id": "log_1791885064180_2gtxgs",
+      "category": "ADMIN",
+      "level": "INFO",
+      "message": "Admin test_admin_1791885064029 executed balance reconciliation for user cust_audit_1791885064063. Restored ₹2 to wallet.",
+      "details": {
+        "userId": "cust_audit_1791885064063",
+        "adminUserId": "test_admin_1791885064029",
+        "txId": "wtx_corr_1791885064156_boskyz",
+        "reason": "Reconciling accidental wallet balance reset against verified payments"
+      },
+      "created_at": "2026-10-13T09:51:04.180Z"
+    },
+    {
+      "id": "log_1791885064170_cpz5ww",
+      "category": "PAYMENT",
+      "level": "INFO",
+      "message": "Restored legitimate wallet balance for user cust_audit_1791885064063 to ₹2 (+₹2)",
+      "details": {
+        "userId": "cust_audit_1791885064063",
+        "adminUserId": "test_admin_1791885064029",
+        "previousBalance": 0,
+        "restoredBalance": 2,
+        "correctionAmount": 2,
+        "verifiedCredits": 2,
+        "legitimateDebits": 0,
+        "paymentCount": 2,
+        "txId": "wtx_corr_1791885064156_boskyz"
+      },
+      "created_at": "2026-10-13T09:51:04.170Z"
+    },
+    {
+      "id": "log_1791885064135_en1swe",
+      "category": "PAYMENT",
+      "level": "INFO",
+      "message": "Credited ₹1 to wallet for user cust_audit_1791885064063. New balance: ₹2",
+      "details": {
+        "userId": "cust_audit_1791885064063",
+        "amount": 1,
+        "balanceBefore": 1,
+        "balanceAfter": 2,
+        "txId": "wtx_1791885064118_cd4wn9"
+      },
+      "created_at": "2026-10-13T09:51:04.135Z"
+    },
+    {
+      "id": "log_1791885064100_9sboal",
+      "category": "PAYMENT",
+      "level": "INFO",
+      "message": "Credited ₹1 to wallet for user cust_audit_1791885064063. New balance: ₹1",
+      "details": {
+        "userId": "cust_audit_1791885064063",
+        "amount": 1,
+        "balanceBefore": 0,
+        "balanceAfter": 1,
+        "txId": "wtx_1791885064075_y0l8r2"
+      },
+      "created_at": "2026-10-13T09:51:04.101Z"
+    },
+    {
+      "id": "log_1791885064020_ls35lv",
+      "category": "ADMIN",
+      "level": "INFO",
+      "message": "New support ticket opened: Campaign Budget Clarification by test_1791885062676@smap-ads.test",
+      "details": {
+        "ticketId": "tkt_1791885064012_35v6i8"
+      },
+      "created_at": "2026-10-13T09:51:04.021Z"
+    },
+    {
+      "id": "log_1791885064001_wjlm6m",
+      "category": "META_API",
+      "level": "INFO",
+      "message": "Campaign submission blocked by safety gate for campaign cmp_dummy_1791885062809: Real campaign submissions to Meta are safely disabled (META_LIVE_SUBMISSIONS_ENABLED is not true). No campaigns will be launched, and no money will be spent on Meta until the owner verifies production access and explicitly enables this flag.",
+      "created_at": "2026-10-13T09:51:04.001Z"
+    },
+    {
+      "id": "log_1791885062810_mt1xad",
+      "category": "META_API",
+      "level": "INFO",
+      "message": "Campaign submission blocked by safety gate for campaign cmp_dummy_1791885062809: Real campaign submissions to Meta are safely disabled (META_LIVE_SUBMISSIONS_ENABLED is not true). No campaigns will be launched, and no money will be spent on Meta until the owner verifies production access and explicitly enables this flag.",
+      "created_at": "2026-10-13T09:51:02.810Z"
+    },
+    {
+      "id": "log_1791885062797_cjhf06",
+      "category": "PAYMENT",
+      "level": "WARN",
+      "message": "Idempotency guard prevented double deduction for campaign smap_cmp_1791885062742_acylw3",
+      "details": {
+        "userId": "test_usr_1791885062676",
+        "campaignId": "smap_cmp_1791885062742_acylw3",
+        "existingTxId": "wtx_1791885062742_wmynd2"
+      },
+      "created_at": "2026-10-13T09:51:02.798Z"
+    },
+    {
+      "id": "log_1791885062778_bonnvs",
+      "category": "META_API",
+      "level": "INFO",
+      "message": "Campaign submission blocked by safety gate for campaign smap_cmp_1791885062742_acylw3: Real campaign submissions to Meta are safely disabled (META_LIVE_SUBMISSIONS_ENABLED is not true). No campaigns will be launched, and no money will be spent on Meta until the owner verifies production access and explicitly enables this flag.",
+      "created_at": "2026-10-13T09:51:02.778Z"
+    },
+    {
+      "id": "log_1791885062758_91ovjv",
+      "category": "PAYMENT",
+      "level": "INFO",
+      "message": "Deducted ₹200 from wallet for user test_usr_1791885062676. New balance: ₹300",
+      "details": {
+        "userId": "test_usr_1791885062676",
+        "amount": 200,
+        "balanceBefore": 500,
+        "balanceAfter": 300,
+        "campaignId": "smap_cmp_1791885062742_acylw3",
+        "txId": "wtx_1791885062742_wmynd2"
+      },
+      "created_at": "2026-10-13T09:51:02.758Z"
+    },
+    {
+      "id": "log_1791885062735_3bbb1o",
+      "category": "PAYMENT",
+      "level": "INFO",
+      "message": "Credited ₹500 to wallet for user test_usr_1791885062676. New balance: ₹500",
+      "details": {
+        "userId": "test_usr_1791885062676",
+        "amount": 500,
+        "balanceBefore": 0,
+        "balanceAfter": 500,
+        "txId": "wtx_1791885062722_rhtlfm"
+      },
+      "created_at": "2026-10-13T09:51:02.735Z"
+    },
+    {
+      "id": "log_1791885062710_vrdo1a",
+      "category": "CAMPAIGN",
+      "level": "INFO",
+      "message": "Created campaign draft smap_cmp_1791885062704_s63vj5 for user test_usr_1791885062676",
+      "details": {
+        "campaignId": "smap_cmp_1791885062704_s63vj5",
+        "objective": "TRAFFIC",
+        "metaCampaignId": null,
+        "metaAdsetId": null,
+        "dailyBudget": 40,
+        "durationDays": 5,
+        "totalBudget": 200,
+        "status": "DRAFT"
+      },
+      "created_at": "2026-10-13T09:51:02.710Z"
+    },
+    {
+      "id": "log_1791885062698_je17qh",
+      "category": "CAMPAIGN",
+      "level": "INFO",
+      "message": "Created campaign draft smap_cmp_1791885062690_nqgr2g for user test_usr_1791885062676",
+      "details": {
+        "campaignId": "smap_cmp_1791885062690_nqgr2g",
+        "objective": "TRAFFIC",
+        "metaCampaignId": null,
+        "metaAdsetId": null,
+        "dailyBudget": 40,
+        "durationDays": 5,
+        "totalBudget": 200,
+        "status": "DRAFT"
+      },
+      "created_at": "2026-10-13T09:51:02.698Z"
+    },
+    {
+      "id": "log_1791885045785_gpzpcb",
+      "category": "AUTH",
+      "level": "INFO",
+      "message": "Password reset OTP generated for fullcycle_1791885045640@smap-ads.test (f***0@smap-ads.test)",
+      "details": {
+        "userId": "usr_email_1791885045745_murr6d",
+        "channel": "email"
+      },
+      "created_at": "2026-10-13T09:50:45.785Z"
+    },
+    {
+      "id": "log_1791885045753_f9un12",
+      "category": "AUTH",
+      "level": "INFO",
+      "message": "New user registered with email/password: fullcycle_1791885045640@smap-ads.test",
+      "details": {
+        "userId": "usr_email_1791885045745_murr6d"
+      },
+      "created_at": "2026-10-13T09:50:45.753Z"
+    },
+    {
+      "id": "log_1791885045593_p25wnc",
+      "category": "AUTH",
+      "level": "INFO",
+      "message": "Password reset OTP generated for phone_rec_1791875805950@smap-ads.test (+91 ******6789)",
+      "details": {
+        "userId": "usr_email_1791875806061_1w4bcc",
+        "channel": "phone"
+      },
+      "created_at": "2026-10-13T09:50:45.593Z"
+    },
+    {
+      "id": "log_1791885045559_jsy9yn",
+      "category": "AUTH",
+      "level": "INFO",
+      "message": "New user registered with email/password: phone_rec_1791885045438@smap-ads.test",
+      "details": {
+        "userId": "usr_email_1791885045552_9g8rvs"
+      },
+      "created_at": "2026-10-13T09:50:45.559Z"
+    },
+    {
+      "id": "log_1791885045430_u5zdwj",
+      "category": "AUTH",
+      "level": "INFO",
+      "message": "Password reset OTP generated for recovery_1791885045255@smap-ads.test (r***5@smap-ads.test)",
+      "details": {
+        "userId": "usr_email_1791885045384_tthi0e",
+        "channel": "email"
+      },
+      "created_at": "2026-10-13T09:50:45.430Z"
+    },
+    {
+      "id": "log_1791885045392_in2zgk",
+      "category": "AUTH",
+      "level": "INFO",
+      "message": "New user registered with email/password: recovery_1791885045255@smap-ads.test",
+      "details": {
+        "userId": "usr_email_1791885045384_tthi0e"
+      },
+      "created_at": "2026-10-13T09:50:45.392Z"
+    },
+    {
+      "id": "log_1791885045206_scjjfh",
+      "category": "CAMPAIGN",
+      "level": "INFO",
+      "message": "Created campaign draft smap_cmp_1791885044969_umfxor for user usr_meta_1791885044953",
+      "details": {
+        "campaignId": "smap_cmp_1791885044969_umfxor",
+        "objective": "TRAFFIC",
+        "metaCampaignId": null,
+        "metaAdsetId": null,
+        "dailyBudget": 40,
+        "durationDays": 5,
+        "totalBudget": 200,
+        "status": "DRAFT"
+      },
+      "created_at": "2026-10-13T09:50:45.206Z"
+    },
+    {
+      "id": "log_1791885045187_aaymwn",
+      "category": "META_API",
+      "level": "ERROR",
+      "message": "Meta draft campaign error: Malformed access token EAAP_mock_customer_long_lived_token",
+      "details": {
+        "response": {
+          "error": {
+            "message": "Malformed access token EAAP_mock_customer_long_lived_token",
+            "type": "OAuthException",
+            "code": 190,
+            "fbtrace_id": "AmOH0kVeLrYTBH3xg9TD643"
+          }
+        }
+      },
+      "created_at": "2026-10-13T09:50:45.187Z"
+    },
+    {
+      "id": "log_1791885044970_vbr07d",
+      "category": "META_API",
+      "level": "INFO",
+      "message": "Creating non-delivering draft campaign on Meta for SMAP campaign smap_cmp_1791885044969_umfxor",
+      "created_at": "2026-10-13T09:50:44.970Z"
+    },
+    {
+      "id": "log_1791885044944_pg3d6x",
+      "category": "ADMIN",
+      "level": "INFO",
+      "message": "Admin test_admin_1791885044802 executed balance reconciliation for user cust_audit_1791885044835. Restored ₹2 to wallet.",
+      "details": {
+        "userId": "cust_audit_1791885044835",
+        "adminUserId": "test_admin_1791885044802",
+        "txId": "wtx_corr_1791885044920_d0ss5r",
+        "reason": "Reconciling accidental wallet balance reset against verified payments"
+      },
+      "created_at": "2026-10-13T09:50:44.944Z"
+    },
+    {
+      "id": "log_1791885044936_gwar2w",
+      "category": "PAYMENT",
+      "level": "INFO",
+      "message": "Restored legitimate wallet balance for user cust_audit_1791885044835 to ₹2 (+₹2)",
+      "details": {
+        "userId": "cust_audit_1791885044835",
+        "adminUserId": "test_admin_1791885044802",
+        "previousBalance": 0,
+        "restoredBalance": 2,
+        "correctionAmount": 2,
+        "verifiedCredits": 2,
+        "legitimateDebits": 0,
+        "paymentCount": 2,
+        "txId": "wtx_corr_1791885044920_d0ss5r"
+      },
+      "created_at": "2026-10-13T09:50:44.936Z"
+    },
+    {
+      "id": "log_1791885044900_pla0ak",
+      "category": "PAYMENT",
+      "level": "INFO",
+      "message": "Credited ₹1 to wallet for user cust_audit_1791885044835. New balance: ₹2",
+      "details": {
+        "userId": "cust_audit_1791885044835",
+        "amount": 1,
+        "balanceBefore": 1,
+        "balanceAfter": 2,
+        "txId": "wtx_1791885044883_exb2rj"
+      },
+      "created_at": "2026-10-13T09:50:44.900Z"
+    },
+    {
+      "id": "log_1791885044863_y4nt6g",
+      "category": "PAYMENT",
+      "level": "INFO",
+      "message": "Credited ₹1 to wallet for user cust_audit_1791885044835. New balance: ₹1",
+      "details": {
+        "userId": "cust_audit_1791885044835",
+        "amount": 1,
+        "balanceBefore": 0,
+        "balanceAfter": 1,
+        "txId": "wtx_1791885044849_b1thvs"
+      },
+      "created_at": "2026-10-13T09:50:44.863Z"
+    },
+    {
+      "id": "log_1791885044795_3pm77m",
+      "category": "ADMIN",
+      "level": "INFO",
+      "message": "New support ticket opened: Campaign Budget Clarification by test_1791885043426@smap-ads.test",
+      "details": {
+        "ticketId": "tkt_1791885044787_lxgb8c"
+      },
+      "created_at": "2026-10-13T09:50:44.795Z"
+    },
+    {
+      "id": "log_1791885044777_05vnuz",
+      "category": "META_API",
+      "level": "INFO",
+      "message": "Campaign submission blocked by safety gate for campaign cmp_dummy_1791885043570: Real campaign submissions to Meta are safely disabled (META_LIVE_SUBMISSIONS_ENABLED is not true). No campaigns will be launched, and no money will be spent on Meta until the owner verifies production access and explicitly enables this flag.",
+      "created_at": "2026-10-13T09:50:44.777Z"
+    },
+    {
+      "id": "log_1791885043570_t1uv9z",
+      "category": "META_API",
+      "level": "INFO",
+      "message": "Campaign submission blocked by safety gate for campaign cmp_dummy_1791885043570: Real campaign submissions to Meta are safely disabled (META_LIVE_SUBMISSIONS_ENABLED is not true). No campaigns will be launched, and no money will be spent on Meta until the owner verifies production access and explicitly enables this flag.",
+      "created_at": "2026-10-13T09:50:43.570Z"
+    },
+    {
+      "id": "log_1791885043557_lqy1ip",
+      "category": "PAYMENT",
+      "level": "WARN",
+      "message": "Idempotency guard prevented double deduction for campaign smap_cmp_1791885043495_5moe3p",
+      "details": {
+        "userId": "test_usr_1791885043426",
+        "campaignId": "smap_cmp_1791885043495_5moe3p",
+        "existingTxId": "wtx_1791885043496_zago4f"
+      },
+      "created_at": "2026-10-13T09:50:43.557Z"
+    },
+    {
+      "id": "log_1791885043529_rgfdni",
+      "category": "META_API",
+      "level": "INFO",
+      "message": "Campaign submission blocked by safety gate for campaign smap_cmp_1791885043495_5moe3p: Real campaign submissions to Meta are safely disabled (META_LIVE_SUBMISSIONS_ENABLED is not true). No campaigns will be launched, and no money will be spent on Meta until the owner verifies production access and explicitly enables this flag.",
+      "created_at": "2026-10-13T09:50:43.529Z"
+    },
+    {
+      "id": "log_1791885043508_1xj7in",
+      "category": "PAYMENT",
+      "level": "INFO",
+      "message": "Deducted ₹200 from wallet for user test_usr_1791885043426. New balance: ₹300",
+      "details": {
+        "userId": "test_usr_1791885043426",
+        "amount": 200,
+        "balanceBefore": 500,
+        "balanceAfter": 300,
+        "campaignId": "smap_cmp_1791885043495_5moe3p",
+        "txId": "wtx_1791885043496_zago4f"
+      },
+      "created_at": "2026-10-13T09:50:43.508Z"
+    },
+    {
+      "id": "log_1791885043489_qmhbdf",
+      "category": "PAYMENT",
+      "level": "INFO",
+      "message": "Credited ₹500 to wallet for user test_usr_1791885043426. New balance: ₹500",
+      "details": {
+        "userId": "test_usr_1791885043426",
+        "amount": 500,
+        "balanceBefore": 0,
+        "balanceAfter": 500,
+        "txId": "wtx_1791885043470_muqvf6"
+      },
+      "created_at": "2026-10-13T09:50:43.489Z"
+    },
+    {
+      "id": "log_1791885043462_pawn01",
+      "category": "CAMPAIGN",
+      "level": "INFO",
+      "message": "Created campaign draft smap_cmp_1791885043455_w15j5d for user test_usr_1791885043426",
+      "details": {
+        "campaignId": "smap_cmp_1791885043455_w15j5d",
+        "objective": "TRAFFIC",
+        "metaCampaignId": null,
+        "metaAdsetId": null,
+        "dailyBudget": 40,
+        "durationDays": 5,
+        "totalBudget": 200,
+        "status": "DRAFT"
+      },
+      "created_at": "2026-10-13T09:50:43.462Z"
+    },
+    {
+      "id": "log_1791885043449_tufkfd",
+      "category": "CAMPAIGN",
+      "level": "INFO",
+      "message": "Created campaign draft smap_cmp_1791885043440_ykq9fz for user test_usr_1791885043426",
+      "details": {
+        "campaignId": "smap_cmp_1791885043440_ykq9fz",
+        "objective": "TRAFFIC",
+        "metaCampaignId": null,
+        "metaAdsetId": null,
+        "dailyBudget": 40,
+        "durationDays": 5,
+        "totalBudget": 200,
+        "status": "DRAFT"
+      },
+      "created_at": "2026-10-13T09:50:43.449Z"
+    },
+    {
+      "id": "log_1791884862199_jnz5eo",
+      "category": "AUTH",
+      "level": "INFO",
+      "message": "Password reset OTP generated for phone_rec_1791875805950@smap-ads.test (+91 ******6789)",
+      "details": {
+        "userId": "usr_email_1791875806061_1w4bcc",
+        "channel": "phone"
+      },
+      "created_at": "2026-10-13T09:47:42.199Z"
+    },
+    {
+      "id": "log_1791884862162_7p688m",
+      "category": "AUTH",
+      "level": "INFO",
+      "message": "New user registered with email/password: phone_rec_1791884862033@smap-ads.test",
+      "details": {
+        "userId": "usr_email_1791884862155_71hpo9"
+      },
+      "created_at": "2026-10-13T09:47:42.162Z"
+    },
+    {
+      "id": "log_1791884862025_gbk8fi",
+      "category": "AUTH",
+      "level": "INFO",
+      "message": "Password reset OTP generated for recovery_1791884861835@smap-ads.test (r***5@smap-ads.test)",
+      "details": {
+        "userId": "usr_email_1791884861978_g2mfuz",
+        "channel": "email"
+      },
+      "created_at": "2026-10-13T09:47:42.025Z"
+    },
+    {
+      "id": "log_1791884861987_9eq9jd",
+      "category": "AUTH",
+      "level": "INFO",
+      "message": "New user registered with email/password: recovery_1791884861835@smap-ads.test",
+      "details": {
+        "userId": "usr_email_1791884861978_g2mfuz"
+      },
+      "created_at": "2026-10-13T09:47:41.987Z"
+    },
+    {
+      "id": "log_1791884861786_813c6i",
+      "category": "CAMPAIGN",
+      "level": "INFO",
+      "message": "Created campaign draft smap_cmp_1791884861530_3pqd9t for user usr_meta_1791884861518",
+      "details": {
+        "campaignId": "smap_cmp_1791884861530_3pqd9t",
+        "objective": "TRAFFIC",
+        "metaCampaignId": null,
+        "metaAdsetId": null,
+        "dailyBudget": 40,
+        "durationDays": 5,
+        "totalBudget": 200,
+        "status": "DRAFT"
+      },
+      "created_at": "2026-10-13T09:47:41.786Z"
+    },
+    {
+      "id": "log_1791884861768_2ecsgf",
+      "category": "META_API",
+      "level": "ERROR",
+      "message": "Meta draft campaign error: Malformed access token EAAP_mock_customer_long_lived_token",
+      "details": {
+        "response": {
+          "error": {
+            "message": "Malformed access token EAAP_mock_customer_long_lived_token",
+            "type": "OAuthException",
+            "code": 190,
+            "fbtrace_id": "AuZzqHTCiCghLM1o6g-p196"
+          }
+        }
+      },
+      "created_at": "2026-10-13T09:47:41.768Z"
+    },
+    {
+      "id": "log_1791884861530_6n15yn",
+      "category": "META_API",
+      "level": "INFO",
+      "message": "Creating non-delivering draft campaign on Meta for SMAP campaign smap_cmp_1791884861530_3pqd9t",
+      "created_at": "2026-10-13T09:47:41.530Z"
+    },
+    {
+      "id": "log_1791884861512_z8615r",
+      "category": "ADMIN",
+      "level": "INFO",
+      "message": "Admin test_admin_1791884861408 executed balance reconciliation for user cust_audit_1791884861434. Restored ₹2 to wallet.",
+      "details": {
+        "userId": "cust_audit_1791884861434",
+        "adminUserId": "test_admin_1791884861408",
+        "txId": "wtx_corr_1791884861496_tuvww8",
+        "reason": "Reconciling accidental wallet balance reset against verified payments"
+      },
+      "created_at": "2026-10-13T09:47:41.512Z"
+    },
+    {
+      "id": "log_1791884861507_368t4y",
+      "category": "PAYMENT",
+      "level": "INFO",
+      "message": "Restored legitimate wallet balance for user cust_audit_1791884861434 to ₹2 (+₹2)",
+      "details": {
+        "userId": "cust_audit_1791884861434",
+        "adminUserId": "test_admin_1791884861408",
+        "previousBalance": 0,
+        "restoredBalance": 2,
+        "correctionAmount": 2,
+        "verifiedCredits": 2,
+        "legitimateDebits": 0,
+        "paymentCount": 2,
+        "txId": "wtx_corr_1791884861496_tuvww8"
+      },
+      "created_at": "2026-10-13T09:47:41.507Z"
+    },
+    {
+      "id": "log_1791884861483_gcevmt",
+      "category": "PAYMENT",
+      "level": "INFO",
+      "message": "Credited ₹1 to wallet for user cust_audit_1791884861434. New balance: ₹2",
+      "details": {
+        "userId": "cust_audit_1791884861434",
+        "amount": 1,
+        "balanceBefore": 1,
+        "balanceAfter": 2,
+        "txId": "wtx_1791884861469_4zq63p"
+      },
+      "created_at": "2026-10-13T09:47:41.483Z"
+    },
+    {
+      "id": "log_1791884861457_zjao8a",
+      "category": "PAYMENT",
+      "level": "INFO",
+      "message": "Credited ₹1 to wallet for user cust_audit_1791884861434. New balance: ₹1",
+      "details": {
+        "userId": "cust_audit_1791884861434",
+        "amount": 1,
+        "balanceBefore": 0,
+        "balanceAfter": 1,
+        "txId": "wtx_1791884861446_65ypix"
+      },
+      "created_at": "2026-10-13T09:47:41.457Z"
+    },
+    {
+      "id": "log_1791884861402_ledf71",
+      "category": "ADMIN",
+      "level": "INFO",
+      "message": "New support ticket opened: Campaign Budget Clarification by test_1791884859953@smap-ads.test",
+      "details": {
+        "ticketId": "tkt_1791884861395_avj1js"
+      },
+      "created_at": "2026-10-13T09:47:41.402Z"
+    },
+    {
+      "id": "log_1791884861386_apndec",
+      "category": "META_API",
+      "level": "INFO",
+      "message": "Campaign submission blocked by safety gate for campaign cmp_dummy_1791884860093: Real campaign submissions to Meta are safely disabled (META_LIVE_SUBMISSIONS_ENABLED is not true). No campaigns will be launched, and no money will be spent on Meta until the owner verifies production access and explicitly enables this flag.",
+      "created_at": "2026-10-13T09:47:41.386Z"
+    },
+    {
+      "id": "log_1791884860093_7ia9qj",
+      "category": "META_API",
+      "level": "INFO",
+      "message": "Campaign submission blocked by safety gate for campaign cmp_dummy_1791884860093: Real campaign submissions to Meta are safely disabled (META_LIVE_SUBMISSIONS_ENABLED is not true). No campaigns will be launched, and no money will be spent on Meta until the owner verifies production access and explicitly enables this flag.",
+      "created_at": "2026-10-13T09:47:40.093Z"
+    },
+    {
+      "id": "log_1791884860079_30gyqf",
+      "category": "PAYMENT",
+      "level": "WARN",
+      "message": "Idempotency guard prevented double deduction for campaign smap_cmp_1791884860017_t00nve",
+      "details": {
+        "userId": "test_usr_1791884859953",
+        "campaignId": "smap_cmp_1791884860017_t00nve",
+        "existingTxId": "wtx_1791884860017_j758t6"
+      },
+      "created_at": "2026-10-13T09:47:40.079Z"
+    },
+    {
+      "id": "log_1791884860056_e4lr4w",
+      "category": "META_API",
+      "level": "INFO",
+      "message": "Campaign submission blocked by safety gate for campaign smap_cmp_1791884860017_t00nve: Real campaign submissions to Meta are safely disabled (META_LIVE_SUBMISSIONS_ENABLED is not true). No campaigns will be launched, and no money will be spent on Meta until the owner verifies production access and explicitly enables this flag.",
+      "created_at": "2026-10-13T09:47:40.056Z"
+    },
+    {
+      "id": "log_1791884860032_l1ctu0",
+      "category": "PAYMENT",
+      "level": "INFO",
+      "message": "Deducted ₹200 from wallet for user test_usr_1791884859953. New balance: ₹300",
+      "details": {
+        "userId": "test_usr_1791884859953",
+        "amount": 200,
+        "balanceBefore": 500,
+        "balanceAfter": 300,
+        "campaignId": "smap_cmp_1791884860017_t00nve",
+        "txId": "wtx_1791884860017_j758t6"
+      },
+      "created_at": "2026-10-13T09:47:40.032Z"
+    },
+    {
+      "id": "log_1791884860011_8pssd0",
+      "category": "PAYMENT",
+      "level": "INFO",
+      "message": "Credited ₹500 to wallet for user test_usr_1791884859953. New balance: ₹500",
+      "details": {
+        "userId": "test_usr_1791884859953",
+        "amount": 500,
+        "balanceBefore": 0,
+        "balanceAfter": 500,
+        "txId": "wtx_1791884860000_y6g3l6"
+      },
+      "created_at": "2026-10-13T09:47:40.011Z"
+    },
+    {
+      "id": "log_1791884859988_kn9xj9",
+      "category": "CAMPAIGN",
+      "level": "INFO",
+      "message": "Created campaign draft smap_cmp_1791884859982_f3yx4j for user test_usr_1791884859953",
+      "details": {
+        "campaignId": "smap_cmp_1791884859982_f3yx4j",
+        "objective": "TRAFFIC",
+        "metaCampaignId": null,
+        "metaAdsetId": null,
+        "dailyBudget": 40,
+        "durationDays": 5,
+        "totalBudget": 200,
+        "status": "DRAFT"
+      },
+      "created_at": "2026-10-13T09:47:39.988Z"
+    },
+    {
+      "id": "log_1791884859975_omy96h",
+      "category": "CAMPAIGN",
+      "level": "INFO",
+      "message": "Created campaign draft smap_cmp_1791884859966_7nylt1 for user test_usr_1791884859953",
+      "details": {
+        "campaignId": "smap_cmp_1791884859966_7nylt1",
+        "objective": "TRAFFIC",
+        "metaCampaignId": null,
+        "metaAdsetId": null,
+        "dailyBudget": 40,
+        "durationDays": 5,
+        "totalBudget": 200,
+        "status": "DRAFT"
+      },
+      "created_at": "2026-10-13T09:47:39.975Z"
+    },
+    {
+      "id": "log_1791884488839_9dtvgj",
+      "category": "AUTH",
+      "level": "INFO",
+      "message": "Password reset OTP generated for phone_rec_1791875805950@smap-ads.test (+91 ******6789)",
+      "details": {
+        "userId": "usr_email_1791875806061_1w4bcc",
+        "channel": "phone"
+      },
+      "created_at": "2026-10-13T09:41:28.839Z"
+    },
+    {
+      "id": "log_1791884488798_w7mjr7",
+      "category": "AUTH",
+      "level": "INFO",
+      "message": "New user registered with email/password: phone_rec_1791884488675@smap-ads.test",
+      "details": {
+        "userId": "usr_email_1791884488791_c25hc9"
+      },
+      "created_at": "2026-10-13T09:41:28.798Z"
+    },
+    {
+      "id": "log_1791884488666_stc5p0",
+      "category": "AUTH",
+      "level": "INFO",
+      "message": "Password reset OTP generated for recovery_1791884488477@smap-ads.test (r***7@smap-ads.test)",
+      "details": {
+        "userId": "usr_email_1791884488617_njglf2",
+        "channel": "email"
+      },
+      "created_at": "2026-10-13T09:41:28.666Z"
+    },
+    {
+      "id": "log_1791884488625_0jbqma",
+      "category": "AUTH",
+      "level": "INFO",
+      "message": "New user registered with email/password: recovery_1791884488477@smap-ads.test",
+      "details": {
+        "userId": "usr_email_1791884488617_njglf2"
+      },
+      "created_at": "2026-10-13T09:41:28.625Z"
+    },
+    {
+      "id": "log_1791884488416_hl5vra",
+      "category": "CAMPAIGN",
+      "level": "INFO",
+      "message": "Created campaign draft smap_cmp_1791884488225_lpl91g for user usr_meta_1791884488206",
+      "details": {
+        "campaignId": "smap_cmp_1791884488225_lpl91g",
+        "objective": "TRAFFIC",
+        "metaCampaignId": null,
+        "metaAdsetId": null,
+        "dailyBudget": 40,
+        "durationDays": 5,
+        "totalBudget": 200,
+        "status": "DRAFT"
+      },
+      "created_at": "2026-10-13T09:41:28.416Z"
+    },
+    {
+      "id": "log_1791884488402_lcc2gz",
+      "category": "META_API",
+      "level": "ERROR",
+      "message": "Meta draft campaign error: Malformed access token EAAP_mock_customer_long_lived_token",
+      "details": {
+        "response": {
+          "error": {
+            "message": "Malformed access token EAAP_mock_customer_long_lived_token",
+            "type": "OAuthException",
+            "code": 190,
+            "fbtrace_id": "A2nU_X7M2c28K9e68yC5q1J"
+          }
+        }
+      },
+      "created_at": "2026-10-13T09:41:28.402Z"
+    },
+    {
+      "id": "log_1791884488226_tpse1j",
+      "category": "META_API",
+      "level": "INFO",
+      "message": "Creating non-delivering draft campaign on Meta for SMAP campaign smap_cmp_1791884488225_lpl91g",
+      "created_at": "2026-10-13T09:41:28.226Z"
+    },
+    {
+      "id": "log_1791884488199_sfekwq",
+      "category": "ADMIN",
+      "level": "INFO",
+      "message": "Admin test_admin_1791884488084 executed balance reconciliation for user cust_audit_1791884488112. Restored ₹2 to wallet.",
+      "details": {
+        "userId": "cust_audit_1791884488112",
+        "adminUserId": "test_admin_1791884488084",
+        "txId": "wtx_corr_1791884488183_kxpu38",
+        "reason": "Reconciling accidental wallet balance reset against verified payments"
+      },
+      "created_at": "2026-10-13T09:41:28.199Z"
+    },
+    {
+      "id": "log_1791884488194_iy2nyq",
+      "category": "PAYMENT",
+      "level": "INFO",
+      "message": "Restored legitimate wallet balance for user cust_audit_1791884488112 to ₹2 (+₹2)",
+      "details": {
+        "userId": "cust_audit_1791884488112",
+        "adminUserId": "test_admin_1791884488084",
+        "previousBalance": 0,
+        "restoredBalance": 2,
+        "correctionAmount": 2,
+        "verifiedCredits": 2,
+        "legitimateDebits": 0,
+        "paymentCount": 2,
+        "txId": "wtx_corr_1791884488183_kxpu38"
+      },
+      "created_at": "2026-10-13T09:41:28.194Z"
+    },
+    {
+      "id": "log_1791884488170_uxpau8",
+      "category": "PAYMENT",
+      "level": "INFO",
+      "message": "Credited ₹1 to wallet for user cust_audit_1791884488112. New balance: ₹2",
+      "details": {
+        "userId": "cust_audit_1791884488112",
+        "amount": 1,
+        "balanceBefore": 1,
+        "balanceAfter": 2,
+        "txId": "wtx_1791884488155_iosjhw"
+      },
+      "created_at": "2026-10-13T09:41:28.170Z"
+    },
+    {
+      "id": "log_1791884488140_txifqa",
+      "category": "PAYMENT",
+      "level": "INFO",
+      "message": "Credited ₹1 to wallet for user cust_audit_1791884488112. New balance: ₹1",
+      "details": {
+        "userId": "cust_audit_1791884488112",
+        "amount": 1,
+        "balanceBefore": 0,
+        "balanceAfter": 1,
+        "txId": "wtx_1791884488126_3glgci"
+      },
+      "created_at": "2026-10-13T09:41:28.140Z"
+    },
+    {
+      "id": "log_1791884488078_a85crf",
+      "category": "ADMIN",
+      "level": "INFO",
+      "message": "New support ticket opened: Campaign Budget Clarification by test_1791884486783@smap-ads.test",
+      "details": {
+        "ticketId": "tkt_1791884488071_jbhebw"
+      },
+      "created_at": "2026-10-13T09:41:28.078Z"
+    },
+    {
+      "id": "log_1791884488056_w8c0ls",
+      "category": "META_API",
+      "level": "INFO",
+      "message": "Campaign submission blocked by safety gate for campaign cmp_dummy_1791884486934: Real campaign submissions to Meta are safely disabled (META_LIVE_SUBMISSIONS_ENABLED is not true). No campaigns will be launched, and no money will be spent on Meta until the owner verifies production access and explicitly enables this flag.",
+      "created_at": "2026-10-13T09:41:28.056Z"
+    },
+    {
+      "id": "log_1791884486934_xxu3dh",
+      "category": "META_API",
+      "level": "INFO",
+      "message": "Campaign submission blocked by safety gate for campaign cmp_dummy_1791884486934: Real campaign submissions to Meta are safely disabled (META_LIVE_SUBMISSIONS_ENABLED is not true). No campaigns will be launched, and no money will be spent on Meta until the owner verifies production access and explicitly enables this flag.",
+      "created_at": "2026-10-13T09:41:26.934Z"
+    },
+    {
+      "id": "log_1791884486919_lt8oro",
+      "category": "PAYMENT",
+      "level": "WARN",
+      "message": "Idempotency guard prevented double deduction for campaign smap_cmp_1791884486859_k5hgdp",
+      "details": {
+        "userId": "test_usr_1791884486783",
+        "campaignId": "smap_cmp_1791884486859_k5hgdp",
+        "existingTxId": "wtx_1791884486859_xcfdi9"
+      },
+      "created_at": "2026-10-13T09:41:26.919Z"
+    },
+    {
+      "id": "log_1791884486899_igji4l",
+      "category": "META_API",
+      "level": "INFO",
+      "message": "Campaign submission blocked by safety gate for campaign smap_cmp_1791884486859_k5hgdp: Real campaign submissions to Meta are safely disabled (META_LIVE_SUBMISSIONS_ENABLED is not true). No campaigns will be launched, and no money will be spent on Meta until the owner verifies production access and explicitly enables this flag.",
+      "created_at": "2026-10-13T09:41:26.899Z"
+    },
+    {
+      "id": "log_1791884486877_tsnpej",
+      "category": "PAYMENT",
+      "level": "INFO",
+      "message": "Deducted ₹200 from wallet for user test_usr_1791884486783. New balance: ₹300",
+      "details": {
+        "userId": "test_usr_1791884486783",
+        "amount": 200,
+        "balanceBefore": 500,
+        "balanceAfter": 300,
+        "campaignId": "smap_cmp_1791884486859_k5hgdp",
+        "txId": "wtx_1791884486859_xcfdi9"
+      },
+      "created_at": "2026-10-13T09:41:26.877Z"
+    },
+    {
+      "id": "log_1791884486851_n4ocg2",
+      "category": "PAYMENT",
+      "level": "INFO",
+      "message": "Credited ₹500 to wallet for user test_usr_1791884486783. New balance: ₹500",
+      "details": {
+        "userId": "test_usr_1791884486783",
+        "amount": 500,
+        "balanceBefore": 0,
+        "balanceAfter": 500,
+        "txId": "wtx_1791884486833_p8ethq"
+      },
+      "created_at": "2026-10-13T09:41:26.851Z"
+    },
+    {
+      "id": "log_1791884486823_l8hfhc",
+      "category": "CAMPAIGN",
+      "level": "INFO",
+      "message": "Created campaign draft smap_cmp_1791884486816_2chgis for user test_usr_1791884486783",
+      "details": {
+        "campaignId": "smap_cmp_1791884486816_2chgis",
+        "objective": "TRAFFIC",
+        "metaCampaignId": null,
+        "metaAdsetId": null,
+        "dailyBudget": 40,
+        "durationDays": 5,
+        "totalBudget": 200,
+        "status": "DRAFT"
+      },
+      "created_at": "2026-10-13T09:41:26.823Z"
+    },
+    {
+      "id": "log_1791884486808_l450ne",
+      "category": "CAMPAIGN",
+      "level": "INFO",
+      "message": "Created campaign draft smap_cmp_1791884486799_nbyp9c for user test_usr_1791884486783",
+      "details": {
+        "campaignId": "smap_cmp_1791884486799_nbyp9c",
+        "objective": "TRAFFIC",
+        "metaCampaignId": null,
+        "metaAdsetId": null,
+        "dailyBudget": 40,
+        "durationDays": 5,
+        "totalBudget": 200,
+        "status": "DRAFT"
+      },
+      "created_at": "2026-10-13T09:41:26.808Z"
+    },
+    {
+      "id": "log_1791884425789_9tq4vd",
+      "category": "SCHEDULER",
+      "level": "INFO",
+      "message": "Campaign expiry background scheduler started (check interval: 30s)",
+      "created_at": "2026-10-13T09:40:25.789Z"
+    },
     {
       "id": "log_1791875806114_mfmrn7",
       "category": "AUTH",
@@ -18910,6 +23266,381 @@
     }
   ],
   "wallet_transactions": [
+    {
+      "id": "wtx_corr_1791885123871_119umh",
+      "user_id": "cust_audit_1791885123796",
+      "type": "AUDIT_CORRECTION",
+      "amount": 2,
+      "balance_before": 0,
+      "balance_after": 2,
+      "description": "Reconciling accidental wallet balance reset against verified payments",
+      "payment_id": "smap_pay_rzp_audit_1_1791885123805",
+      "gateway_payment_id": "pay_rzp_audit_1_1791885123805",
+      "gateway_order_id": null,
+      "campaign_id": null,
+      "status": "SUCCESS",
+      "created_at": "2026-10-13T09:52:03.871Z"
+    },
+    {
+      "id": "wtx_1791885123840_3sp6q0",
+      "user_id": "cust_audit_1791885123796",
+      "type": "ADD_FUNDS",
+      "amount": 1,
+      "balance_before": 1,
+      "balance_after": 2,
+      "description": "Added funds via Razorpay UPI (UTR_667696542797)",
+      "payment_id": null,
+      "gateway_payment_id": "pay_rzp_audit_2_1791885123833",
+      "gateway_order_id": null,
+      "campaign_id": null,
+      "status": "SUCCESS",
+      "created_at": "2026-10-13T09:52:03.840Z"
+    },
+    {
+      "id": "wtx_1791885123812_nk8ndc",
+      "user_id": "cust_audit_1791885123796",
+      "type": "ADD_FUNDS",
+      "amount": 1,
+      "balance_before": 0,
+      "balance_after": 1,
+      "description": "Added funds via Razorpay UPI (UTR_257178192361)",
+      "payment_id": null,
+      "gateway_payment_id": "pay_rzp_audit_1_1791885123805",
+      "gateway_order_id": null,
+      "campaign_id": null,
+      "status": "SUCCESS",
+      "created_at": "2026-10-13T09:52:03.812Z"
+    },
+    {
+      "id": "wtx_1791885122387_rf8ojw",
+      "user_id": "test_usr_1791885122307",
+      "type": "CAMPAIGN_PAYMENT",
+      "amount": 200,
+      "balance_before": 500,
+      "balance_after": 300,
+      "description": "Campaign Payment: Starter Sprint (Funded Campaign)",
+      "payment_id": null,
+      "gateway_payment_id": null,
+      "gateway_order_id": null,
+      "campaign_id": "smap_cmp_1791885122387_o5j1hm",
+      "status": "SUCCESS",
+      "created_at": "2026-10-13T09:52:02.387Z"
+    },
+    {
+      "id": "wtx_1791885122363_g1ald0",
+      "user_id": "test_usr_1791885122307",
+      "type": "ADD_FUNDS",
+      "amount": 500,
+      "balance_before": 0,
+      "balance_after": 500,
+      "description": "Verified UPI wallet credit for testing",
+      "payment_id": null,
+      "gateway_payment_id": null,
+      "gateway_order_id": null,
+      "campaign_id": null,
+      "status": "SUCCESS",
+      "created_at": "2026-10-13T09:52:02.363Z"
+    },
+    {
+      "id": "wtx_corr_1791885064156_boskyz",
+      "user_id": "cust_audit_1791885064063",
+      "type": "AUDIT_CORRECTION",
+      "amount": 2,
+      "balance_before": 0,
+      "balance_after": 2,
+      "description": "Reconciling accidental wallet balance reset against verified payments",
+      "payment_id": "smap_pay_rzp_audit_1_1791885064069",
+      "gateway_payment_id": "pay_rzp_audit_1_1791885064069",
+      "gateway_order_id": null,
+      "campaign_id": null,
+      "status": "SUCCESS",
+      "created_at": "2026-10-13T09:51:04.156Z"
+    },
+    {
+      "id": "wtx_1791885064118_cd4wn9",
+      "user_id": "cust_audit_1791885064063",
+      "type": "ADD_FUNDS",
+      "amount": 1,
+      "balance_before": 1,
+      "balance_after": 2,
+      "description": "Added funds via Razorpay UPI (UTR_667696542797)",
+      "payment_id": null,
+      "gateway_payment_id": "pay_rzp_audit_2_1791885064110",
+      "gateway_order_id": null,
+      "campaign_id": null,
+      "status": "SUCCESS",
+      "created_at": "2026-10-13T09:51:04.118Z"
+    },
+    {
+      "id": "wtx_1791885064075_y0l8r2",
+      "user_id": "cust_audit_1791885064063",
+      "type": "ADD_FUNDS",
+      "amount": 1,
+      "balance_before": 0,
+      "balance_after": 1,
+      "description": "Added funds via Razorpay UPI (UTR_257178192361)",
+      "payment_id": null,
+      "gateway_payment_id": "pay_rzp_audit_1_1791885064069",
+      "gateway_order_id": null,
+      "campaign_id": null,
+      "status": "SUCCESS",
+      "created_at": "2026-10-13T09:51:04.075Z"
+    },
+    {
+      "id": "wtx_1791885062742_wmynd2",
+      "user_id": "test_usr_1791885062676",
+      "type": "CAMPAIGN_PAYMENT",
+      "amount": 200,
+      "balance_before": 500,
+      "balance_after": 300,
+      "description": "Campaign Payment: Starter Sprint (Funded Campaign)",
+      "payment_id": null,
+      "gateway_payment_id": null,
+      "gateway_order_id": null,
+      "campaign_id": "smap_cmp_1791885062742_acylw3",
+      "status": "SUCCESS",
+      "created_at": "2026-10-13T09:51:02.742Z"
+    },
+    {
+      "id": "wtx_1791885062722_rhtlfm",
+      "user_id": "test_usr_1791885062676",
+      "type": "ADD_FUNDS",
+      "amount": 500,
+      "balance_before": 0,
+      "balance_after": 500,
+      "description": "Verified UPI wallet credit for testing",
+      "payment_id": null,
+      "gateway_payment_id": null,
+      "gateway_order_id": null,
+      "campaign_id": null,
+      "status": "SUCCESS",
+      "created_at": "2026-10-13T09:51:02.722Z"
+    },
+    {
+      "id": "wtx_corr_1791885044920_d0ss5r",
+      "user_id": "cust_audit_1791885044835",
+      "type": "AUDIT_CORRECTION",
+      "amount": 2,
+      "balance_before": 0,
+      "balance_after": 2,
+      "description": "Reconciling accidental wallet balance reset against verified payments",
+      "payment_id": "smap_pay_rzp_audit_1_1791885044842",
+      "gateway_payment_id": "pay_rzp_audit_1_1791885044842",
+      "gateway_order_id": null,
+      "campaign_id": null,
+      "status": "SUCCESS",
+      "created_at": "2026-10-13T09:50:44.920Z"
+    },
+    {
+      "id": "wtx_1791885044883_exb2rj",
+      "user_id": "cust_audit_1791885044835",
+      "type": "ADD_FUNDS",
+      "amount": 1,
+      "balance_before": 1,
+      "balance_after": 2,
+      "description": "Added funds via Razorpay UPI (UTR_667696542797)",
+      "payment_id": null,
+      "gateway_payment_id": "pay_rzp_audit_2_1791885044874",
+      "gateway_order_id": null,
+      "campaign_id": null,
+      "status": "SUCCESS",
+      "created_at": "2026-10-13T09:50:44.883Z"
+    },
+    {
+      "id": "wtx_1791885044849_b1thvs",
+      "user_id": "cust_audit_1791885044835",
+      "type": "ADD_FUNDS",
+      "amount": 1,
+      "balance_before": 0,
+      "balance_after": 1,
+      "description": "Added funds via Razorpay UPI (UTR_257178192361)",
+      "payment_id": null,
+      "gateway_payment_id": "pay_rzp_audit_1_1791885044842",
+      "gateway_order_id": null,
+      "campaign_id": null,
+      "status": "SUCCESS",
+      "created_at": "2026-10-13T09:50:44.849Z"
+    },
+    {
+      "id": "wtx_1791885043496_zago4f",
+      "user_id": "test_usr_1791885043426",
+      "type": "CAMPAIGN_PAYMENT",
+      "amount": 200,
+      "balance_before": 500,
+      "balance_after": 300,
+      "description": "Campaign Payment: Starter Sprint (Funded Campaign)",
+      "payment_id": null,
+      "gateway_payment_id": null,
+      "gateway_order_id": null,
+      "campaign_id": "smap_cmp_1791885043495_5moe3p",
+      "status": "SUCCESS",
+      "created_at": "2026-10-13T09:50:43.496Z"
+    },
+    {
+      "id": "wtx_1791885043470_muqvf6",
+      "user_id": "test_usr_1791885043426",
+      "type": "ADD_FUNDS",
+      "amount": 500,
+      "balance_before": 0,
+      "balance_after": 500,
+      "description": "Verified UPI wallet credit for testing",
+      "payment_id": null,
+      "gateway_payment_id": null,
+      "gateway_order_id": null,
+      "campaign_id": null,
+      "status": "SUCCESS",
+      "created_at": "2026-10-13T09:50:43.470Z"
+    },
+    {
+      "id": "wtx_corr_1791884861496_tuvww8",
+      "user_id": "cust_audit_1791884861434",
+      "type": "AUDIT_CORRECTION",
+      "amount": 2,
+      "balance_before": 0,
+      "balance_after": 2,
+      "description": "Reconciling accidental wallet balance reset against verified payments",
+      "payment_id": "smap_pay_rzp_audit_1_1791884861440",
+      "gateway_payment_id": "pay_rzp_audit_1_1791884861440",
+      "gateway_order_id": null,
+      "campaign_id": null,
+      "status": "SUCCESS",
+      "created_at": "2026-10-13T09:47:41.496Z"
+    },
+    {
+      "id": "wtx_1791884861469_4zq63p",
+      "user_id": "cust_audit_1791884861434",
+      "type": "ADD_FUNDS",
+      "amount": 1,
+      "balance_before": 1,
+      "balance_after": 2,
+      "description": "Added funds via Razorpay UPI (UTR_667696542797)",
+      "payment_id": null,
+      "gateway_payment_id": "pay_rzp_audit_2_1791884861463",
+      "gateway_order_id": null,
+      "campaign_id": null,
+      "status": "SUCCESS",
+      "created_at": "2026-10-13T09:47:41.469Z"
+    },
+    {
+      "id": "wtx_1791884861446_65ypix",
+      "user_id": "cust_audit_1791884861434",
+      "type": "ADD_FUNDS",
+      "amount": 1,
+      "balance_before": 0,
+      "balance_after": 1,
+      "description": "Added funds via Razorpay UPI (UTR_257178192361)",
+      "payment_id": null,
+      "gateway_payment_id": "pay_rzp_audit_1_1791884861440",
+      "gateway_order_id": null,
+      "campaign_id": null,
+      "status": "SUCCESS",
+      "created_at": "2026-10-13T09:47:41.446Z"
+    },
+    {
+      "id": "wtx_1791884860017_j758t6",
+      "user_id": "test_usr_1791884859953",
+      "type": "CAMPAIGN_PAYMENT",
+      "amount": 200,
+      "balance_before": 500,
+      "balance_after": 300,
+      "description": "Campaign Payment: Starter Sprint (Funded Campaign)",
+      "payment_id": null,
+      "gateway_payment_id": null,
+      "gateway_order_id": null,
+      "campaign_id": "smap_cmp_1791884860017_t00nve",
+      "status": "SUCCESS",
+      "created_at": "2026-10-13T09:47:40.017Z"
+    },
+    {
+      "id": "wtx_1791884860000_y6g3l6",
+      "user_id": "test_usr_1791884859953",
+      "type": "ADD_FUNDS",
+      "amount": 500,
+      "balance_before": 0,
+      "balance_after": 500,
+      "description": "Verified UPI wallet credit for testing",
+      "payment_id": null,
+      "gateway_payment_id": null,
+      "gateway_order_id": null,
+      "campaign_id": null,
+      "status": "SUCCESS",
+      "created_at": "2026-10-13T09:47:40.000Z"
+    },
+    {
+      "id": "wtx_corr_1791884488183_kxpu38",
+      "user_id": "cust_audit_1791884488112",
+      "type": "AUDIT_CORRECTION",
+      "amount": 2,
+      "balance_before": 0,
+      "balance_after": 2,
+      "description": "Reconciling accidental wallet balance reset against verified payments",
+      "payment_id": "smap_pay_rzp_audit_1_1791884488120",
+      "gateway_payment_id": "pay_rzp_audit_1_1791884488120",
+      "gateway_order_id": null,
+      "campaign_id": null,
+      "status": "SUCCESS",
+      "created_at": "2026-10-13T09:41:28.183Z"
+    },
+    {
+      "id": "wtx_1791884488155_iosjhw",
+      "user_id": "cust_audit_1791884488112",
+      "type": "ADD_FUNDS",
+      "amount": 1,
+      "balance_before": 1,
+      "balance_after": 2,
+      "description": "Added funds via Razorpay UPI (UTR_667696542797)",
+      "payment_id": null,
+      "gateway_payment_id": "pay_rzp_audit_2_1791884488148",
+      "gateway_order_id": null,
+      "campaign_id": null,
+      "status": "SUCCESS",
+      "created_at": "2026-10-13T09:41:28.155Z"
+    },
+    {
+      "id": "wtx_1791884488126_3glgci",
+      "user_id": "cust_audit_1791884488112",
+      "type": "ADD_FUNDS",
+      "amount": 1,
+      "balance_before": 0,
+      "balance_after": 1,
+      "description": "Added funds via Razorpay UPI (UTR_257178192361)",
+      "payment_id": null,
+      "gateway_payment_id": "pay_rzp_audit_1_1791884488120",
+      "gateway_order_id": null,
+      "campaign_id": null,
+      "status": "SUCCESS",
+      "created_at": "2026-10-13T09:41:28.126Z"
+    },
+    {
+      "id": "wtx_1791884486859_xcfdi9",
+      "user_id": "test_usr_1791884486783",
+      "type": "CAMPAIGN_PAYMENT",
+      "amount": 200,
+      "balance_before": 500,
+      "balance_after": 300,
+      "description": "Campaign Payment: Starter Sprint (Funded Campaign)",
+      "payment_id": null,
+      "gateway_payment_id": null,
+      "gateway_order_id": null,
+      "campaign_id": "smap_cmp_1791884486859_k5hgdp",
+      "status": "SUCCESS",
+      "created_at": "2026-10-13T09:41:26.859Z"
+    },
+    {
+      "id": "wtx_1791884486833_p8ethq",
+      "user_id": "test_usr_1791884486783",
+      "type": "ADD_FUNDS",
+      "amount": 500,
+      "balance_before": 0,
+      "balance_after": 500,
+      "description": "Verified UPI wallet credit for testing",
+      "payment_id": null,
+      "gateway_payment_id": null,
+      "gateway_order_id": null,
+      "campaign_id": null,
+      "status": "SUCCESS",
+      "created_at": "2026-10-13T09:41:26.833Z"
+    },
     {
       "id": "wtx_corr_1791875805441_y5ghkj",
       "user_id": "cust_audit_1791875805352",

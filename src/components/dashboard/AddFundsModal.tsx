@@ -55,7 +55,7 @@ export const AddFundsModal: React.FC<AddFundsModalProps> = ({
   const [customAmount, setCustomAmount] = useState<string>(recommendedAmount ? String(recommendedAmount) : '100');
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
-  const [processingMode, setProcessingMode] = useState<'direct' | 'chooser' | null>(null);
+  const [processingMode, setProcessingMode] = useState<'standard' | 'native_intent' | null>(null);
   const [fallbackHelp, setFallbackHelp] = useState<string | null>(null);
   const isProcessing = processingMode !== null;
 
@@ -82,7 +82,7 @@ export const AddFundsModal: React.FC<AddFundsModalProps> = ({
   const amountToAdd = Number(customAmount) || selectedAmount;
   const projectedBalance = Math.round((currentBalance + (amountToAdd > 0 ? amountToAdd : 0)) * 100) / 100;
 
-  const handleLaunchUpiCheckout = async (mode: 'direct' | 'chooser' = 'direct') => {
+  const handleLaunchUpiCheckout = async (mode: 'standard' | 'native_intent' = 'standard') => {
     if (!amountToAdd || amountToAdd < 1) {
       setError('Please enter an amount of at least ₹1');
       return;
@@ -91,17 +91,8 @@ export const AddFundsModal: React.FC<AddFundsModalProps> = ({
     setFallbackHelp(null);
     setProcessingMode(mode);
 
-    // If currently running in the temporary AI Studio preview environment,
-    // Razorpay domain security requires checkout to originate from the registered production website:
-    const isPreviewDomain = typeof window !== 'undefined' && window.location.hostname.includes('run.app');
-    if (isPreviewDomain) {
-      const prodUrl = `https://smap-ads.onrender.com/?tab=wallet&add_funds=${amountToAdd}`;
-      window.location.href = prodUrl;
-      return;
-    }
-
     try {
-      // 1. Create real server-side Razorpay Order
+      // 1. Create real server-side Razorpay Order with exact amount and secure reference
       const orderRes = await api.createAddFundsOrder(amountToAdd);
       
       if (orderRes.gatewayError) {
@@ -118,15 +109,24 @@ export const AddFundsModal: React.FC<AddFundsModalProps> = ({
       const sdkReady = await loadRazorpaySdk();
 
       if (sdkReady && keyId) {
-        // Detect mobile environment
+        // Device capability detection
         const isMobileDevice = typeof navigator !== 'undefined' && /android|iphone|ipad|ipod/i.test(navigator.userAgent);
+        const isAndroid = typeof navigator !== 'undefined' && /android/i.test(navigator.userAgent);
+
+        // If 'native_intent' is chosen on a desktop browser, provide helpful context
+        if (mode === 'native_intent' && !isMobileDevice) {
+          setFallbackHelp('Native UPI App launch is optimized for Android phones with installed UPI apps. On desktop, Razorpay will display a dynamic QR code for you to scan.');
+        }
 
         // Official Razorpay UPI flow configuration:
-        // - In mode 'direct': Priority intent flow opens installed UPI app chooser (PhonePe, GPay, Paytm) directly
-        // - In mode 'chooser': Presents the native UPI App selection tray / QR code fallback
+        // - 'native_intent': Strictly 'intent' flow. On Android, launches the native OS app chooser directly
+        //   without opening an intermediate payment selection webpage.
+        // - 'standard': Supported standard flow with both intent and dynamic QR code options.
+        const upiFlows = mode === 'native_intent' ? ['intent'] : ['intent', 'qr'];
+
         const rzpOptions: any = {
           key: keyId,
-          amount: Math.round(amountToAdd * 100), // in paise
+          amount: Math.round(amountToAdd * 100), // in paise (exact server-verified order amount)
           currency: 'INR',
           name: 'SMAP Advertising',
           description: `Wallet Top-Up: ₹${amountToAdd} (SMAP Ads)`,
@@ -140,11 +140,11 @@ export const AddFundsModal: React.FC<AddFundsModalProps> = ({
             display: {
               blocks: {
                 upi: {
-                  name: mode === 'chooser' ? 'Choose Installed UPI App' : 'Pay via UPI App',
+                  name: mode === 'native_intent' ? 'Pay with Installed UPI App' : 'UPI Payment Options',
                   instruments: [
                     {
                       method: 'upi',
-                      flows: mode === 'direct' ? ['intent', 'qr'] : ['intent', 'qr'],
+                      flows: upiFlows,
                     },
                   ],
                 },
@@ -156,7 +156,7 @@ export const AddFundsModal: React.FC<AddFundsModalProps> = ({
             },
           },
           theme: {
-            color: '#0891B2', // Cyan neon brand matching SMAP logo
+            color: '#0891B2', // Cyan brand matching SMAP logo
           },
           notes: {
             purpose: 'WALLET_TOPUP',
@@ -190,7 +190,7 @@ export const AddFundsModal: React.FC<AddFundsModalProps> = ({
             ondismiss: () => {
               setProcessingMode(null);
               if (!isMobileDevice) {
-                setFallbackHelp('On desktop browsers, Razorpay displays a dynamic UPI QR Code to scan with PhonePe, Google Pay, or Paytm.');
+                setFallbackHelp('On desktop browsers, you can scan the on-screen QR Code using your phone’s PhonePe, GPay, or Paytm app.');
               }
             },
           },
@@ -348,24 +348,17 @@ export const AddFundsModal: React.FC<AddFundsModalProps> = ({
 
         {/* Payment CTA Section - Two Distinct UPI Options */}
         <div className="space-y-3 pt-2">
-          {typeof window !== 'undefined' && window.location.hostname.includes('run.app') && (
-            <div className="rounded-2xl border border-cyan-500/20 bg-cyan-500/10 p-3 text-[11px] text-cyan-300">
-              <span className="font-semibold block text-white mb-0.5">Production Razorpay Gateway:</span>
-              <span>Razorpay requires payments to originate from your registered domain <strong>smap-ads.onrender.com</strong>. Tapping below opens your live site directly.</span>
-            </div>
-          )}
-
           {/* Option 1: Launch UPI App (PhonePe / GPay / Paytm) */}
           <button
             type="button"
-            onClick={() => handleLaunchUpiCheckout('direct')}
+            onClick={() => handleLaunchUpiCheckout('standard')}
             disabled={amountToAdd < 1 || isProcessing}
-            className="w-full flex items-center justify-center gap-2.5 rounded-2xl bg-gradient-to-r from-purple-600 via-indigo-600 to-cyan-600 hover:opacity-95 py-3.5 px-6 text-sm font-extrabold text-white shadow-xl shadow-cyan-600/25 active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none transition-all"
+            className="w-full flex items-center justify-center gap-2.5 rounded-2xl bg-gradient-to-r from-purple-600 via-indigo-600 to-cyan-600 hover:opacity-95 py-3.5 px-6 text-sm font-extrabold text-white shadow-xl shadow-cyan-600/25 active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none transition-all cursor-pointer"
           >
-            {processingMode === 'direct' ? (
+            {processingMode === 'standard' ? (
               <>
                 <Loader2 className="h-5 w-5 animate-spin text-cyan-200" />
-                <span>Launching UPI App (PhonePe / GPay / Paytm)...</span>
+                <span>Launching UPI Checkout (PhonePe / GPay / Paytm)...</span>
               </>
             ) : (
               <>
@@ -386,22 +379,22 @@ export const AddFundsModal: React.FC<AddFundsModalProps> = ({
             </div>
           </div>
 
-          {/* Option 2: Use Your UPI App / Chooser */}
+          {/* Option 2: Use Your UPI App (Direct Native Intent) */}
           <button
             type="button"
-            onClick={() => handleLaunchUpiCheckout('chooser')}
+            onClick={() => handleLaunchUpiCheckout('native_intent')}
             disabled={amountToAdd < 1 || isProcessing}
-            className="w-full flex items-center justify-center gap-2.5 rounded-2xl border-2 border-cyan-500/40 bg-cyan-500/10 hover:bg-cyan-500/20 py-3.5 px-6 text-sm font-extrabold text-cyan-700 dark:text-cyan-300 shadow-sm active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none transition-all"
+            className="w-full flex items-center justify-center gap-2.5 rounded-2xl border-2 border-cyan-500/40 bg-cyan-500/10 hover:bg-cyan-500/20 py-3.5 px-6 text-sm font-extrabold text-cyan-700 dark:text-cyan-300 shadow-sm active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none transition-all cursor-pointer"
           >
-            {processingMode === 'chooser' ? (
+            {processingMode === 'native_intent' ? (
               <>
                 <Loader2 className="h-5 w-5 animate-spin text-cyan-400" />
-                <span>Opening UPI App Chooser...</span>
+                <span>Opening Installed UPI App...</span>
               </>
             ) : (
               <>
                 <AppWindow className="h-5 w-5 text-cyan-500 dark:text-cyan-400" />
-                <span>Use Your UPI App (Choose Installed App)</span>
+                <span>Use Your UPI App</span>
                 <ArrowRight className="h-4 w-4" />
               </>
             )}

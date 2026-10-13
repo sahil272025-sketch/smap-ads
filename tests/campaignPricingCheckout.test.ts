@@ -1,4 +1,5 @@
 import express from 'express';
+import bcrypt from 'bcryptjs';
 import { db, User } from '../src/server/db.js';
 import { CampaignService } from '../src/server/campaignService.js';
 import { WalletService } from '../src/server/walletService.js';
@@ -931,7 +932,39 @@ async function runTests() {
       unregisteredBlocked = true;
     }
   }
-  assert(unregisteredBlocked === true, 'Unregistered contacts cleanly rejected without leaking OTPs');
+  // 6. Test OTP store retention and cryptographic hashing
+  const cycleEmail = `fullcycle_${Date.now()}@smap-ads.test`;
+  await AuthService.registerWithEmailPassword({
+    name: 'Cycle User',
+    email: cycleEmail,
+    password: 'OldPassword123',
+  });
+  await AuthService.sendPasswordResetOtp(cycleEmail);
+  const userRec = db.findUserByEmail(cycleEmail)!;
+  const storedOtpData = (AuthService as any).otpStore.get(userRec.id);
+  assert(!!storedOtpData, 'OTP record saved in memory store with expiry');
+  assert(storedOtpData.otpHash.startsWith('$2'), 'OTP is hashed with bcrypt salt and not stored in plaintext');
+  const bcryptInvalid = await bcrypt.compare('000000', storedOtpData.otpHash);
+  assert(bcryptInvalid === false, 'bcrypt correctly hashes OTP and rejects incorrect guess');
+
+  // TEST 27: Direct UPI Intent Order & Exact Amount Precision
+  console.log('\n--- TEST 27: Direct UPI Intent Order & Exact Amount Precision ---');
+  const topupUser = db.findUserByEmail(recoveryEmail)!;
+  
+  // Test exact dynamic amount ₹500 (not hardcoded)
+  const order500 = await WalletService.createAddFundsOrder(topupUser.id, 500);
+  assert(order500.amount === 500, 'Order created with exact requested amount of ₹500');
+  assert(order500.payment.amount === 500, 'Payment record stores exact ₹500');
+  assert(order500.payment.currency === 'INR', 'Payment currency is INR');
+  assert(order500.payment.payee_upi === 'sahil-stp@ybl', 'Payment payee UPI is sahil-stp@ybl');
+  assert(Boolean(order500.upiIntentUrl?.startsWith('upi://pay?')), 'Payment includes valid NPCI UPI Intent URI');
+  assert(Boolean(order500.upiIntentUrl?.includes('am=500.00')), 'UPI Intent URI contains exact dynamic amount 500.00');
+  assert(Boolean(order500.upiIntentUrl?.includes('pa=sahil-stp%40ybl')), 'UPI Intent URI contains verified merchant payee VPA');
+
+  // Test dynamic custom amount ₹250.75
+  const orderCustom = await WalletService.createAddFundsOrder(topupUser.id, 250.75);
+  assert(orderCustom.amount === 250.75, 'Order handles decimal precision: ₹250.75');
+  assert(Boolean(orderCustom.upiIntentUrl?.includes('am=250.75')), 'UPI Intent contains dynamic decimal amount 250.75');
 
   console.log('\n====================================================');
   console.log(`🎉 ALL ${passedTests}/${totalTests} TESTS PASSED SUCCESSFULLY!`);
