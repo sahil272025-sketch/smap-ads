@@ -867,89 +867,65 @@ async function runTests() {
     await new Promise<void>((resolve) => server.close(() => resolve()));
   }
 
-  // TEST 26: Real OTP Password Recovery Workflow (Email & Phone)
-  console.log('\n--- TEST 26: OTP Password Recovery & Rate Limiting ---');
-  const recoveryEmail = `recovery_${Date.now()}@smap-ads.test`;
-  const registeredUserEmail = await AuthService.registerWithEmailPassword({
-    name: 'Recovery Email Customer',
-    email: recoveryEmail,
-    password: 'InitialPassword123',
+  // TEST 26: Email & Password Registration, Authentication & Security Validation
+  console.log('\n--- TEST 26: Email & Password Signup, Login & Credential Security ---');
+  const authTestEmail = `auth_test_${Date.now()}@smap-ads.test`;
+  const registeredUser = await AuthService.registerWithEmailPassword({
+    name: 'Auth Verified Customer',
+    email: authTestEmail,
+    password: 'SecurePassword123!',
     phone: '9876543210',
   });
 
-  assert(!!registeredUserEmail.user.id, 'Test recovery user registered successfully');
+  assert(!!registeredUser.user.id, 'Test user registered successfully with email and password');
+  assert(registeredUser.user.email === authTestEmail, 'Registered user stores correct email');
+  assert(registeredUser.user.name === 'Auth Verified Customer', 'Registered user stores correct display name');
+  assert(Boolean(registeredUser.user.password_hash?.startsWith('$2')), 'Password stored safely as bcrypt hash, never plaintext');
+  assert(!!registeredUser.token, 'Registration returns active session JWT token');
 
-  // 1. Send OTP via email
-  const otpResEmail = await AuthService.sendPasswordResetOtp(recoveryEmail);
-  assert(otpResEmail.success === true, 'OTP generated successfully for email recovery');
-  assert(otpResEmail.channel === 'email', 'Recovery channel recognized as email');
-  assert(otpResEmail.maskedTarget.includes('@'), 'Email is properly masked for security');
-  assert(otpResEmail.cooldownSeconds === 60, '60 second cooldown enforced on OTP resend');
+  // 1. Verify successful login with correct email and password
+  const loginSuccess = await AuthService.loginWithEmailPassword(authTestEmail, 'SecurePassword123!');
+  assert(loginSuccess.user.id === registeredUser.user.id, 'Login successful with matching credentials');
+  assert(!!loginSuccess.token, 'Login returns valid session JWT token');
 
-  // 2. Cooldown enforcement on the same user
-  let cooldownBlocked = false;
+  // 2. Verify login failure with wrong password
+  let wrongPassBlocked = false;
   try {
-    await AuthService.sendPasswordResetOtp(recoveryEmail);
+    await AuthService.loginWithEmailPassword(authTestEmail, 'IncorrectPassword999');
   } catch (err: any) {
-    if (err.message.includes('Please wait') && err.message.includes('seconds')) {
-      cooldownBlocked = true;
+    if (err.message.includes('Invalid') || err.message.includes('credentials')) {
+      wrongPassBlocked = true;
     }
   }
-  assert(cooldownBlocked === true, 'Rapid duplicate OTP requests blocked by 60-second cooldown');
+  assert(wrongPassBlocked === true, 'Login with incorrect password strictly rejected');
 
-  // 3. Send OTP via 10-digit phone number with separate user
-  const phoneRecoveryEmail = `phone_rec_${Date.now()}@smap-ads.test`;
-  const recoveryPhone = '9123456789';
-  await AuthService.registerWithEmailPassword({
-    name: 'Phone Recovery Customer',
-    email: phoneRecoveryEmail,
-    password: 'InitialPassword123',
-    phone: recoveryPhone,
-  });
-
-  const otpResPhone = await AuthService.sendPasswordResetOtp(recoveryPhone);
-  assert(otpResPhone.success === true, 'OTP generated successfully for phone recovery');
-  assert(otpResPhone.channel === 'phone', 'Recovery channel recognized as phone');
-  assert(otpResPhone.maskedTarget.includes('+91'), 'Phone target includes country code in mask');
-
-  // 4. Invalid OTP rejection
-  let invalidOtpBlocked = false;
+  // 3. Verify duplicate registration prevention
+  let dupEmailBlocked = false;
   try {
-    await AuthService.verifyPasswordResetOtp(recoveryPhone, '000000');
+    await AuthService.registerWithEmailPassword({
+      name: 'Duplicate Customer',
+      email: authTestEmail,
+      password: 'AnotherPassword456',
+    });
   } catch (err: any) {
-    if (err.message.includes('Invalid OTP code')) {
-      invalidOtpBlocked = true;
+    if (err.message.includes('already exists') || err.message.includes('registered')) {
+      dupEmailBlocked = true;
     }
   }
-  assert(invalidOtpBlocked === true, 'Invalid OTP code correctly rejected');
+  assert(dupEmailBlocked === true, 'Duplicate email registration strictly blocked');
 
-  // 5. Unregistered contact rejection
-  let unregisteredBlocked = false;
+  // 4. Verify password complexity & empty credentials rejection
+  let emptyBlocked = false;
   try {
-    await AuthService.sendPasswordResetOtp('unregistered_ghost_user@smap-ads.test');
+    await AuthService.loginWithEmailPassword('', '');
   } catch (err: any) {
-    if (err.message.includes('No registered account found')) {
-      unregisteredBlocked = true;
-    }
+    emptyBlocked = true;
   }
-  // 6. Test OTP store retention and cryptographic hashing
-  const cycleEmail = `fullcycle_${Date.now()}@smap-ads.test`;
-  await AuthService.registerWithEmailPassword({
-    name: 'Cycle User',
-    email: cycleEmail,
-    password: 'OldPassword123',
-  });
-  await AuthService.sendPasswordResetOtp(cycleEmail);
-  const userRec = db.findUserByEmail(cycleEmail)!;
-  const storedOtpData = (AuthService as any).otpStore.get(userRec.id);
-  assert(!!storedOtpData, 'OTP record saved in memory store with expiry');
-  assert(storedOtpData.otpHash.startsWith('$2'), 'OTP is hashed with bcrypt salt and not stored in plaintext');
-  const bcryptInvalid = await bcrypt.compare('000000', storedOtpData.otpHash);
-  assert(bcryptInvalid === false, 'bcrypt correctly hashes OTP and rejects incorrect guess');
+  assert(emptyBlocked === true, 'Empty email/password submission strictly rejected');
 
   // TEST 27: Direct UPI Intent Order & Exact Amount Precision
   console.log('\n--- TEST 27: Direct UPI Intent Order & Exact Amount Precision ---');
-  const topupUser = db.findUserByEmail(recoveryEmail)!;
+  const topupUser = db.findUserByEmail(authTestEmail)!;
   
   // Test exact dynamic amount ₹500 (not hardcoded)
   const order500 = await WalletService.createAddFundsOrder(topupUser.id, 500);

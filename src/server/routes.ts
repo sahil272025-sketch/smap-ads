@@ -582,37 +582,6 @@ apiRouter.post('/auth/login', async (req, res) => {
   }
 });
 
-// Password Recovery with OTP (Email / Phone)
-apiRouter.post('/auth/forgot-password/send-otp', async (req, res) => {
-  try {
-    const { contact } = req.body;
-    const result = await AuthService.sendPasswordResetOtp(contact);
-    res.json(result);
-  } catch (err: any) {
-    res.status(400).json({ error: err.message || 'Failed to send OTP' });
-  }
-});
-
-apiRouter.post('/auth/forgot-password/verify-otp', async (req, res) => {
-  try {
-    const { contact, otp } = req.body;
-    const result = await AuthService.verifyPasswordResetOtp(contact, otp);
-    res.json(result);
-  } catch (err: any) {
-    res.status(400).json({ error: err.message || 'Invalid or expired OTP' });
-  }
-});
-
-apiRouter.post('/auth/forgot-password/reset-password', async (req, res) => {
-  try {
-    const { contact, resetToken, newPassword } = req.body;
-    const result = await AuthService.resetPasswordWithOtp(contact, resetToken, newPassword);
-    res.json(result);
-  } catch (err: any) {
-    res.status(400).json({ error: err.message || 'Failed to reset password' });
-  }
-});
-
 apiRouter.get('/auth/me', requireAuth, (req: AuthenticatedRequest, res) => {
   const user = req.user!;
   const metaConnection = db.findMetaConnectionByUserId(user.id);

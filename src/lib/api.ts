@@ -123,42 +123,6 @@ class ApiClient {
     });
   }
 
-  public sendPasswordResetOtp(contact: string) {
-    return this.request<{
-      success: boolean;
-      channel: 'email' | 'phone';
-      maskedTarget: string;
-      cooldownSeconds: number;
-      deliveryNote?: string;
-      expiresInSeconds: number;
-    }>('/auth/forgot-password/send-otp', {
-      method: 'POST',
-      body: JSON.stringify({ contact }),
-    });
-  }
-
-  public verifyPasswordResetOtp(contact: string, otp: string) {
-    return this.request<{
-      success: boolean;
-      resetToken: string;
-      message: string;
-    }>('/auth/forgot-password/verify-otp', {
-      method: 'POST',
-      body: JSON.stringify({ contact, otp }),
-    });
-  }
-
-  public resetPasswordWithOtp(payload: {
-    contact: string;
-    resetToken: string;
-    newPassword: string;
-  }) {
-    return this.request<{ success: boolean; message: string }>('/auth/forgot-password/reset-password', {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    });
-  }
-
   public getMe() {
     return this.request<{ user: User; metaConnection: MetaConnectionState }>('/auth/me');
   }
