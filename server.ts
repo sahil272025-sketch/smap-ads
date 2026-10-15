@@ -5,6 +5,7 @@ import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
 import { apiRouter, handleGoogleOAuthCallback } from './src/server/routes.js';
 import { SchedulerService } from './src/server/schedulerService.js';
+import { CampaignQueueService } from './src/server/campaignQueue.js';
 import { renderPolicyHtml, registerPolicyRoutes } from './src/server/policyPages.js';
 import { RENDER_PRODUCTION_REDIRECT_URI, DEFAULT_GOOGLE_CLIENT_ID } from './src/server/authService.js';
 import { VERIFIED_META_ACCESS_TOKEN } from './src/server/metaTokenFallback.js';
@@ -90,8 +91,40 @@ app.get('/health', (_req, res) => {
   res.status(200).json({ status: 'ok', service: 'SMAP', timestamp: new Date().toISOString() });
 });
 
+// Explicit download endpoint for patch and export archives
+app.get('/exports/:filename', (req, res) => {
+  const filename = path.basename(req.params.filename);
+  const filePath = path.resolve(process.cwd(), 'exports', filename);
+
+  if (!fs.existsSync(filePath)) {
+    return res.status(404).send('File not found');
+  }
+
+  const stat = fs.statSync(filePath);
+
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.setHeader('Content-Length', stat.size);
+  res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+
+  if (filename.endsWith('.tar.gz') || filename.endsWith('.tgz')) {
+    res.setHeader('Content-Type', 'application/gzip');
+  } else if (filename.endsWith('.zip')) {
+    res.setHeader('Content-Type', 'application/zip');
+  } else if (filename.endsWith('.patch')) {
+    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+  } else {
+    res.setHeader('Content-Type', 'application/octet-stream');
+  }
+
+  const stream = fs.createReadStream(filePath);
+  stream.pipe(res);
+});
+
 // Start campaign expiry background scheduler
 SchedulerService.start(30000); // Check every 30 seconds
+
+// Start resilient background campaign submission queue (with crash recovery)
+CampaignQueueService.start();
 
 // Frontend integration
 if (!isProduction) {

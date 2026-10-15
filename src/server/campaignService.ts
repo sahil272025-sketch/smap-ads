@@ -1,6 +1,7 @@
 import { db, Campaign, CampaignStatus, CampaignTargeting, Package } from './db.js';
 import { MetaService } from './metaService.js';
 import { PaymentService } from './paymentService.js';
+import { CampaignQueueService } from './campaignQueue.js';
 
 export class CampaignService {
   public static async createDraft(userId: string, data: {
@@ -171,41 +172,25 @@ export class CampaignService {
       throw new Error('Meta account not connected. Please connect your Meta advertising account via OAuth.');
     }
 
-    // Set status to SUBMITTING
-    db.updateCampaign(campaignId, { status: 'SUBMITTING' });
-
-    // Compute start_at and end_at based on package duration
+    // Compute start_at and end_at based on package duration if not set
     const pkg = db.findPackageById(campaign.package_id);
     const durationDays = pkg ? pkg.duration_days : 5;
     const startDate = new Date();
     const endDate = new Date(startDate.getTime() + durationDays * 24 * 3600 * 1000);
 
-    const result = await MetaService.submitCampaignToMeta(campaign, connection);
+    // Enqueue for resilient background worker execution
+    const queueJob = CampaignQueueService.enqueue(campaignId);
 
-    if (result.success) {
-      const updated = db.updateCampaign(campaignId, {
-        status: result.status,
-        meta_campaign_id: result.meta_campaign_id || null,
-        meta_adset_id: result.meta_adset_id || null,
-        meta_creative_id: result.meta_creative_id || null,
-        meta_ad_id: result.meta_ad_id || null,
-        start_at: startDate.toISOString(),
-        end_at: endDate.toISOString(),
-        meta_status_message: 'Campaign submitted to Meta. Currently in Meta review process.',
-      });
+    const updated = db.updateCampaign(campaignId, {
+      status: 'SUBMITTING',
+      queue_status: 'QUEUED',
+      start_at: campaign.start_at || startDate.toISOString(),
+      end_at: campaign.end_at || endDate.toISOString(),
+      meta_status_message: 'Campaign safely queued for background worker submission to Meta Marketing API.',
+    });
 
-      db.log('CAMPAIGN', 'INFO', `Campaign ${campaignId} submitted to Meta: ${result.meta_campaign_id}`);
-      return updated!;
-    } else {
-      const updated = db.updateCampaign(campaignId, {
-        status: 'FAILED',
-        error_details: result.error || 'Meta campaign submission failed',
-        meta_status_message: result.error,
-      });
-
-      db.log('CAMPAIGN', 'ERROR', `Campaign ${campaignId} Meta submission failed: ${result.error}`);
-      return updated!;
-    }
+    db.log('CAMPAIGN', 'INFO', `Campaign ${campaignId} enqueued for Meta background submission (Job ${queueJob.jobId})`);
+    return updated!;
   }
 
   public static async getCampaignWithMetaMetrics(campaignId: string, userId?: string) {
@@ -226,6 +211,99 @@ export class CampaignService {
       package: pkg,
       payment,
       insights,
+    };
+  }
+
+  /**
+   * Aggregates truthful campaign performance reports from Meta Marketing API insights.
+   * Eliminates fabricated data and provides real totals, per-campaign metrics, and Meta latency disclosures.
+   */
+  public static async getPerformanceReports(userId?: string, forceRefresh = false) {
+    const campaigns = db.getCampaigns(userId);
+
+    // Sort campaigns with most recent first
+    const sortedCampaigns = [...campaigns].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+    let totalImpressions = 0;
+    let totalReach = 0;
+    let totalClicks = 0;
+    let totalSpend = 0;
+    let hasLiveMetrics = false;
+
+    const campaignReports = await Promise.all(
+      sortedCampaigns.map(async (c) => {
+        const pkg = db.findPackageById(c.package_id);
+        const insights = await MetaService.getCampaignInsights(c, forceRefresh);
+
+        if (insights.dataAvailable) {
+          hasLiveMetrics = true;
+          totalImpressions += insights.impressions || 0;
+          totalReach += insights.reach || 0;
+          totalClicks += insights.clicks || 0;
+          totalSpend += insights.spend || 0;
+        }
+
+        return {
+          id: c.id,
+          businessName: c.business_name,
+          headline: c.headline,
+          creativeUrl: c.creative_url,
+          creativeType: c.creative_type,
+          packageName: pkg?.name || 'Fixed Duration Package',
+          packagePrice: pkg?.price || c.total_budget || 0,
+          platforms: pkg?.platforms || ['Facebook', 'Instagram'],
+          status: c.status,
+          queueStatus: c.queue_status || null,
+          metaCampaignId: c.meta_campaign_id,
+          metaStatusMessage: c.meta_status_message,
+          rejectionReason: c.rejection_reason,
+          errorDetails: c.error_details,
+          startAt: c.start_at,
+          endAt: c.end_at,
+          createdAt: c.created_at,
+          insights,
+          syncStatus: insights.syncStatus || 'NO_META_ID',
+          lastSyncedAt: insights.lastSyncedAt || null,
+        };
+      })
+    );
+
+    const averageCtr = totalImpressions > 0
+      ? Number(((totalClicks / totalImpressions) * 100).toFixed(2))
+      : null;
+    const averageCpc = totalClicks > 0
+      ? Number((totalSpend / totalClicks).toFixed(2))
+      : null;
+
+    const activeCount = sortedCampaigns.filter(c => c.status === 'ACTIVE').length;
+    const underReviewCount = sortedCampaigns.filter(c => c.status === 'UNDER_REVIEW' || c.status === 'PENDING_REVIEW').length;
+    const queuedCount = sortedCampaigns.filter(c => c.status === 'QUEUED' || c.queue_status === 'QUEUED' || c.queue_status === 'PROCESSING').length;
+    const completedCount = sortedCampaigns.filter(c => c.status === 'COMPLETED').length;
+    const failedCount = sortedCampaigns.filter(c => c.status === 'FAILED').length;
+
+    return {
+      summary: {
+        totalImpressions,
+        totalReach,
+        totalClicks,
+        totalSpend,
+        averageCtr,
+        averageCpc,
+        totalCampaigns: sortedCampaigns.length,
+        activeCampaignsCount: activeCount,
+        inReviewCount: underReviewCount,
+        queuedCount,
+        completedCount,
+        failedCount,
+        hasLiveMetrics,
+      },
+      campaigns: campaignReports,
+      lastSyncedAt: new Date().toISOString(),
+      disclosures: {
+        impressionsVsReach: 'Impressions indicate the total count of times your ad was displayed on screen (which may include repeat views by the same person). Reach measures unique individual accounts who viewed your ad.',
+        reportingLatency: 'Meta Marketing API updates metrics periodically in batches (typically 15 to 60 minutes). Very recent ad clicks or views may take up to an hour to appear in official reports.',
+        reviewWindow: 'New ad creatives undergo standard Meta ad review within 24–48 hours before active delivery commences.',
+      },
     };
   }
 
@@ -422,42 +500,8 @@ export class CampaignService {
 
     db.createCampaign(campaign as Campaign);
 
-    // Meta Activation Flow
-    let metaResult: any = null;
-    let metaSubmissionStatus = 'PAYMENT_CONFIRMED';
-    try {
-      const metaConn = db.findMetaConnectionByUserId(userId);
-      const submitRes = await MetaService.submitCampaignToMeta(campaign as Campaign, metaConn);
-      metaResult = submitRes;
-      if (submitRes.success) {
-        metaSubmissionStatus = submitRes.status; // 'UNDER_REVIEW' or 'ACTIVE'
-        db.updateCampaign(campaignId, {
-          status: submitRes.status,
-          meta_campaign_id: submitRes.meta_campaign_id || null,
-          meta_adset_id: submitRes.meta_adset_id || null,
-          meta_creative_id: submitRes.meta_creative_id || null,
-          meta_ad_id: submitRes.meta_ad_id || null,
-          meta_status_message: 'Campaign registered with Meta Marketing API. In standard review cycle.',
-        });
-      } else {
-        // Honest error reporting - NEVER report success or UNDER_REVIEW when Meta rejected or failed!
-        metaSubmissionStatus = 'FAILED';
-        db.updateCampaign(campaignId, {
-          status: 'FAILED',
-          error_details: submitRes.error || 'Meta campaign submission notice',
-          meta_status_message: submitRes.error || 'Meta creative or ad creation rejected.',
-          rejection_reason: submitRes.error || 'Meta API rejected campaign creative/ad creation.',
-        });
-      }
-    } catch (err: any) {
-      metaSubmissionStatus = 'FAILED';
-      db.updateCampaign(campaignId, {
-        status: 'FAILED',
-        error_details: err?.message,
-        meta_status_message: `Meta activation failed: ${err?.message}`,
-        rejection_reason: err?.message,
-      });
-    }
+    // Enqueue for resilient background execution (non-blocking, crash-recoverable, automatic retries)
+    const queueJob = CampaignQueueService.enqueue(campaignId);
 
     const finalUpdatedCampaign = db.findCampaignById(campaignId)!;
     return {
@@ -466,8 +510,13 @@ export class CampaignService {
       payment,
       walletTransaction: deductRes.transaction,
       newBalance: deductRes.newBalance,
-      metaResult,
-      metaSubmissionStatus,
+      metaResult: {
+        queued: true,
+        jobId: queueJob.jobId,
+        position: queueJob.position,
+        message: 'Campaign safely queued for background worker submission to Meta Marketing API.',
+      },
+      metaSubmissionStatus: 'PAYMENT_CONFIRMED',
     };
   }
 }

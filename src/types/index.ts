@@ -41,6 +41,7 @@ export type PlacementType = 'facebook_feed' | 'instagram_feed' | 'instagram_stor
 
 export type CampaignStatus = 
   | 'DRAFT'
+  | 'QUEUED'
   | 'PENDING_REVIEW'
   | 'PAYMENT_PENDING'
   | 'PAYMENT_CONFIRMED'
@@ -87,6 +88,11 @@ export interface Campaign {
   start_at: string | null;
   end_at: string | null;
   status: CampaignStatus;
+  queue_status?: 'QUEUED' | 'PROCESSING' | 'COMPLETED' | 'RETRYING' | 'FAILED' | null;
+  retry_count?: number;
+  last_retry_at?: string | null;
+  next_retry_at?: string | null;
+  last_synced_at?: string | null;
   meta_campaign_id: string | null;
   meta_adset_id: string | null;
   meta_creative_id: string | null;
@@ -247,6 +253,70 @@ export interface MetaInsights {
   cpc: number | null;
   dataAvailable: boolean;
   notice: string;
+  lastSyncedAt?: string | null;
+  syncStatus?: 'LIVE_SYNCHRONIZED' | 'PENDING_DELIVERY' | 'NO_META_ID' | 'SYNC_ERROR' | string | null;
+}
+
+export interface PerformanceCampaignItem {
+  id: string;
+  businessName: string;
+  headline: string;
+  creativeUrl: string;
+  creativeType: 'image' | 'video';
+  packageName: string;
+  packagePrice: number;
+  platforms: string[];
+  status: CampaignStatus;
+  queueStatus?: string | null;
+  metaCampaignId: string | null;
+  metaStatusMessage: string | null;
+  rejectionReason: string | null;
+  errorDetails: string | null;
+  startAt: string | null;
+  endAt: string | null;
+  createdAt: string;
+  insights: MetaInsights;
+  syncStatus: string;
+  lastSyncedAt: string | null;
+}
+
+export interface PerformanceReportsData {
+  summary: {
+    totalImpressions: number;
+    totalReach: number;
+    totalClicks: number;
+    totalSpend: number;
+    averageCtr: number | null;
+    averageCpc: number | null;
+    totalCampaigns: number;
+    activeCampaignsCount: number;
+    inReviewCount: number;
+    queuedCount: number;
+    completedCount: number;
+    failedCount: number;
+    hasLiveMetrics: boolean;
+  };
+  campaigns: PerformanceCampaignItem[];
+  lastSyncedAt: string;
+  disclosures: {
+    impressionsVsReach: string;
+    reportingLatency: string;
+    reviewWindow: string;
+  };
+}
+
+export interface QueueStatusData {
+  success: boolean;
+  stats: {
+    queuedCount: number;
+    processingCount: number;
+    activeWorkers: number;
+    completedCount: number;
+    failedCount: number;
+    retriedCount: number;
+    liveSubmissionsEnabled: boolean;
+  };
+  timestamp: string;
 }
 
 export interface SupportTicketReply {

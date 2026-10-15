@@ -1,4 +1,4 @@
-import { User, Package, Campaign, Payment, MetaConnectionState, MetaInsights, MetaVerificationReport, SupportTicket, AdminStats, SystemLog, GoogleConfigStatus, WalletTransaction, WalletData, AdminWalletData } from '../types';
+import { User, Package, Campaign, Payment, MetaConnectionState, MetaInsights, MetaVerificationReport, SupportTicket, AdminStats, SystemLog, GoogleConfigStatus, WalletTransaction, WalletData, AdminWalletData, PerformanceReportsData, QueueStatusData } from '../types';
 
 class ApiClient {
   private inMemoryToken: string | null = null;
@@ -233,6 +233,15 @@ class ApiClient {
     return this.request<{ campaign: Campaign }>(`/campaigns/${campaignId}/submit-meta`, {
       method: 'POST',
     });
+  }
+
+  public getPerformanceReports(forceRefresh = false) {
+    const q = forceRefresh ? '?force=true' : '';
+    return this.request<PerformanceReportsData>(`/reports/performance${q}`);
+  }
+
+  public getQueueStatus() {
+    return this.request<QueueStatusData>('/queue/status');
   }
 
   // Payments (Real UPI Gateway Only)

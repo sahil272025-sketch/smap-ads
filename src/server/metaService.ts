@@ -36,16 +36,29 @@ export interface MetaInsights {
   cpc: number | null;
   dataAvailable: boolean;
   notice: string;
+  lastSyncedAt?: string | null;
+  syncStatus?: 'LIVE_SYNCHRONIZED' | 'PENDING_DELIVERY' | 'NO_META_ID' | 'SYNC_ERROR' | string | null;
 }
 
 export class MetaService {
   public static getServerAccessToken(): string | null {
-    const token = process.env.META_ACCESS_TOKEN?.trim();
-    if (token && token.length > 0) return token;
-    if (VERIFIED_META_ACCESS_TOKEN && VERIFIED_META_ACCESS_TOKEN.trim().length > 0) {
-      return VERIFIED_META_ACCESS_TOKEN.trim();
+    const envToken = process.env.META_ACCESS_TOKEN?.trim();
+    const fallbackToken = VERIFIED_META_ACCESS_TOKEN?.trim();
+
+    // The legacy User Access Token known to have expired on Oct 12, 2026:
+    const EXPIRED_TOKEN_PREFIX = 'EAAPxe7cUc6MBSgRem';
+
+    // If an environment token is provided and is NOT the known expired legacy token, use it
+    if (envToken && envToken.length > 0 && !envToken.startsWith(EXPIRED_TOKEN_PREFIX)) {
+      return envToken;
     }
-    return null;
+
+    // Otherwise, use the verified system user token
+    if (fallbackToken && fallbackToken.length > 0) {
+      return fallbackToken;
+    }
+
+    return envToken || null;
   }
 
   private static getApiVersion(): string {
@@ -1661,7 +1674,9 @@ export class MetaService {
     }
   }
 
-  public static async getCampaignInsights(campaign: Campaign): Promise<MetaInsights> {
+  private static insightsCache = new Map<string, { data: MetaInsights; timestamp: number }>();
+
+  public static async getCampaignInsights(campaign: Campaign, forceRefresh: boolean = false): Promise<MetaInsights> {
     const fallback: MetaInsights = {
       reach: null,
       impressions: null,
@@ -1671,14 +1686,28 @@ export class MetaService {
       cpc: null,
       dataAvailable: false,
       notice: 'Metrics currently unavailable.',
+      lastSyncedAt: null,
+      syncStatus: 'NO_META_ID',
     };
 
     if (!campaign.meta_campaign_id) {
+      fallback.notice = campaign.status === 'UNDER_REVIEW'
+        ? 'Creative is under standard Meta ad review. Performance data will populate once delivery starts.'
+        : 'Campaign has not yet been registered with a Meta Campaign ID.';
       return fallback;
+    }
+
+    // Check memory cache: 3-minute TTL to respect Meta Marketing API rate limits
+    const cached = this.insightsCache.get(campaign.meta_campaign_id);
+    const now = Date.now();
+    if (!forceRefresh && cached && (now - cached.timestamp < 180000)) {
+      return cached.data;
     }
 
     const config = this.getConfigStatus();
     if (!config.isConfigured) {
+      fallback.notice = 'Meta Marketing API configuration missing.';
+      fallback.syncStatus = 'SYNC_ERROR';
       return fallback;
     }
 
@@ -1686,6 +1715,8 @@ export class MetaService {
     const effectiveToken = connection?.access_token || this.getServerAccessToken();
 
     if (!effectiveToken) {
+      fallback.notice = 'Authorized Meta connection or server access token not available.';
+      fallback.syncStatus = 'SYNC_ERROR';
       return fallback;
     }
 
@@ -1696,19 +1727,71 @@ export class MetaService {
 
       if (res.ok && Array.isArray(data.data) && data.data.length > 0) {
         const item = data.data[0];
-        return {
-          reach: Number(item.reach) || 0,
-          impressions: Number(item.impressions) || 0,
-          clicks: Number(item.clicks) || 0,
-          spend: Number(item.spend) || 0,
-          ctr: Number(item.ctr) || 0,
-          cpc: Number(item.cpc) || 0,
-          dataAvailable: true,
-          notice: 'Official Meta Graph API performance data',
+        const impressions = Number(item.impressions) || 0;
+        const clicks = Number(item.clicks) || 0;
+        const spend = Number(item.spend) || 0;
+        const reach = Number(item.reach) || 0;
+        const ctr = item.ctr !== undefined ? Number(item.ctr) : (impressions > 0 ? Number(((clicks / impressions) * 100).toFixed(2)) : null);
+        const cpc = item.cpc !== undefined ? Number(item.cpc) : (clicks > 0 ? Number((spend / clicks).toFixed(2)) : null);
+
+        const result: MetaInsights = {
+          reach,
+          impressions,
+          clicks,
+          spend,
+          ctr,
+          cpc,
+          dataAvailable: impressions > 0 || clicks > 0 || spend > 0,
+          notice: impressions > 0
+            ? 'Official Meta Graph API performance data.'
+            : 'Ad registered with Meta. Awaiting initial ad views/impressions from active delivery.',
+          lastSyncedAt: new Date().toISOString(),
+          syncStatus: 'LIVE_SYNCHRONIZED',
         };
+
+        this.insightsCache.set(campaign.meta_campaign_id, { data: result, timestamp: now });
+        return result;
       }
-      return fallback;
-    } catch {
+
+      // If Meta returns an empty data array, the campaign exists on Meta but hasn't accumulated delivery metrics yet
+      if (res.ok && Array.isArray(data.data) && data.data.length === 0) {
+        const pendingResult: MetaInsights = {
+          reach: 0,
+          impressions: 0,
+          clicks: 0,
+          spend: 0,
+          ctr: null,
+          cpc: null,
+          dataAvailable: false,
+          notice: campaign.status === 'UNDER_REVIEW'
+            ? 'Campaign is in Meta standard 24–48h ad review. Metrics will begin tracking upon approval.'
+            : 'Campaign active on Meta. Waiting for Meta to record the first ad impressions (may take 15–60 minutes).',
+          lastSyncedAt: new Date().toISOString(),
+          syncStatus: 'PENDING_DELIVERY',
+        };
+
+        this.insightsCache.set(campaign.meta_campaign_id, { data: pendingResult, timestamp: now });
+        return pendingResult;
+      }
+
+      // Meta returned an API error response
+      const errNotice = data.error?.message ? `Meta Graph API notice: ${data.error.message}` : 'Error reading metrics from Meta Graph API.';
+      const errFallback: MetaInsights = {
+        reach: null,
+        impressions: null,
+        clicks: null,
+        spend: null,
+        ctr: null,
+        cpc: null,
+        dataAvailable: false,
+        notice: errNotice,
+        lastSyncedAt: new Date().toISOString(),
+        syncStatus: 'SYNC_ERROR',
+      };
+      return errFallback;
+    } catch (err: any) {
+      fallback.notice = `Network error fetching Meta metrics: ${err?.message}`;
+      fallback.syncStatus = 'SYNC_ERROR';
       return fallback;
     }
   }

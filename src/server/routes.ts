@@ -10,6 +10,7 @@ import { MetaService } from './metaService.js';
 import { CampaignService } from './campaignService.js';
 import { SupportService } from './supportService.js';
 import { WalletService } from './walletService.js';
+import { CampaignQueueService } from './campaignQueue.js';
 
 export const apiRouter = express.Router();
 
@@ -303,7 +304,7 @@ function renderAuthResultPage(res: Response, {
               : { type: 'GOOGLE_AUTH_ERROR', error: safeError }
           )}, '*');
         } catch (_) {}
-        setTimeout(function() { 
+        setTimeout(function() {
           window.close();
           // If window.close() is blocked (e.g. mobile Chrome tabs), navigate current window to dashboard
           setTimeout(function() {
@@ -459,7 +460,7 @@ export const handleGoogleOAuthCallback = async (req: Request, res: Response) => 
 
 apiRouter.get('/auth/google/url', (req, res) => {
   const state = AuthService.generateOAuthState();
-  
+
   // Set secure CSRF state cookie
   res.cookie('smap_oauth_state', state, {
     httpOnly: true,
@@ -707,6 +708,31 @@ apiRouter.post('/campaigns/:id/submit-meta', requireAuth, async (req: Authentica
   } catch (err: any) {
     res.status(400).json({ error: err.message || 'Failed to submit campaign to Meta' });
   }
+});
+
+// Authentic Live Meta Marketing API Performance Reports
+apiRouter.get(['/reports/performance', '/campaigns/performance/reports'], requireAuth, async (req: AuthenticatedRequest, res) => {
+  try {
+    const forceRefresh = req.query.force === 'true';
+    const userId = req.user!.role === 'admin' && req.query.userId
+      ? String(req.query.userId)
+      : (req.user!.role === 'admin' && req.query.all === 'true' ? undefined : req.user!.id);
+
+    const reports = await CampaignService.getPerformanceReports(userId, forceRefresh);
+    res.json(reports);
+  } catch (err: any) {
+    res.status(500).json({ error: err?.message || 'Failed to generate performance reports' });
+  }
+});
+
+// Diagnostic Campaign Queue Status
+apiRouter.get('/queue/status', requireAuth, (_req: AuthenticatedRequest, res) => {
+  const stats = CampaignQueueService.getQueueStats();
+  res.json({
+    success: true,
+    stats,
+    timestamp: new Date().toISOString(),
+  });
 });
 
 // ==========================================

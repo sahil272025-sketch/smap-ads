@@ -65,6 +65,7 @@ export type PlacementType = 'facebook_feed' | 'instagram_feed' | 'instagram_stor
 
 export type CampaignStatus = 
   | 'DRAFT'
+  | 'QUEUED'
   | 'PENDING_REVIEW'
   | 'PAYMENT_PENDING'
   | 'PAYMENT_CONFIRMED'
@@ -111,6 +112,11 @@ export interface Campaign {
   start_at: string | null;
   end_at: string | null;
   status: CampaignStatus;
+  queue_status?: 'QUEUED' | 'PROCESSING' | 'COMPLETED' | 'RETRYING' | 'FAILED' | null;
+  retry_count?: number;
+  last_retry_at?: string | null;
+  next_retry_at?: string | null;
+  last_synced_at?: string | null;
   meta_campaign_id: string | null;
   meta_adset_id: string | null;
   meta_creative_id: string | null;
@@ -229,7 +235,7 @@ export interface SupportTicket {
 
 export interface SystemLog {
   id: string;
-  category: 'AUTH' | 'PAYMENT' | 'META_API' | 'SCHEDULER' | 'ADMIN' | 'CAMPAIGN';
+  category: 'AUTH' | 'PAYMENT' | 'META_API' | 'SCHEDULER' | 'ADMIN' | 'CAMPAIGN' | 'QUEUE';
   level: 'INFO' | 'WARN' | 'ERROR';
   message: string;
   details?: Record<string, unknown>;
@@ -709,7 +715,11 @@ class DatabaseService {
     if (custom) return custom;
 
     // Use verified server-side META_ACCESS_TOKEN and verified Meta assets (Facebook Page, Instagram, SMAP Ads)
-    const serverToken = (process.env.META_ACCESS_TOKEN?.trim()) || (VERIFIED_META_ACCESS_TOKEN && VERIFIED_META_ACCESS_TOKEN.trim().length > 0 ? VERIFIED_META_ACCESS_TOKEN.trim() : null);
+    const envToken = process.env.META_ACCESS_TOKEN?.trim();
+    const fallbackToken = VERIFIED_META_ACCESS_TOKEN && VERIFIED_META_ACCESS_TOKEN.trim().length > 0 ? VERIFIED_META_ACCESS_TOKEN.trim() : null;
+    const serverToken = (envToken && !envToken.startsWith('EAAPxe7cUc6MBSgRem'))
+      ? envToken
+      : (fallbackToken || envToken || null);
     if (serverToken && serverToken.length > 0) {
       return {
         id: `meta_conn_server_${userId || 'default'}`,

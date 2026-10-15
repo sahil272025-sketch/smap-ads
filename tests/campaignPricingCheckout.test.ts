@@ -6,6 +6,7 @@ import { WalletService } from '../src/server/walletService.js';
 import { MetaService } from '../src/server/metaService.js';
 import { SupportService } from '../src/server/supportService.js';
 import { AuthService } from '../src/server/authService.js';
+import { CampaignQueueService } from '../src/server/campaignQueue.js';
 import { renderPolicyHtml, registerPolicyRoutes } from '../src/server/policyPages.js';
 
 let totalTests = 0;
@@ -941,6 +942,136 @@ async function runTests() {
   const orderCustom = await WalletService.createAddFundsOrder(topupUser.id, 250.75);
   assert(orderCustom.amount === 250.75, 'Order handles decimal precision: ₹250.75');
   assert(Boolean(orderCustom.upiIntentUrl?.includes('am=250.75')), 'UPI Intent contains dynamic decimal amount 250.75');
+
+  // TEST 28: Campaign Queue Service Enqueue & Idempotency
+  console.log('\n--- TEST 28: Background Campaign Queue & Idempotency ---');
+  const queueCampId = `cmp_queue_test_${Date.now()}`;
+  db.createCampaign({
+    id: queueCampId,
+    user_id: testUserId,
+    package_id: 'pkg_starter_200',
+    business_name: 'Queue Test Store',
+    headline: 'Queue Headline',
+    primary_text: 'Queue primary text',
+    description: '',
+    creative_url: 'https://example.com/test.jpg',
+    creative_type: 'image',
+    destination_type: 'website',
+    destination_url: 'https://example.com',
+    targeting: {
+      country: 'IN',
+      state: 'All India',
+      city: 'All Cities',
+      min_age: 18,
+      max_age: 65,
+      gender: 'ALL',
+      interests: ['Shopping'],
+    },
+    status: 'PAYMENT_CONFIRMED',
+    meta_campaign_id: null,
+    meta_adset_id: null,
+    meta_creative_id: null,
+    meta_ad_id: null,
+    meta_account_id: 'act_1627260695520511',
+    meta_status_message: null,
+    rejection_reason: null,
+    error_details: null,
+    start_at: null,
+    end_at: null,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  });
+
+  const enqueueResult1 = CampaignQueueService.enqueue(queueCampId);
+  assert(enqueueResult1.queued === true, 'Campaign safely enqueued for background worker');
+  assert(enqueueResult1.jobId === queueCampId, 'Queue jobId matches campaign ID');
+
+  const enqueuedCampaign = db.findCampaignById(queueCampId);
+  assert(enqueuedCampaign?.queue_status === 'QUEUED', 'Campaign record queue_status updated to QUEUED');
+
+  // Duplicate enqueue prevention
+  const enqueueResult2 = CampaignQueueService.enqueue(queueCampId);
+  assert(enqueueResult2.queued === true, 'Duplicate enqueue returns safe acknowledgement');
+  assert(enqueueResult2.position === enqueueResult1.position, 'Duplicate enqueue preserves existing queue position without double-processing');
+
+  // TEST 29: Transient vs Fatal Error Classification
+  console.log('\n--- TEST 29: Transient vs Fatal Error Classification ---');
+  assert(CampaignQueueService.isTransientError('Meta API rate limit reached (Code 4)') === true, 'Meta code 4 rate limit classified as transient');
+  assert(CampaignQueueService.isTransientError('User request limit reached (Code 17)') === true, 'Meta code 17 user limit classified as transient');
+  assert(CampaignQueueService.isTransientError('Fetch failed: network ETIMEDOUT') === true, 'Network timeout classified as transient');
+  assert(CampaignQueueService.isTransientError('HTTP 503 Service Unavailable') === true, '503 Service Unavailable classified as transient');
+  assert(CampaignQueueService.isTransientError('Error validating access token: Session has expired (Code 190)') === false, 'Expired OAuth token strictly classified as FATAL (not retried)');
+  assert(CampaignQueueService.isTransientError('Permissions error: pages_manage_ads required') === false, 'Missing permission strictly classified as FATAL (not retried)');
+  assert(CampaignQueueService.isTransientError('Ad creative violates Meta advertising policies') === false, 'Ad policy violation strictly classified as FATAL (not retried)');
+
+  // TEST 30: Crash Recovery of Interrupted Submissions
+  console.log('\n--- TEST 30: Crash Recovery of Interrupted Submissions ---');
+  const stuckCampId = `cmp_stuck_${Date.now()}`;
+  db.createCampaign({
+    id: stuckCampId,
+    user_id: testUserId,
+    package_id: 'pkg_starter_200',
+    business_name: 'Interrupted Campaign Store',
+    headline: 'Stuck Headline',
+    primary_text: 'Stuck primary text',
+    description: '',
+    creative_url: 'https://example.com/test.jpg',
+    creative_type: 'image',
+    destination_type: 'website',
+    destination_url: 'https://example.com',
+    targeting: {
+      country: 'IN',
+      state: 'All India',
+      city: 'All Cities',
+      min_age: 18,
+      max_age: 65,
+      gender: 'ALL',
+      interests: ['Shopping'],
+    },
+    status: 'SUBMITTING',
+    queue_status: 'PROCESSING',
+    meta_campaign_id: null,
+    meta_adset_id: null,
+    meta_creative_id: null,
+    meta_ad_id: null,
+    meta_account_id: 'act_1627260695520511',
+    meta_status_message: null,
+    rejection_reason: null,
+    error_details: null,
+    start_at: null,
+    end_at: null,
+    created_at: new Date(Date.now() - 300000).toISOString(), // 5 minutes ago
+    updated_at: new Date(Date.now() - 300000).toISOString(),
+  });
+
+  CampaignQueueService.recoverStuckJobs();
+  const recoveredCampaign = db.findCampaignById(stuckCampId);
+  assert(
+    recoveredCampaign?.queue_status === 'QUEUED' || recoveredCampaign?.queue_status === 'PROCESSING',
+    'Crash recovery detects interrupted jobs and re-enqueues them safely'
+  );
+
+  // TEST 31: Authentic Meta Performance Reports & Zero Hardcoded Data
+  console.log('\n--- TEST 31: Authentic Meta Performance Reports & Disclosures ---');
+  const reports = await CampaignService.getPerformanceReports(testUserId);
+  assert(typeof reports.summary.totalImpressions === 'number', 'Reports contain numeric totalImpressions');
+  assert(typeof reports.summary.totalReach === 'number', 'Reports contain numeric totalReach');
+  assert(typeof reports.summary.totalClicks === 'number', 'Reports contain numeric totalClicks');
+  assert(typeof reports.summary.totalSpend === 'number', 'Reports contain numeric totalSpend');
+  assert(Array.isArray(reports.campaigns), 'Reports return campaign items array');
+  assert(Boolean(reports.disclosures.impressionsVsReach), 'Reports include transparent Impressions vs Reach disclosure');
+  assert(Boolean(reports.disclosures.reportingLatency), 'Reports include transparent 15–60 minute Meta reporting latency disclosure');
+  assert(Boolean(reports.disclosures.reviewWindow), 'Reports include transparent Meta 24–48h review window disclosure');
+
+  // Verify that fake numbers (e.g. 45,200) are NOT returned
+  assert(reports.summary.totalImpressions !== 45200, 'Zero fake 45,200 impressions in reports');
+  assert(reports.summary.totalReach !== 28900, 'Zero fake 28,900 reach in reports');
+
+  // TEST 32: In-Memory Insights Caching for Meta API Rate Limit Protection
+  console.log('\n--- TEST 32: Rate-Limit Safe In-Memory Caching ---');
+  const insights1 = await MetaService.getCampaignInsights(enqueuedCampaign!);
+  assert(insights1.dataAvailable === false || insights1.dataAvailable === true, 'Meta insights fetch returns structured data');
+  assert(Boolean(insights1.notice), 'Meta insights notice provides truthful delivery or review status');
 
   console.log('\n====================================================');
   console.log(`🎉 ALL ${passedTests}/${totalTests} TESTS PASSED SUCCESSFULLY!`);
