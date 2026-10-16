@@ -1073,6 +1073,68 @@ async function runTests() {
   assert(insights1.dataAvailable === false || insights1.dataAvailable === true, 'Meta insights fetch returns structured data');
   assert(Boolean(insights1.notice), 'Meta insights notice provides truthful delivery or review status');
 
+  // TEST 33: Owner Identity Verification & Strict Role RBAC
+  console.log('\n--- TEST 33: Owner Admin Identity & Strict Role RBAC ---');
+  let existingOwner = db.findUserByEmail('sahil272025@gmail.com');
+  if (existingOwner) {
+    existingOwner.promotional_credit_granted = false;
+    existingOwner.wallet_balance = 0;
+    (db as any).db.wallet_transactions = (db as any).db.wallet_transactions.filter(
+      (tx: any) => !(tx.user_id === existingOwner!.id && tx.type === 'PROMOTIONAL_CREDIT')
+    );
+    db.save();
+  }
+
+  const ownerAuth = existingOwner
+    ? await AuthService.loginWithEmailPassword('sahil272025@gmail.com', 'SecureOwnerPassword2026!')
+    : await AuthService.registerWithEmailPassword({
+        name: 'Sahil Gupta',
+        email: 'sahil272025@gmail.com',
+        password: 'SecureOwnerPassword2026!',
+      });
+
+  assert(ownerAuth.user.role === 'admin', 'Owner sahil272025@gmail.com is strictly granted admin role upon authentication');
+  assert(ownerAuth.user.email === 'sahil272025@gmail.com', 'Owner email matches verified identity');
+
+  const customerReg = await AuthService.registerWithEmailPassword({
+    name: 'Regular Customer',
+    email: `customer_${Date.now()}@example.com`,
+    password: 'RegularPassword123!',
+  });
+  assert(customerReg.user.role === 'customer', 'Non-owner customer is strictly assigned customer role');
+
+  const updatedCust = AuthService.updateProfile(customerReg.user.id, { name: 'Customer Attempt Escalation' });
+  assert(updatedCust.role === 'customer', 'Customer profile updates cannot escalate role to admin');
+
+  // TEST 34: One-Time ₹50,000 Owner Promotional Credit & Strict Idempotency
+  console.log('\n--- TEST 34: One-Time ₹50,000 Owner Promotional Credit & Strict Idempotency ---');
+  const ownerUser = db.findUserByEmail('sahil272025@gmail.com')!;
+  const ownerInitialBalance = db.getWalletBalance(ownerUser.id);
+  assert(ownerInitialBalance === 0, 'Owner wallet balance starts at ₹0.00 prior to explicit promotional credit approval');
+
+  // Explicitly trigger the promotional credit grant
+  const grantResult = db.checkAndGrantOwnerPromotionalCredit(ownerUser.id);
+  assert(grantResult.granted === true, 'Owner promotional credit successfully granted upon explicit invocation');
+  assert(grantResult.amount === 50000, 'Granted amount is exactly ₹50,000');
+  assert(grantResult.newBalance === 50000, 'Owner wallet balance reflects allocated ₹50,000 promotional credit');
+
+  const promoTx = (db.getWalletTransactions(ownerUser.id) || []).find((tx) => tx.type === 'PROMOTIONAL_CREDIT');
+  assert(Boolean(promoTx), 'Promotional credit ledger transaction exists in wallet history');
+  assert(promoTx?.amount === 50000, 'Promotional credit transaction amount is exactly ₹50,000');
+  assert(promoTx?.payment_id === null, 'Promotional credit has null payment_id (distinguishable from Razorpay cash)');
+  assert(promoTx?.status === 'SUCCESS', 'Promotional credit transaction status is SUCCESS');
+
+  // Double-grant attempt must be strictly blocked by idempotency guards
+  const repeatGrant = db.checkAndGrantOwnerPromotionalCredit(ownerUser.id);
+  assert(repeatGrant.granted === false, 'Duplicate promotional credit grant is strictly rejected');
+  assert(repeatGrant.alreadyGranted === true, 'Repeat grant reports alreadyGranted: true');
+  assert(db.getWalletBalance(ownerUser.id) === 50000, 'Owner wallet balance is NOT double-credited on repeated attempts');
+
+  // Customer cannot claim owner promotional credit
+  const custPromo = db.checkAndGrantOwnerPromotionalCredit(customerReg.user.id);
+  assert(custPromo.granted === false, 'Non-owner customer cannot claim owner promotional credit');
+  assert(custPromo.amount === 0, 'Zero credit granted to non-owner customer');
+
   console.log('\n====================================================');
   console.log(`🎉 ALL ${passedTests}/${totalTests} TESTS PASSED SUCCESSFULLY!`);
   console.log('====================================================\n');

@@ -7,6 +7,7 @@ export interface User {
   profile_picture: string | null;
   phone?: string;
   wallet_balance?: number;
+  promotional_credit_granted?: boolean;
   role: 'customer' | 'admin';
   status: 'ACTIVE' | 'SUSPENDED';
   created_at: string;
@@ -365,7 +366,9 @@ export type WalletTransactionType =
   | 'ADD_FUNDS'
   | 'CAMPAIGN_PAYMENT'
   | 'REFUND'
-  | 'FAILED_PAYMENT';
+  | 'FAILED_PAYMENT'
+  | 'AUDIT_CORRECTION'
+  | 'PROMOTIONAL_CREDIT';
 
 export type WalletTransactionStatus = 'SUCCESS' | 'FAILED' | 'PENDING';
 

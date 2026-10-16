@@ -1092,6 +1092,31 @@ apiRouter.post('/admin/wallets/:userId/reset', requireAdmin, (req, res) => {
   }
 });
 
+// Admin/Owner endpoint: Check and claim one-time owner promotional credit (strictly for sahil272025@gmail.com)
+apiRouter.post('/admin/owner/claim-promo-credit', requireAdmin, (req: AuthenticatedRequest, res) => {
+  try {
+    const user = req.user!;
+    if (user.email.trim().toLowerCase() !== 'sahil272025@gmail.com') {
+      return res.status(403).json({ error: 'Only the verified owner account (sahil272025@gmail.com) is eligible for owner promotional advertising credits.' });
+    }
+
+    const result = db.checkAndGrantOwnerPromotionalCredit(user.id);
+    res.json({
+      success: true,
+      granted: result.granted,
+      alreadyGranted: result.alreadyGranted,
+      amount: result.amount,
+      wallet_balance: result.newBalance,
+      message: result.granted
+        ? 'Owner promotional credit of ₹50,000 successfully allocated to your wallet.'
+        : 'Owner promotional credit was already allocated to this account.',
+      transaction: result.transaction,
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || 'Failed to process owner promotional credit' });
+  }
+});
+
 // ==========================================
 // 5. META / FACEBOOK & INSTAGRAM INTEGRATION
 // ==========================================

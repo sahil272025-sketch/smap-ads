@@ -16,6 +16,7 @@ export interface User {
   phone?: string;
   password_hash?: string | null;
   wallet_balance?: number; // In INR (default 0)
+  promotional_credit_granted?: boolean;
   updated_at?: string;
 }
 
@@ -24,7 +25,8 @@ export type WalletTransactionType =
   | 'CAMPAIGN_PAYMENT'
   | 'REFUND'
   | 'FAILED_PAYMENT'
-  | 'AUDIT_CORRECTION';
+  | 'AUDIT_CORRECTION'
+  | 'PROMOTIONAL_CREDIT';
 
 export type WalletTransactionStatus = 'SUCCESS' | 'FAILED' | 'PENDING';
 
@@ -949,6 +951,96 @@ class DatabaseService {
     });
 
     return { newBalance, transaction: tx };
+  }
+
+  /**
+   * One-time promotional credit allocation strictly for verified Owner/Admin account (sahil272025@gmail.com).
+   * Strict double-layer idempotency: checks both user.promotional_credit_granted flag and existing ledger transactions.
+   * Completely independent of Razorpay payment records and non-withdrawable.
+   */
+  public checkAndGrantOwnerPromotionalCredit(userId: string): {
+    granted: boolean;
+    amount: number;
+    newBalance: number;
+    alreadyGranted: boolean;
+    transaction?: WalletTransaction;
+  } {
+    const user = this.findUserById(userId);
+    if (!user) {
+      return { granted: false, amount: 0, newBalance: 0, alreadyGranted: false };
+    }
+
+    // Strict identity verification: Only the verified owner account is eligible
+    const cleanEmail = user.email.trim().toLowerCase();
+    if (cleanEmail !== 'sahil272025@gmail.com') {
+      return { granted: false, amount: 0, newBalance: user.wallet_balance || 0, alreadyGranted: false };
+    }
+
+    // Idempotency Check: verify if already granted via flag or existing transaction
+    const existingTx = (this.db.wallet_transactions || []).find(
+      (tx) => tx.user_id === userId && tx.type === 'PROMOTIONAL_CREDIT'
+    );
+
+    if (user.promotional_credit_granted || existingTx) {
+      if (!user.promotional_credit_granted) {
+        user.promotional_credit_granted = true;
+        this.save();
+      }
+      return {
+        granted: false,
+        amount: 0,
+        newBalance: user.wallet_balance || 0,
+        alreadyGranted: true,
+        transaction: existingTx,
+      };
+    }
+
+    // Atomically allocate the ₹50,000 promotional credit
+    const promoAmount = 50000;
+    const currentBalance = typeof user.wallet_balance === 'number' && !isNaN(user.wallet_balance)
+      ? user.wallet_balance
+      : 0;
+    const newBalance = Math.round((currentBalance + promoAmount) * 100) / 100;
+
+    const tx: WalletTransaction = {
+      id: `wtx_promo_owner_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
+      user_id: userId,
+      type: 'PROMOTIONAL_CREDIT',
+      amount: promoAmount,
+      balance_before: currentBalance,
+      balance_after: newBalance,
+      description: 'Owner Promotional Advertising Credit — Authorized for campaign creation and ad testing (Non-withdrawable)',
+      payment_id: null,
+      gateway_payment_id: null,
+      gateway_order_id: null,
+      campaign_id: null,
+      status: 'SUCCESS',
+      created_at: new Date().toISOString(),
+    };
+
+    user.wallet_balance = newBalance;
+    user.promotional_credit_granted = true;
+    user.role = 'admin'; // Owner is always admin
+    user.updated_at = new Date().toISOString();
+
+    this.createWalletTransaction(tx);
+    this.save();
+
+    this.log('ADMIN', 'INFO', `Allocated one-time owner promotional credit of ₹${promoAmount} to verified owner ${user.email}. New balance: ₹${newBalance}`, {
+      userId,
+      amount: promoAmount,
+      balanceBefore: currentBalance,
+      balanceAfter: newBalance,
+      txId: tx.id,
+    });
+
+    return {
+      granted: true,
+      amount: promoAmount,
+      newBalance,
+      alreadyGranted: false,
+      transaction: tx,
+    };
   }
 
   /**

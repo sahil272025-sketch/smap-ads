@@ -46,6 +46,7 @@ export interface GoogleUserProfile {
 }
 
 export class AuthService {
+  public static readonly OWNER_EMAIL = 'sahil272025@gmail.com';
   public static readonly DEFAULT_GOOGLE_CLIENT_ID = DEFAULT_GOOGLE_CLIENT_ID;
 
   private static getClientId(): string | null {
@@ -395,10 +396,12 @@ export class AuthService {
     const now = new Date().toISOString();
 
     // Determine admin role server-side only
-    const defaultAdminEmails = 'sahilking17341734@gmail.com,sahilguptasahilgupta652@gmail.com';
+    const cleanEmail = profile.email.trim().toLowerCase();
+    const isOwner = cleanEmail === AuthService.OWNER_EMAIL;
+    const defaultAdminEmails = `${AuthService.OWNER_EMAIL},sahilking17341734@gmail.com,sahilguptasahilgupta652@gmail.com`;
     const adminEmailsConfig = process.env.ADMIN_EMAILS || defaultAdminEmails;
     const adminList = adminEmailsConfig.split(',').map((e) => e.trim().toLowerCase());
-    const isAdmin = adminList.includes(profile.email.toLowerCase());
+    const isAdmin = isOwner || adminList.includes(cleanEmail);
     const role: 'customer' | 'admin' = isAdmin ? 'admin' : 'customer';
 
     // 1. Check by stable Google Subject ID (sub)
@@ -418,7 +421,7 @@ export class AuthService {
       db.log('AUTH', 'INFO', `Google user signed in: ${user.email} (sub: ${profile.sub})`, { userId: user.id });
     } else {
       // 2. Check if an account already exists with this verified email
-      const existingByEmail = db.findUserByEmail(profile.email);
+      const existingByEmail = db.findUserByEmail(cleanEmail);
       if (existingByEmail) {
         user = db.updateUser(existingByEmail.id, {
           google_sub: profile.sub,
@@ -435,7 +438,7 @@ export class AuthService {
           id: newId,
           google_sub: profile.sub,
           name: profile.name,
-          email: profile.email,
+          email: cleanEmail,
           email_verified: profile.email_verified,
           profile_picture: profile.picture,
           role,
@@ -444,7 +447,7 @@ export class AuthService {
           last_login_at: now,
         };
         user = db.createUser(newUser);
-        db.log('AUTH', 'INFO', `New customer created via Google Sign-In: ${user.email} (sub: ${profile.sub})`, { userId: user.id });
+        db.log('AUTH', 'INFO', `New account created via Google Sign-In: ${user.email} (sub: ${profile.sub})`, { userId: user.id });
       }
     }
 
@@ -517,10 +520,11 @@ export class AuthService {
     const passwordHash = await bcrypt.hash(password, 10);
     const now = new Date().toISOString();
 
-    const defaultAdminEmails = 'sahilking17341734@gmail.com,sahilguptasahilgupta652@gmail.com';
+    const defaultAdminEmails = `${AuthService.OWNER_EMAIL},sahilking17341734@gmail.com,sahilguptasahilgupta652@gmail.com`;
     const adminEmailsConfig = process.env.ADMIN_EMAILS || defaultAdminEmails;
     const adminList = adminEmailsConfig.split(',').map((e) => e.trim().toLowerCase());
-    const role: 'customer' | 'admin' = adminList.includes(cleanEmail) ? 'admin' : 'customer';
+    const isOwner = cleanEmail === AuthService.OWNER_EMAIL;
+    const role: 'customer' | 'admin' = (isOwner || adminList.includes(cleanEmail)) ? 'admin' : 'customer';
 
     let user: User;
     if (existing) {
@@ -528,6 +532,7 @@ export class AuthService {
         password_hash: passwordHash,
         name: name.trim() || existing.name,
         phone: phone?.trim() || existing.phone,
+        role: (isOwner || role === 'admin') ? 'admin' : existing.role,
         last_login_at: now,
       })!;
       db.log('AUTH', 'INFO', `Added password credentials to user: ${user.email}`, { userId: user.id });
@@ -579,7 +584,17 @@ export class AuthService {
     }
 
     const now = new Date().toISOString();
-    const updatedUser = db.updateUser(user.id, { last_login_at: now })!;
+    const isOwner = cleanEmail === AuthService.OWNER_EMAIL;
+    const defaultAdminEmails = `${AuthService.OWNER_EMAIL},sahilking17341734@gmail.com,sahilguptasahilgupta652@gmail.com`;
+    const adminEmailsConfig = process.env.ADMIN_EMAILS || defaultAdminEmails;
+    const adminList = adminEmailsConfig.split(',').map((e) => e.trim().toLowerCase());
+    const isAdmin = isOwner || adminList.includes(cleanEmail);
+
+    const updatedUser = db.updateUser(user.id, {
+      last_login_at: now,
+      role: isAdmin ? 'admin' : user.role,
+    })!;
+
     const token = this.generateSessionToken(updatedUser);
     db.log('AUTH', 'INFO', `User logged in with email/password: ${user.email}`, { userId: user.id });
     return { user: updatedUser, token };
