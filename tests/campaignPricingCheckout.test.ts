@@ -1085,7 +1085,7 @@ async function runTests() {
     db.save();
   }
 
-  const ownerAuth = existingOwner
+  const ownerAuth = (existingOwner && existingOwner.password_hash)
     ? await AuthService.loginWithEmailPassword('sahil272025@gmail.com', 'SecureOwnerPassword2026!')
     : await AuthService.registerWithEmailPassword({
         name: 'Sahil Gupta',

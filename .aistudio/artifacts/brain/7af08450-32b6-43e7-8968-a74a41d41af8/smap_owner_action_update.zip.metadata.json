@@ -1,0 +1,5 @@
+{
+  "summary": "Verified binary ZIP archive (smap_owner_action_update.zip) containing the critical bug fix for the ₹50,000 owner promotional credit claim: removed blocking window.confirm, added real-time wallet_updated event broadcast, enabled Render persistent disk support (/var/data), and included all 11 updated files. CRC verified clean, 0 corrupted files.",
+  "updatedAt": "2026-10-18T11:30:00.000000000Z",
+  "userFacing": true
+}

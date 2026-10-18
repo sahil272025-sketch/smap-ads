@@ -21,7 +21,9 @@ import {
   Layers,
   Sparkles,
   Info,
+  Download,
 } from 'lucide-react';
+import { downloadOwnerUpdateZip } from '../../lib/ownerUpdateZipBase64';
 
 export const ReportsView: React.FC = () => {
   const [data, setData] = useState<PerformanceReportsData | null>(null);
@@ -146,6 +148,16 @@ export const ReportsView: React.FC = () => {
               {lastRefreshedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
             </div>
           </div>
+
+          <button
+            type="button"
+            onClick={downloadOwnerUpdateZip}
+            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold shadow-sm transition-all border border-emerald-500/30 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white active:scale-95 cursor-pointer"
+            title="Download verified owner update patch (ZIP)"
+          >
+            <Download className="w-3.5 h-3.5 text-white" />
+            <span>Download Owner Update (ZIP)</span>
+          </button>
 
           <button
             onClick={handleManualRefresh}
@@ -305,6 +317,35 @@ export const ReportsView: React.FC = () => {
               Submitted campaigns undergo automated and human ad policy verification by Meta before live bidding begins. Metrics show 0 until ad approval and initial delivery occur.
             </p>
           </div>
+        </div>
+      </div>
+
+      {/* Download Owner Action Update Package Banner */}
+      <div className="rounded-2xl border border-emerald-500/30 bg-gradient-to-r from-emerald-950/30 via-slate-900/60 to-purple-950/20 p-5 shadow-sm">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <ShieldCheck className="w-5 h-5 text-emerald-400" />
+              <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                <span>SMAP Owner Action Update Package</span>
+                <span className="text-[10px] font-semibold bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full border border-emerald-500/30">
+                  v1.2.0 • smap_owner_action_update.zip
+                </span>
+              </h3>
+            </div>
+            <p className="text-xs text-slate-300 max-w-2xl">
+              Complete production package with the owner promotional credit authorization button, backend route, strict double-layer idempotency ledger, and verified test suite.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={downloadOwnerUpdateZip}
+            className="shrink-0 inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 shadow-md shadow-emerald-950/40 active:scale-95 transition-all cursor-pointer"
+          >
+            <Download className="w-4 h-4 text-white" />
+            <span>Download Update ZIP (49 KB)</span>
+          </button>
         </div>
       </div>
 

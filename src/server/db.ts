@@ -255,7 +255,10 @@ interface DatabaseSchema {
   wallet_transactions: WalletTransaction[];
 }
 
-const DATA_DIR = path.resolve(process.cwd(), 'data');
+const DEFAULT_DATA_DIR = path.resolve(process.cwd(), 'data');
+const DATA_DIR = process.env.RENDER_DISK_PATH ||
+  process.env.DATA_DIR ||
+  (fs.existsSync('/var/data') ? '/var/data' : DEFAULT_DATA_DIR);
 const DB_FILE = path.join(DATA_DIR, 'smap_db.json');
 
 class DatabaseService {
@@ -283,6 +286,18 @@ class DatabaseService {
       fs.mkdirSync(uploadsDir, { recursive: true });
     }
 
+    // If using an external persistent disk and DB_FILE does not exist yet, copy initial seed
+    if (!fs.existsSync(DB_FILE) && DATA_DIR !== DEFAULT_DATA_DIR) {
+      const defaultDbFile = path.join(DEFAULT_DATA_DIR, 'smap_db.json');
+      if (fs.existsSync(defaultDbFile)) {
+        try {
+          fs.copyFileSync(defaultDbFile, DB_FILE);
+        } catch {
+          // ignore
+        }
+      }
+    }
+
     if (fs.existsSync(DB_FILE)) {
       try {
         const raw = fs.readFileSync(DB_FILE, 'utf-8');
@@ -308,6 +323,9 @@ class DatabaseService {
 
     // Ensure packages are present and match specifications
     this.ensureDefaultPackages();
+
+    // Ensure canonical owner account exists with admin role and initial ₹0 balance
+    this.ensureOwnerAccount();
   }
 
   public save() {
@@ -522,6 +540,39 @@ class DatabaseService {
     }
     if (updated) {
       this.save();
+    }
+  }
+
+  /**
+   * Ensures the verified owner account (sahil272025@gmail.com) exists with admin privileges.
+   * NOTE: Balance starts strictly at ₹0.00 and promotional_credit_granted is false.
+   * The one-time ₹50,000 credit requires explicit authenticated owner action.
+   */
+  private ensureOwnerAccount() {
+    const ownerEmail = 'sahil272025@gmail.com';
+    let owner = this.findUserByEmail(ownerEmail);
+    if (!owner) {
+      owner = {
+        id: 'usr_owner_sahil272025',
+        google_sub: '',
+        name: 'Sahil Gupta',
+        email: ownerEmail,
+        email_verified: true,
+        profile_picture: null,
+        role: 'admin',
+        status: 'ACTIVE',
+        wallet_balance: 0,
+        promotional_credit_granted: false,
+        created_at: new Date().toISOString(),
+        last_login_at: new Date().toISOString(),
+      };
+      this.db.users.push(owner);
+      this.save();
+    } else {
+      if (owner.role !== 'admin') {
+        owner.role = 'admin';
+        this.save();
+      }
     }
   }
 

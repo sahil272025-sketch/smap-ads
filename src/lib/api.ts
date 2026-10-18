@@ -9,6 +9,13 @@ class ApiClient {
 
   private readTokenFromCookie() {
     try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        const lsToken = localStorage.getItem('smap_token');
+        if (lsToken) {
+          this.inMemoryToken = lsToken;
+          return;
+        }
+      }
       if (typeof document !== 'undefined') {
         const match = document.cookie.match(/(?:^|;\s*)smap_token=([^;]+)/);
         if (match && match[1]) {
@@ -23,6 +30,13 @@ class ApiClient {
   public setToken(token: string | null) {
     this.inMemoryToken = token;
     try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        if (token) {
+          localStorage.setItem('smap_token', token);
+        } else {
+          localStorage.removeItem('smap_token');
+        }
+      }
       if (typeof document !== 'undefined') {
         if (token) {
           document.cookie = `smap_token=${encodeURIComponent(token)}; path=/; max-age=604800; SameSite=Lax; Secure`;
@@ -444,6 +458,20 @@ class ApiClient {
     }>(`/admin/wallets/${userId}/reset`, {
       method: 'POST',
       body: JSON.stringify({ reason }),
+    });
+  }
+
+  public claimOwnerPromotionalCredit() {
+    return this.request<{
+      success: boolean;
+      granted: boolean;
+      alreadyGranted: boolean;
+      amount: number;
+      wallet_balance: number;
+      message: string;
+      transaction?: WalletTransaction;
+    }>('/admin/owner/claim-promo-credit', {
+      method: 'POST',
     });
   }
 

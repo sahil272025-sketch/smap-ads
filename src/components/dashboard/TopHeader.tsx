@@ -44,8 +44,19 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
 
   useEffect(() => {
     loadBalance();
+    const handleWalletUpdated = (e: any) => {
+      if (typeof e?.detail?.balance === 'number') {
+        setWalletBalance(e.detail.balance);
+      } else {
+        loadBalance();
+      }
+    };
+    window.addEventListener('wallet_updated', handleWalletUpdated);
     const interval = setInterval(loadBalance, 10000);
-    return () => clearInterval(interval);
+    return () => {
+      window.removeEventListener('wallet_updated', handleWalletUpdated);
+      clearInterval(interval);
+    };
   }, []);
 
   useEffect(() => {

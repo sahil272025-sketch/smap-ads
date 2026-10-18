@@ -1,0 +1,5 @@
+{
+  "summary": "Unified Git diff patch fixing the claim button block by removing window.confirm, updating WalletView, TopHeader, AdminDashboard, and db.ts with Render disk persistence.",
+  "updatedAt": "2026-10-18T11:30:00.000000000Z",
+  "userFacing": true
+}

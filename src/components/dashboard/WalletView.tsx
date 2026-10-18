@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { WalletTransaction, Payment } from '../../types';
+import { WalletTransaction, Payment, User } from '../../types';
 import { api } from '../../lib/api';
+import { useAuth } from '../../context/AuthContext';
 import { AddFundsModal } from './AddFundsModal';
 import {
   Wallet,
@@ -17,6 +18,7 @@ import {
   ShieldCheck,
   TrendingUp,
   Receipt,
+  Sparkles,
 } from 'lucide-react';
 
 export const WalletView: React.FC = () => {
@@ -30,6 +32,9 @@ export const WalletView: React.FC = () => {
   const [topupPayments, setTopupPayments] = useState<Payment[]>([]);
   const [syncing, setSyncing] = useState(false);
   const [syncNotice, setSyncNotice] = useState<string | null>(null);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [claimingPromo, setClaimingPromo] = useState(false);
+  const [promoMessage, setPromoMessage] = useState<{ text: string; success: boolean } | null>(null);
 
   const handleSyncWallet = async () => {
     setSyncing(true);
@@ -51,12 +56,16 @@ export const WalletView: React.FC = () => {
   const loadWalletData = async () => {
     setLoading(true);
     try {
-      const [data, paymentsRes] = await Promise.all([
+      const [data, paymentsRes, meRes] = await Promise.all([
         api.getWallet(),
         api.getPayments().catch(() => ({ payments: [] as Payment[] })),
+        api.getMe().catch(() => null),
       ]);
       setBalance(data.balance || 0);
       setTransactions(data.transactions || []);
+      if (meRes?.user) {
+        setCurrentUser(meRes.user);
+      }
       const userTopups = (paymentsRes.payments || []).filter(
         (p) => p.campaign_id === 'WALLET_TOPUP' || p.package_id === 'wallet_topup'
       );
@@ -65,6 +74,50 @@ export const WalletView: React.FC = () => {
       console.error('Failed to load wallet data', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const { user: authUser } = useAuth();
+  const effectiveUser = currentUser || authUser;
+  const isOwner = effectiveUser?.email?.trim().toLowerCase() === 'sahil272025@gmail.com';
+  const hasPromoCredit = effectiveUser?.promotional_credit_granted || transactions.some((tx) => tx.type === 'PROMOTIONAL_CREDIT');
+
+  const handleClaimPromoCredit = async () => {
+    setClaimingPromo(true);
+    setPromoMessage(null);
+    try {
+      const res = await api.claimOwnerPromotionalCredit();
+      // Immediately update local balance and ledger
+      setBalance(res.wallet_balance);
+      if (res.transaction) {
+        setTransactions((prev) => {
+          const exists = prev.some((t) => t.id === res.transaction!.id);
+          return exists ? prev : [res.transaction!, ...prev];
+        });
+      }
+      if (currentUser) {
+        setCurrentUser({
+          ...currentUser,
+          promotional_credit_granted: true,
+          wallet_balance: res.wallet_balance,
+        });
+      }
+      setPromoMessage({
+        text: res.message || 'Owner promotional credit of ₹50,000 successfully allocated to your wallet.',
+        success: true,
+      });
+      // Broadcast real-time balance update to TopHeader and other components
+      window.dispatchEvent(new CustomEvent('wallet_updated', { detail: { balance: res.wallet_balance } }));
+      // Background re-fetch to ensure all server data matches
+      await loadWalletData();
+    } catch (err: any) {
+      console.error('Failed to claim promotional credit', err);
+      setPromoMessage({
+        text: err.message || 'Failed to claim promotional credit. Please verify your connection or re-login.',
+        success: false,
+      });
+    } finally {
+      setClaimingPromo(false);
     }
   };
 
@@ -150,6 +203,20 @@ export const WalletView: React.FC = () => {
             Refund
           </span>
         );
+      case 'PROMOTIONAL_CREDIT':
+        return (
+          <span className="inline-flex items-center gap-1 rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-0.5 text-[10px] font-bold text-amber-500">
+            <Sparkles className="h-3 w-3" />
+            Owner Promo Credit
+          </span>
+        );
+      case 'AUDIT_CORRECTION':
+        return (
+          <span className="inline-flex items-center gap-1 rounded-full border border-teal-500/30 bg-teal-500/10 px-2.5 py-0.5 text-[10px] font-bold text-teal-400">
+            <ShieldCheck className="h-3 w-3" />
+            Audit Correction
+          </span>
+        );
       default:
         return (
           <span className="rounded-full border border-slate-500/30 bg-slate-500/10 px-2.5 py-0.5 text-[10px] font-bold text-slate-400">
@@ -212,6 +279,53 @@ export const WalletView: React.FC = () => {
         <div className="flex items-center gap-2.5 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-xs sm:text-sm font-medium text-emerald-400">
           <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500" />
           <span>{syncNotice}</span>
+        </div>
+      )}
+
+      {/* Owner Promotional Advertising Credit Card (Strictly for sahil272025@gmail.com) */}
+      {isOwner && (
+        <div className="relative overflow-hidden rounded-2xl border border-amber-500/40 bg-gradient-to-r from-amber-950/30 via-purple-950/20 to-slate-900/50 p-5 shadow-lg shadow-amber-950/20">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="h-5 w-5 text-amber-400" />
+                <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                  <span>Owner Administrative Advertising Allocation</span>
+                  <span className="text-[10px] font-semibold bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full border border-amber-500/40">
+                    sahil272025@gmail.com
+                  </span>
+                </h3>
+              </div>
+              <p className="text-xs text-slate-300 max-w-xl">
+                Authorized one-time ₹50,000 promotional advertising credit for campaign launch and Meta delivery verification. Strictly non-withdrawable with double-layer ledger idempotency.
+              </p>
+              {promoMessage && (
+                <div className={`text-xs font-semibold mt-1.5 flex items-center gap-1.5 ${promoMessage.success ? 'text-emerald-400' : 'text-rose-400'}`}>
+                  {promoMessage.success ? <CheckCircle2 className="h-3.5 w-3.5" /> : <AlertTriangle className="h-3.5 w-3.5" />}
+                  <span>{promoMessage.text}</span>
+                </div>
+              )}
+            </div>
+
+            <div className="shrink-0">
+              {hasPromoCredit ? (
+                <div className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-xs">
+                  <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+                  <span>₹50,000 Promotional Credit Active</span>
+                </div>
+              ) : (
+                <button
+                  onClick={handleClaimPromoCredit}
+                  disabled={claimingPromo}
+                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 shadow-md shadow-amber-950/40 active:scale-95 transition-all cursor-pointer disabled:opacity-50"
+                  title="Authorize and allocate ₹50,000 promotional credit to sahil272025@gmail.com"
+                >
+                  <Sparkles className={`h-4 w-4 ${claimingPromo ? 'animate-spin' : ''}`} />
+                  <span>{claimingPromo ? 'Authorizing Credit...' : 'Authorize & Claim ₹50,000 Credit'}</span>
+                </button>
+              )}
+            </div>
+          </div>
         </div>
       )}
 

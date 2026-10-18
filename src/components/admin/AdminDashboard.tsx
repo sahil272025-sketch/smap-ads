@@ -23,6 +23,7 @@ import {
   ArrowDownRight,
   ArrowUpRight,
   RotateCcw,
+  Sparkles,
 } from 'lucide-react';
 
 export const AdminDashboard: React.FC = () => {
@@ -41,6 +42,23 @@ export const AdminDashboard: React.FC = () => {
   const [metaReport, setMetaReport] = useState<MetaVerificationReport | null>(null);
   const [isVerifyingMeta, setIsVerifyingMeta] = useState<boolean>(false);
   const [walletData, setWalletData] = useState<AdminWalletData | null>(null);
+  const [claimingPromo, setClaimingPromo] = useState(false);
+  const [promoFeedback, setPromoFeedback] = useState<{ text: string; success: boolean } | null>(null);
+
+  const handleClaimOwnerPromo = async () => {
+    setClaimingPromo(true);
+    setPromoFeedback(null);
+    try {
+      const res = await api.claimOwnerPromotionalCredit();
+      setPromoFeedback({ text: res.message, success: res.granted || res.alreadyGranted });
+      window.dispatchEvent(new CustomEvent('wallet_updated', { detail: { balance: res.wallet_balance } }));
+      await loadAllAdminData();
+    } catch (err: any) {
+      setPromoFeedback({ text: err.message || 'Failed to claim promotional credit', success: false });
+    } finally {
+      setClaimingPromo(false);
+    }
+  };
 
   const handleVerifyMeta = async () => {
     setIsVerifyingMeta(true);
@@ -312,6 +330,58 @@ export const AdminDashboard: React.FC = () => {
           {/* SECTION 1B: CUSTOMER WALLETS (Requirement 17) */}
           {activeSection === 'wallets' && (
             <div className="space-y-6">
+              {/* Owner Promotional Credit Allocation Management */}
+              <div className="rounded-2xl border border-amber-500/40 bg-gradient-to-r from-amber-950/40 via-purple-950/20 to-slate-900/60 p-5 shadow-lg">
+                <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <ShieldCheck className="h-5 w-5 text-amber-400" />
+                      <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                        <span>Owner Promotional Advertising Credit</span>
+                        <span className="text-[10px] font-semibold bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full border border-amber-500/40">
+                          sahil272025@gmail.com
+                        </span>
+                      </h3>
+                    </div>
+                    <p className="text-xs text-slate-300 max-w-2xl">
+                      One-time ₹50,000 promotional advertising credit authorized for live ad testing and verified owner campaigns. Creates an immutable audit ledger entry of type <code className="text-amber-300">PROMOTIONAL_CREDIT</code>.
+                    </p>
+                    {promoFeedback && (
+                      <div className={`text-xs font-semibold mt-1.5 flex items-center gap-1.5 ${promoFeedback.success ? 'text-emerald-400' : 'text-rose-400'}`}>
+                        {promoFeedback.success ? <CheckCircle2 className="h-3.5 w-3.5" /> : <AlertTriangle className="h-3.5 w-3.5" />}
+                        <span>{promoFeedback.text}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="shrink-0 flex items-center gap-3">
+                    <div className="text-right">
+                      <span className="text-[10px] uppercase font-bold text-slate-400 block">Owner Balance</span>
+                      <span className="text-sm font-black text-white tabular-nums">
+                        ₹{(customers.find((c) => c.email.toLowerCase() === 'sahil272025@gmail.com')?.wallet_balance || 0).toFixed(2)}
+                      </span>
+                    </div>
+
+                    {customers.find((c) => c.email.toLowerCase() === 'sahil272025@gmail.com')?.promotional_credit_granted ||
+                    (customers.find((c) => c.email.toLowerCase() === 'sahil272025@gmail.com')?.wallet_balance || 0) >= 50000 ? (
+                      <div className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                        <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+                        <span>₹50,000 Active</span>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={handleClaimOwnerPromo}
+                        disabled={claimingPromo}
+                        className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 shadow-md shadow-amber-950/40 active:scale-95 transition-all cursor-pointer disabled:opacity-50"
+                      >
+                        <Sparkles className={`h-4 w-4 ${claimingPromo ? 'animate-spin' : ''}`} />
+                        <span>{claimingPromo ? 'Authorizing...' : 'Authorize ₹50,000 Credit'}</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
               {/* Wallet Summary Metrics */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 <div className="rounded-2xl border border-purple-500/30 bg-[#0C1220] p-5 space-y-1">
