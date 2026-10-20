@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { api } from '../../lib/api';
 import {
   X,
@@ -51,6 +52,7 @@ export const AddFundsModal: React.FC<AddFundsModalProps> = ({
   onSuccess,
 }) => {
   const { user } = useAuth();
+  const { t, formatCurrency } = useLanguage();
   const [selectedAmount, setSelectedAmount] = useState<number>(recommendedAmount || 100);
   const [customAmount, setCustomAmount] = useState<string>(recommendedAmount ? String(recommendedAmount) : '100');
   const [error, setError] = useState<string | null>(null);
@@ -239,10 +241,10 @@ export const AddFundsModal: React.FC<AddFundsModalProps> = ({
             </div>
             <div>
               <h2 className="text-lg sm:text-xl font-extrabold text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
-                <span>Add Funds to Wallet</span>
+                <span>{t.addFunds.title}</span>
               </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Official Razorpay UPI Intent • Instant Wallet Credit
+                {t.addFunds.subtitle}
               </p>
             </div>
           </div>
@@ -259,18 +261,18 @@ export const AddFundsModal: React.FC<AddFundsModalProps> = ({
         <div className="grid grid-cols-2 gap-3 p-4 rounded-2xl border border-cyan-500/20 bg-cyan-50/50 dark:bg-cyan-950/20">
           <div>
             <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 block">
-              Current Balance
+              {t.wallet.availableBalance}
             </span>
             <span className="text-lg sm:text-xl font-extrabold text-slate-900 dark:text-white tabular-nums">
-              ₹{currentBalance.toFixed(2)}
+              {formatCurrency(currentBalance)}
             </span>
           </div>
           <div className="border-l border-cyan-500/20 pl-3">
             <span className="text-[11px] font-medium text-cyan-600 dark:text-cyan-300 block">
-              Projected (After Payment)
+              {t.wallet.balanceAfter}
             </span>
             <span className="text-lg sm:text-xl font-extrabold text-cyan-600 dark:text-cyan-400 tabular-nums">
-              ₹{projectedBalance.toFixed(2)}
+              {formatCurrency(projectedBalance)}
             </span>
           </div>
         </div>
@@ -278,7 +280,7 @@ export const AddFundsModal: React.FC<AddFundsModalProps> = ({
         {/* Quick Amount Selector */}
         <div className="space-y-2">
           <label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-            Select Preset Amount
+            {t.addFunds.selectAmount}
           </label>
           <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
             {PRESET_AMOUNTS.map((amt) => {
@@ -304,7 +306,7 @@ export const AddFundsModal: React.FC<AddFundsModalProps> = ({
         {/* Custom Amount Input */}
         <div className="space-y-2">
           <label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-            Or Enter Custom Amount (₹)
+            {t.addFunds.customAmount}
           </label>
           <div className="relative">
             <span className="absolute left-4 top-3 text-lg font-bold text-slate-400">
@@ -320,7 +322,7 @@ export const AddFundsModal: React.FC<AddFundsModalProps> = ({
             />
           </div>
           <p className="text-[11px] text-slate-400 dark:text-slate-500">
-            Minimum top-up: ₹1 (Testing Supported) • Automated Razorpay verification
+            {t.addFunds.minDepositNote}
           </p>
         </div>
 
@@ -358,12 +360,12 @@ export const AddFundsModal: React.FC<AddFundsModalProps> = ({
             {processingMode === 'standard' ? (
               <>
                 <Loader2 className="h-5 w-5 animate-spin text-cyan-200" />
-                <span>Launching UPI Checkout (PhonePe / GPay / Paytm)...</span>
+                <span>{t.addFunds.verifying}</span>
               </>
             ) : (
               <>
                 <Smartphone className="h-5 w-5 text-cyan-300" />
-                <span>Launch UPI App (PhonePe / GPay / Paytm)</span>
+                <span>{t.addFunds.payWithAnyUpi}</span>
                 <ArrowRight className="h-4 w-4" />
               </>
             )}
@@ -389,12 +391,12 @@ export const AddFundsModal: React.FC<AddFundsModalProps> = ({
             {processingMode === 'native_intent' ? (
               <>
                 <Loader2 className="h-5 w-5 animate-spin text-cyan-400" />
-                <span>Opening Installed UPI App...</span>
+                <span>{t.addFunds.verifying}</span>
               </>
             ) : (
               <>
                 <AppWindow className="h-5 w-5 text-cyan-500 dark:text-cyan-400" />
-                <span>Use Your UPI App</span>
+                <span>{t.addFunds.upiOptionTitle}</span>
                 <ArrowRight className="h-4 w-4" />
               </>
             )}

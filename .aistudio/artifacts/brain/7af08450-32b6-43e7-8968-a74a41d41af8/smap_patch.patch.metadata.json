@@ -1,0 +1,5 @@
+{
+  "summary": "Unified Git diff patch removing the ZIP download card/header from ReportsView and adding high-res image & 70s video upload validation to CreateAdFlow and routes.ts.",
+  "updatedAt": "2026-10-19T09:00:00.000000000Z",
+  "userFacing": true
+}

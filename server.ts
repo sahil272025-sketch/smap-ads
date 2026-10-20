@@ -65,7 +65,11 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
 
 // Static uploads directory
-const uploadsDir = path.resolve(process.cwd(), 'data/uploads');
+const DEFAULT_DATA_DIR = path.resolve(process.cwd(), 'data');
+const DATA_DIR = process.env.RENDER_DISK_PATH ||
+  process.env.DATA_DIR ||
+  (fs.existsSync('/var/data') ? '/var/data' : DEFAULT_DATA_DIR);
+const uploadsDir = path.join(DATA_DIR, 'uploads');
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }

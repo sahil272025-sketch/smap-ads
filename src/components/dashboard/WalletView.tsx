@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { WalletTransaction, Payment, User } from '../../types';
 import { api } from '../../lib/api';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { AddFundsModal } from './AddFundsModal';
 import {
   Wallet,
@@ -22,6 +23,7 @@ import {
 } from 'lucide-react';
 
 export const WalletView: React.FC = () => {
+  const { t, formatCurrency } = useLanguage();
   const [balance, setBalance] = useState<number>(0);
   const [transactions, setTransactions] = useState<WalletTransaction[]>([]);
   const [loading, setLoading] = useState(true);
@@ -33,6 +35,7 @@ export const WalletView: React.FC = () => {
   const [syncing, setSyncing] = useState(false);
   const [syncNotice, setSyncNotice] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [walletPromoClaimed, setWalletPromoClaimed] = useState<boolean | null>(null);
   const [claimingPromo, setClaimingPromo] = useState(false);
   const [promoMessage, setPromoMessage] = useState<{ text: string; success: boolean } | null>(null);
 
@@ -63,8 +66,14 @@ export const WalletView: React.FC = () => {
       ]);
       setBalance(data.balance || 0);
       setTransactions(data.transactions || []);
+      if (typeof data.promotional_credit_granted === 'boolean') {
+        setWalletPromoClaimed(data.promotional_credit_granted);
+      }
       if (meRes?.user) {
         setCurrentUser(meRes.user);
+        if (typeof meRes.user.promotional_credit_granted === 'boolean') {
+          setWalletPromoClaimed(meRes.user.promotional_credit_granted);
+        }
       }
       const userTopups = (paymentsRes.payments || []).filter(
         (p) => p.campaign_id === 'WALLET_TOPUP' || p.package_id === 'wallet_topup'
@@ -80,7 +89,11 @@ export const WalletView: React.FC = () => {
   const { user: authUser } = useAuth();
   const effectiveUser = currentUser || authUser;
   const isOwner = effectiveUser?.email?.trim().toLowerCase() === 'sahil272025@gmail.com';
-  const hasPromoCredit = effectiveUser?.promotional_credit_granted || transactions.some((tx) => tx.type === 'PROMOTIONAL_CREDIT');
+  const hasPromoCredit = Boolean(
+    walletPromoClaimed ||
+    effectiveUser?.promotional_credit_granted ||
+    transactions.some((tx) => tx.type === 'PROMOTIONAL_CREDIT')
+  );
 
   const handleClaimPromoCredit = async () => {
     setClaimingPromo(true);
@@ -89,6 +102,7 @@ export const WalletView: React.FC = () => {
       const res = await api.claimOwnerPromotionalCredit();
       // Immediately update local balance and ledger
       setBalance(res.wallet_balance);
+      setWalletPromoClaimed(true);
       if (res.transaction) {
         setTransactions((prev) => {
           const exists = prev.some((t) => t.id === res.transaction!.id);
@@ -177,7 +191,7 @@ export const WalletView: React.FC = () => {
       return (
         <span className="inline-flex items-center gap-1 rounded-full border border-red-500/30 bg-red-500/10 px-2.5 py-0.5 text-[10px] font-bold text-red-500">
           <AlertTriangle className="h-3 w-3" />
-          Failed Payment
+          {t.wallet.statusFailed}
         </span>
       );
     }
@@ -186,28 +200,28 @@ export const WalletView: React.FC = () => {
         return (
           <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5 text-[10px] font-bold text-emerald-500">
             <ArrowDownRight className="h-3 w-3" />
-            Add Funds
+            {t.wallet.filterDeposits}
           </span>
         );
       case 'CAMPAIGN_PAYMENT':
         return (
           <span className="inline-flex items-center gap-1 rounded-full border border-purple-500/30 bg-purple-500/10 px-2.5 py-0.5 text-[10px] font-bold text-purple-400">
             <ArrowUpRight className="h-3 w-3" />
-            Campaign Payment
+            {t.wallet.filterDebits}
           </span>
         );
       case 'REFUND':
         return (
           <span className="inline-flex items-center gap-1 rounded-full border border-blue-500/30 bg-blue-500/10 px-2.5 py-0.5 text-[10px] font-bold text-blue-400">
             <RotateCcw className="h-3 w-3" />
-            Refund
+            {t.wallet.filterRefunds}
           </span>
         );
       case 'PROMOTIONAL_CREDIT':
         return (
           <span className="inline-flex items-center gap-1 rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-0.5 text-[10px] font-bold text-amber-500">
             <Sparkles className="h-3 w-3" />
-            Owner Promo Credit
+            {t.wallet.filterPromo}
           </span>
         );
       case 'AUDIT_CORRECTION':
@@ -233,14 +247,14 @@ export const WalletView: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800/80 pb-6">
         <div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight flex items-center gap-2.5">
-            <span>SMAP Wallet</span>
+            <span>{t.wallet.title}</span>
             <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20">
               <ShieldCheck className="h-3 w-3" />
-              Verified Balance
+              {t.common.verified}
             </span>
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Pre-fund your advertising budget via UPI and launch campaigns instantly.
+            {t.wallet.subtitle}
           </p>
         </div>
 
@@ -252,7 +266,7 @@ export const WalletView: React.FC = () => {
             className="inline-flex items-center gap-2 rounded-xl border border-purple-500/30 bg-purple-500/10 dark:bg-purple-950/30 px-3.5 py-2.5 text-xs font-semibold text-purple-700 dark:text-purple-300 hover:bg-purple-500/20 shadow-sm transition-colors"
           >
             <ShieldCheck className={`h-3.5 w-3.5 text-purple-500 ${syncing ? 'animate-spin' : ''}`} />
-            <span>{syncing ? 'Verifying...' : 'Sync Payments'}</span>
+            <span>{syncing ? t.wallet.syncing : t.wallet.syncRecords}</span>
           </button>
 
           <button
@@ -261,7 +275,7 @@ export const WalletView: React.FC = () => {
             className="inline-flex items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0D121F] px-4 py-2.5 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 shadow-sm transition-colors"
           >
             <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
-            <span>Refresh</span>
+            <span>{t.common.refresh}</span>
           </button>
 
           <button
@@ -269,7 +283,7 @@ export const WalletView: React.FC = () => {
             className="inline-flex items-center gap-2 rounded-xl bg-purple-600 px-5 py-2.5 text-xs sm:text-sm font-bold text-white shadow-lg shadow-purple-600/30 hover:bg-purple-500 active:scale-95 transition-all"
           >
             <Plus className="h-4 w-4" />
-            <span>Add Funds</span>
+            <span>{t.wallet.addFunds}</span>
           </button>
         </div>
       </div>
@@ -290,14 +304,14 @@ export const WalletView: React.FC = () => {
               <div className="flex items-center gap-2">
                 <ShieldCheck className="h-5 w-5 text-amber-400" />
                 <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                  <span>Owner Administrative Advertising Allocation</span>
+                  <span>{t.wallet.ownerPromoTitle}</span>
                   <span className="text-[10px] font-semibold bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full border border-amber-500/40">
                     sahil272025@gmail.com
                   </span>
                 </h3>
               </div>
               <p className="text-xs text-slate-300 max-w-xl">
-                Authorized one-time ₹50,000 promotional advertising credit for campaign launch and Meta delivery verification. Strictly non-withdrawable with double-layer ledger idempotency.
+                {t.wallet.promoGrantedDesc}
               </p>
               {promoMessage && (
                 <div className={`text-xs font-semibold mt-1.5 flex items-center gap-1.5 ${promoMessage.success ? 'text-emerald-400' : 'text-rose-400'}`}>
@@ -311,17 +325,17 @@ export const WalletView: React.FC = () => {
               {hasPromoCredit ? (
                 <div className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-xs">
                   <CheckCircle2 className="h-4 w-4 text-emerald-400" />
-                  <span>₹50,000 Promotional Credit Active</span>
+                  <span>{t.wallet.promoActive}</span>
                 </div>
               ) : (
                 <button
                   onClick={handleClaimPromoCredit}
                   disabled={claimingPromo}
                   className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 shadow-md shadow-amber-950/40 active:scale-95 transition-all cursor-pointer disabled:opacity-50"
-                  title="Authorize and allocate ₹50,000 promotional credit to sahil272025@gmail.com"
+                  title="Claim ₹50,000 promotional credit for sahil272025@gmail.com"
                 >
                   <Sparkles className={`h-4 w-4 ${claimingPromo ? 'animate-spin' : ''}`} />
-                  <span>{claimingPromo ? 'Authorizing Credit...' : 'Authorize & Claim ₹50,000 Credit'}</span>
+                  <span>{claimingPromo ? t.wallet.claiming : t.wallet.claimOwnerCredit}</span>
                 </button>
               )}
             </div>
@@ -338,12 +352,12 @@ export const WalletView: React.FC = () => {
           <div className="space-y-3">
             <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-purple-300">
               <Wallet className="h-4 w-4 text-purple-400" />
-              <span>Available Fund Balance</span>
+              <span>{t.wallet.availableBalance}</span>
             </div>
 
             <div className="flex items-baseline gap-2">
               <span className="text-3xl sm:text-5xl font-black tracking-tight text-white tabular-nums">
-                ₹{balance.toFixed(2)}
+                {formatCurrency(balance)}
               </span>
               <span className="text-xs font-bold text-purple-300 uppercase tracking-widest">
                 INR
@@ -351,12 +365,12 @@ export const WalletView: React.FC = () => {
             </div>
 
             <p className="text-xs text-slate-400 max-w-md">
-              Your available balance is stored safely in your SMAP account. You can use it anytime to pay for advertising campaigns without entering card details again.
+              {t.wallet.subtitle}
             </p>
 
             {/* Quick Add Funds presets */}
             <div className="flex items-center gap-2 pt-1 flex-wrap">
-              <span className="text-xs text-slate-400">Quick top-up:</span>
+              <span className="text-xs text-slate-400">{t.wallet.addFunds}:</span>
               {[100, 200, 500, 1000].map((amt) => (
                 <button
                   key={amt}
@@ -375,16 +389,16 @@ export const WalletView: React.FC = () => {
               className="inline-flex items-center justify-center gap-2 rounded-2xl bg-purple-600 px-6 py-3.5 text-sm font-extrabold text-white shadow-xl shadow-purple-600/40 hover:bg-purple-500 active:scale-95 transition-all"
             >
               <Plus className="h-4 w-4" />
-              <span>Add Funds Now</span>
+              <span>{t.wallet.addFunds}</span>
             </button>
             <div className="flex items-center gap-4 text-xs text-slate-400 pt-1">
               <div>
-                <span className="block text-[10px] uppercase text-slate-500">Total Added</span>
-                <span className="font-bold text-emerald-400 tabular-nums">₹{totalAdded.toFixed(2)}</span>
+                <span className="block text-[10px] uppercase text-slate-500">{t.wallet.filterDeposits}</span>
+                <span className="font-bold text-emerald-400 tabular-nums">{formatCurrency(totalAdded)}</span>
               </div>
               <div className="border-l border-white/10 pl-4">
-                <span className="block text-[10px] uppercase text-slate-500">Total Used</span>
-                <span className="font-bold text-purple-300 tabular-nums">₹{totalSpent.toFixed(2)}</span>
+                <span className="block text-[10px] uppercase text-slate-500">{t.wallet.filterDebits}</span>
+                <span className="font-bold text-purple-300 tabular-nums">{formatCurrency(totalSpent)}</span>
               </div>
             </div>
           </div>
@@ -443,10 +457,10 @@ export const WalletView: React.FC = () => {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">
-              Wallet Transaction History
+              {t.wallet.transactionLedger}
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              Detailed chronological record of fund additions, campaign payments, and refunds.
+              {t.wallet.transactionLedgerDesc}
             </p>
           </div>
 
@@ -455,10 +469,10 @@ export const WalletView: React.FC = () => {
             {/* Filter pills */}
             <div className="flex items-center p-1 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs font-semibold">
               {[
-                { id: 'ALL', label: 'All' },
-                { id: 'ADD_FUNDS', label: 'Add Funds' },
-                { id: 'CAMPAIGN_PAYMENT', label: 'Campaigns' },
-                { id: 'FAILED_PAYMENT', label: 'Failed' },
+                { id: 'ALL', label: t.common.all },
+                { id: 'ADD_FUNDS', label: t.wallet.filterDeposits },
+                { id: 'CAMPAIGN_PAYMENT', label: t.wallet.filterDebits },
+                { id: 'FAILED_PAYMENT', label: t.wallet.statusFailed },
               ].map((pill) => (
                 <button
                   key={pill.id}
@@ -481,7 +495,7 @@ export const WalletView: React.FC = () => {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search transactions..."
+                placeholder={t.wallet.searchPlaceholder}
                 className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0D121F] py-1.5 pl-8 pr-3 text-xs text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:border-purple-500 focus:outline-none"
               />
             </div>
@@ -496,12 +510,10 @@ export const WalletView: React.FC = () => {
                 <Receipt className="h-6 w-6" />
               </div>
               <p className="text-sm font-bold text-slate-700 dark:text-slate-300">
-                No wallet transactions found
+                {t.wallet.noTransactions}
               </p>
               <p className="text-xs text-slate-400 max-w-sm mx-auto">
-                {filterType !== 'ALL' || searchQuery
-                  ? 'No records match your selected filter or search query.'
-                  : 'You have not added any funds to your wallet yet. Click "Add Funds" above to get started.'}
+                {t.wallet.noTransactionsDesc}
               </p>
             </div>
           ) : (
@@ -509,11 +521,11 @@ export const WalletView: React.FC = () => {
               <table className="w-full text-left text-xs">
                 <thead className="border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60 font-semibold text-slate-500 dark:text-slate-400">
                   <tr>
-                    <th className="py-3.5 pl-6 pr-4">Type & Details</th>
-                    <th className="py-3.5 px-4">Transaction / Payment ID</th>
-                    <th className="py-3.5 px-4">Date & Time</th>
-                    <th className="py-3.5 px-4 text-right">Amount</th>
-                    <th className="py-3.5 pl-4 pr-6 text-right">Balance After</th>
+                    <th className="py-3.5 pl-6 pr-4">{t.wallet.type}</th>
+                    <th className="py-3.5 px-4">{t.wallet.reference}</th>
+                    <th className="py-3.5 px-4">{t.wallet.date}</th>
+                    <th className="py-3.5 px-4 text-right">{t.wallet.amount}</th>
+                    <th className="py-3.5 pl-4 pr-6 text-right">{t.wallet.balanceAfter}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 text-slate-600 dark:text-slate-300">

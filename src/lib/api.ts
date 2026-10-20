@@ -141,11 +141,15 @@ class ApiClient {
     return this.request<{ user: User; metaConnection: MetaConnectionState }>('/auth/me');
   }
 
-  public updateProfile(payload: { name?: string; phone?: string }) {
+  public updateProfile(payload: { name?: string; phone?: string; language?: 'en' | 'hi' }) {
     return this.request<{ user: User }>('/auth/profile', {
       method: 'PUT',
       body: JSON.stringify(payload),
     });
+  }
+
+  public updateLanguage(language: 'en' | 'hi') {
+    return this.updateProfile({ language });
   }
 
   public logout() {

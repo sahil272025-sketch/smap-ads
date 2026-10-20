@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
+import { LanguageProvider } from './context/LanguageContext';
 import { api } from './lib/api';
 import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
@@ -474,7 +475,9 @@ export function App() {
     <ErrorBoundary>
       <ThemeProvider>
         <AuthProvider>
-          <MainAppContent />
+          <LanguageProvider>
+            <MainAppContent />
+          </LanguageProvider>
         </AuthProvider>
       </ThemeProvider>
     </ErrorBoundary>

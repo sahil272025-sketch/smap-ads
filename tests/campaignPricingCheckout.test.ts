@@ -1109,6 +1109,11 @@ async function runTests() {
   // TEST 34: One-Time ₹50,000 Owner Promotional Credit & Strict Idempotency
   console.log('\n--- TEST 34: One-Time ₹50,000 Owner Promotional Credit & Strict Idempotency ---');
   const ownerUser = db.findUserByEmail('sahil272025@gmail.com')!;
+  ownerUser.wallet_balance = 0;
+  ownerUser.promotional_credit_granted = false;
+  (db as any).db.owner_promotional_credit = null;
+  (db as any).db.wallet_transactions = (db as any).db.wallet_transactions.filter((tx: any) => tx.type !== 'PROMOTIONAL_CREDIT');
+  db.save();
   const ownerInitialBalance = db.getWalletBalance(ownerUser.id);
   assert(ownerInitialBalance === 0, 'Owner wallet balance starts at ₹0.00 prior to explicit promotional credit approval');
 

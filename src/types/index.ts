@@ -8,6 +8,7 @@ export interface User {
   phone?: string;
   wallet_balance?: number;
   promotional_credit_granted?: boolean;
+  language?: 'en' | 'hi';
   role: 'customer' | 'admin';
   status: 'ACTIVE' | 'SUSPENDED';
   created_at: string;
@@ -392,6 +393,7 @@ export interface WalletData {
   balance: number;
   currency: 'INR';
   transactions: WalletTransaction[];
+  promotional_credit_granted?: boolean;
 }
 
 export interface AdminWalletCustomer {

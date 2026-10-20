@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { api } from '../../lib/api';
 import { ThemeToggle } from '../ThemeToggle';
 import {
@@ -27,6 +28,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
   onSearch,
 }) => {
   const { user, logout } = useAuth();
+  const { language, setLanguage, t, formatCurrency } = useLanguage();
   const [profileOpen, setProfileOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -107,29 +109,40 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
               type="text"
               value={searchQuery}
               onChange={handleSearchChange}
-              placeholder="Search campaigns, ads, reports..."
+              placeholder={t.header.searchPlaceholder}
               className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#0D121F] py-2 pl-10 pr-4 text-xs text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-purple-500 focus:outline-none transition-colors"
             />
           </div>
         </div>
 
-        {/* Right: Wallet Balance, Notification, Theme, Profile */}
+        {/* Right: Wallet Balance, Language Selector, Notification, Theme, Profile */}
         <div className="flex items-center gap-2 sm:gap-3">
           {/* Quick Wallet Balance Pill */}
           {walletBalance !== null && (
             <button
               onClick={() => onNavigate('wallet')}
               className="flex items-center gap-2 px-2.5 sm:px-3 py-1.5 rounded-xl border border-purple-500/25 bg-purple-50 dark:bg-purple-950/40 hover:border-purple-500/60 text-slate-800 dark:text-slate-200 transition-all text-xs font-bold shadow-sm active:scale-95"
-              title="Click to view Wallet & Add Funds"
+              title={t.header.wallet}
             >
               <div className="flex h-5 w-5 items-center justify-center rounded-lg bg-purple-600 text-white">
                 <Wallet className="h-3 w-3" />
               </div>
               <span className="tabular-nums font-black text-purple-600 dark:text-purple-400">
-                ₹{walletBalance.toFixed(2)}
+                {formatCurrency(walletBalance)}
               </span>
             </button>
           )}
+
+          {/* Quick Language Toggle */}
+          <button
+            type="button"
+            onClick={() => setLanguage(language === 'en' ? 'hi' : 'en')}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#0D121F] hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-300 transition-all shadow-sm active:scale-95"
+            title={language === 'en' ? 'Switch to हिन्दी (Hindi)' : 'Switch to English'}
+            aria-label="Language selector"
+          >
+            <span>{language === 'en' ? '🇬🇧 EN' : '🇮🇳 हिं'}</span>
+          </button>
 
           {/* Notification Bell */}
           <div className="relative" ref={notifRef}>
@@ -148,7 +161,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
             {notificationsOpen && (
               <div className="absolute right-0 mt-2 w-72 sm:w-80 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0D121F] p-4 shadow-2xl z-50 animate-in fade-in zoom-in-95 duration-100 text-xs">
                 <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
-                  <span className="font-bold text-slate-900 dark:text-white">Notifications</span>
+                  <span className="font-bold text-slate-900 dark:text-white">{t.header.notifications}</span>
                   <span className="text-[10px] text-purple-600 dark:text-purple-400 font-semibold">1 New</span>
                 </div>
                 <div className="mt-3 space-y-2.5">
@@ -184,7 +197,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
                   {displayName}
                 </div>
                 <div className="text-[10px] text-slate-500 dark:text-slate-400 -mt-0.5">
-                  {user?.role === 'admin' ? 'Admin' : 'Free Plan'}
+                  {user?.role === 'admin' ? t.nav.admin : 'Free Plan'}
                 </div>
               </div>
               <ChevronDown className="h-3 w-3 text-slate-400" />
@@ -205,7 +218,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
                   className="flex w-full items-center gap-2.5 px-3 py-2 rounded-xl text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
                 >
                   <UserIcon className="h-4 w-4 text-purple-500" />
-                  <span>Account Profile</span>
+                  <span>{t.header.myAccount}</span>
                 </button>
 
                 <button
@@ -216,7 +229,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
                   className="flex w-full items-center gap-2.5 px-3 py-2 rounded-xl text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
                 >
                   <Settings className="h-4 w-4 text-purple-500" />
-                  <span>Settings & Theme</span>
+                  <span>{t.header.settings}</span>
                 </button>
 
                 {user?.role === 'admin' && (
@@ -228,7 +241,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
                     className="flex w-full items-center gap-2.5 px-3 py-2 rounded-xl text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/30 transition-colors"
                   >
                     <ShieldCheck className="h-4 w-4 text-amber-500" />
-                    <span>Admin Panel</span>
+                    <span>{t.nav.admin}</span>
                   </button>
                 )}
 
@@ -242,7 +255,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
                   className="flex w-full items-center gap-2.5 px-3 py-2 rounded-xl text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors font-medium"
                 >
                   <LogOut className="h-4 w-4" />
-                  <span>Logout</span>
+                  <span>{t.header.logout}</span>
                 </button>
               </div>
             )}

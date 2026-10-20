@@ -1,0 +1,5 @@
+{
+  "summary": "Git unified diff patch (smap_wallet_persistence.patch) resolving one-time owner credit enforcement, wallet persistence across logout/login, campaign durability, and Render disk configuration.",
+  "userFacing": true,
+  "requestFeedback": false
+}

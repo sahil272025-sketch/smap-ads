@@ -17,6 +17,7 @@ export interface User {
   password_hash?: string | null;
   wallet_balance?: number; // In INR (default 0)
   promotional_credit_granted?: boolean;
+  language?: 'en' | 'hi';
   updated_at?: string;
 }
 
@@ -253,6 +254,14 @@ interface DatabaseSchema {
   support_tickets: SupportTicket[];
   system_logs: SystemLog[];
   wallet_transactions: WalletTransaction[];
+  owner_promotional_credit?: {
+    granted: boolean;
+    granted_at: string;
+    amount: number;
+    transaction_id: string;
+    user_id: string;
+    user_email: string;
+  } | null;
 }
 
 const DEFAULT_DATA_DIR = path.resolve(process.cwd(), 'data');
@@ -271,7 +280,9 @@ class DatabaseService {
     support_tickets: [],
     system_logs: [],
     wallet_transactions: [],
+    owner_promotional_credit: null,
   };
+  private promoMutex = false;
 
   constructor() {
     this.init();
@@ -308,10 +319,31 @@ class DatabaseService {
             ...u,
             wallet_balance: typeof u.wallet_balance === 'number' && !isNaN(u.wallet_balance) ? u.wallet_balance : 0,
           }));
+        } else {
+          this.db.users = [];
         }
-        // Ensure wallet_transactions array exists
-        if (!Array.isArray(this.db.wallet_transactions)) {
-          this.db.wallet_transactions = [];
+        // Ensure all collections are arrays
+        if (!Array.isArray(this.db.packages)) this.db.packages = [];
+        if (!Array.isArray(this.db.campaigns)) this.db.campaigns = [];
+        if (!Array.isArray(this.db.payments)) this.db.payments = [];
+        if (!Array.isArray(this.db.meta_connections)) this.db.meta_connections = [];
+        if (!Array.isArray(this.db.support_tickets)) this.db.support_tickets = [];
+        if (!Array.isArray(this.db.system_logs)) this.db.system_logs = [];
+        if (!Array.isArray(this.db.wallet_transactions)) this.db.wallet_transactions = [];
+
+        // Synchronize top-level owner_promotional_credit if a promotional transaction already exists
+        const promoTx = this.db.wallet_transactions.find(
+          (tx) => tx.type === 'PROMOTIONAL_CREDIT' && tx.status === 'SUCCESS'
+        );
+        if (promoTx && !this.db.owner_promotional_credit?.granted) {
+          this.db.owner_promotional_credit = {
+            granted: true,
+            granted_at: promoTx.created_at,
+            amount: promoTx.amount,
+            transaction_id: promoTx.id,
+            user_id: promoTx.user_id,
+            user_email: 'sahil272025@gmail.com',
+          };
         }
       } catch (err) {
         console.error('Failed to parse existing DB file, reinitializing', err);
@@ -545,13 +577,40 @@ class DatabaseService {
 
   /**
    * Ensures the verified owner account (sahil272025@gmail.com) exists with admin privileges.
-   * NOTE: Balance starts strictly at ₹0.00 and promotional_credit_granted is false.
-   * The one-time ₹50,000 credit requires explicit authenticated owner action.
+   * NOTE: Balance starts strictly at ₹0.00 unless already funded or granted.
+   * Synchronizes promotional_credit_granted if a PROMOTIONAL_CREDIT transaction exists in the ledger.
+   * Never overwrites or resets an existing owner balance on server reboot or deployment.
    */
   private ensureOwnerAccount() {
     const ownerEmail = 'sahil272025@gmail.com';
     let owner = this.findUserByEmail(ownerEmail);
+    const hasPromoTx = Array.isArray(this.db.wallet_transactions) &&
+      this.db.wallet_transactions.some((tx) => tx.type === 'PROMOTIONAL_CREDIT' && tx.status === 'SUCCESS');
+    const isPromoClaimed = Boolean(hasPromoTx || this.db.owner_promotional_credit?.granted);
+
+    // Merge duplicate owner accounts if any were created
+    const allOwnerRecords = this.db.users.filter(u => u && u.email && u.email.trim().toLowerCase() === ownerEmail);
+    if (allOwnerRecords.length > 1) {
+      const canonical = allOwnerRecords.find(u => u.id === 'usr_owner_sahil272025') || allOwnerRecords[0];
+      for (const dup of allOwnerRecords) {
+        if (dup.id !== canonical.id) {
+          this.db.wallet_transactions.forEach(tx => {
+            if (tx.user_id === dup.id) tx.user_id = canonical.id;
+          });
+          this.db.campaigns.forEach(c => {
+            if (c.user_id === dup.id) c.user_id = canonical.id;
+          });
+          this.db.payments.forEach(p => {
+            if (p.user_id === dup.id) p.user_id = canonical.id;
+          });
+        }
+      }
+      this.db.users = this.db.users.filter(u => !allOwnerRecords.some(dup => dup.id === u.id) || u.id === canonical.id);
+      owner = canonical;
+    }
+
     if (!owner) {
+      const ledgerBal = isPromoClaimed ? this.calculateOwnerLedgerBalance() : 0;
       owner = {
         id: 'usr_owner_sahil272025',
         google_sub: '',
@@ -561,19 +620,89 @@ class DatabaseService {
         profile_picture: null,
         role: 'admin',
         status: 'ACTIVE',
-        wallet_balance: 0,
-        promotional_credit_granted: false,
+        wallet_balance: ledgerBal,
+        promotional_credit_granted: isPromoClaimed,
         created_at: new Date().toISOString(),
         last_login_at: new Date().toISOString(),
       };
       this.db.users.push(owner);
       this.save();
     } else {
+      let changed = false;
       if (owner.role !== 'admin') {
         owner.role = 'admin';
+        changed = true;
+      }
+      if (isPromoClaimed && !owner.promotional_credit_granted) {
+        owner.promotional_credit_granted = true;
+        changed = true;
+      }
+      // If wallet_balance is somehow not a number, restore from ledger
+      if (typeof owner.wallet_balance !== 'number' || isNaN(owner.wallet_balance)) {
+        owner.wallet_balance = this.calculateOwnerLedgerBalance();
+        changed = true;
+      }
+      if (changed) {
         this.save();
       }
     }
+  }
+
+  /**
+   * Calculates the exact auditable owner wallet balance from the immutable ledger.
+   * Credits: PROMOTIONAL_CREDIT, ADD_FUNDS, GATEWAY_CREDIT, ADMIN_RECONCILIATION
+   * Debits: CAMPAIGN_PAYMENT, DEBIT, ADJUSTMENT_DEBIT
+   * Ensures spent balance is never restored to the seed value.
+   */
+  public calculateOwnerLedgerBalance(): number {
+    const ownerEmail = 'sahil272025@gmail.com';
+    const ownerUsers = this.db.users.filter((u) => u && u.email && u.email.trim().toLowerCase() === ownerEmail);
+    const ownerUserIds = new Set(ownerUsers.map((u) => u.id));
+    ownerUserIds.add('usr_owner_sahil272025');
+
+    const txs = Array.isArray(this.db.wallet_transactions)
+      ? this.db.wallet_transactions.filter((tx) => ownerUserIds.has(tx.user_id) && tx.status === 'SUCCESS')
+      : [];
+
+    let balance = 0;
+    for (const tx of txs) {
+      const amt = Number(tx.amount) || 0;
+      if (tx.type === 'PROMOTIONAL_CREDIT' || tx.type === 'ADD_FUNDS' || tx.type === 'AUDIT_CORRECTION' || tx.type === 'REFUND') {
+        balance += amt;
+      } else if (tx.type === 'CAMPAIGN_PAYMENT') {
+        balance -= amt;
+      }
+    }
+    return Math.max(0, Math.round(balance * 100) / 100);
+  }
+
+  /**
+   * Checks whether the one-time owner promotional credit has been claimed.
+   * Enforces global database uniqueness across all transactions, metadata, and user flags.
+   */
+  public isOwnerPromotionalCreditClaimed(userId?: string, userEmail?: string): boolean {
+    if (this.db.owner_promotional_credit?.granted) {
+      return true;
+    }
+
+    const hasPromoTx = Array.isArray(this.db.wallet_transactions) &&
+      this.db.wallet_transactions.some((tx) => tx.type === 'PROMOTIONAL_CREDIT' && tx.status === 'SUCCESS');
+    if (hasPromoTx) return true;
+
+    const owner = this.findUserByEmail('sahil272025@gmail.com');
+    if (owner?.promotional_credit_granted) return true;
+
+    if (userId) {
+      const u = this.findUserById(userId);
+      if (u?.promotional_credit_granted) return true;
+    }
+
+    if (userEmail && userEmail.trim().toLowerCase() === 'sahil272025@gmail.com') {
+      const u = this.findUserByEmail(userEmail);
+      if (u?.promotional_credit_granted) return true;
+    }
+
+    return false;
   }
 
   // System Logs
@@ -602,6 +731,18 @@ class DatabaseService {
         const data = JSON.parse(raw);
         if (Array.isArray(data.users)) {
           this.db.users = data.users.filter((u: User) => u && u.id && u.email);
+        }
+        if (Array.isArray(data.campaigns)) {
+          this.db.campaigns = data.campaigns;
+        }
+        if (Array.isArray(data.wallet_transactions)) {
+          this.db.wallet_transactions = data.wallet_transactions;
+        }
+        if (Array.isArray(data.payments)) {
+          this.db.payments = data.payments;
+        }
+        if (data.owner_promotional_credit) {
+          this.db.owner_promotional_credit = data.owner_promotional_credit;
         }
       }
     } catch {
@@ -710,6 +851,13 @@ class DatabaseService {
   // Campaigns
   public getCampaigns(userId?: string) {
     if (userId) {
+      const user = this.findUserById(userId);
+      if (user && user.email.trim().toLowerCase() === 'sahil272025@gmail.com') {
+        const ownerUsers = this.db.users.filter(u => u && u.email && u.email.trim().toLowerCase() === 'sahil272025@gmail.com');
+        const ownerIds = new Set(ownerUsers.map(u => u.id));
+        ownerIds.add('usr_owner_sahil272025');
+        return this.db.campaigns.filter(c => ownerIds.has(c.user_id));
+      }
       return this.db.campaigns.filter(c => c.user_id === userId);
     }
     return this.db.campaigns;
@@ -880,6 +1028,12 @@ class DatabaseService {
   public getWalletBalance(userId: string): number {
     const user = this.findUserById(userId);
     if (!user) return 0;
+    if (user.email.trim().toLowerCase() === 'sahil272025@gmail.com') {
+      if (typeof user.wallet_balance === 'number' && !isNaN(user.wallet_balance)) {
+        return Math.max(0, Math.round(user.wallet_balance * 100) / 100);
+      }
+      return this.calculateOwnerLedgerBalance();
+    }
     return typeof user.wallet_balance === 'number' && !isNaN(user.wallet_balance)
       ? Math.max(0, Math.round(user.wallet_balance * 100) / 100)
       : 0;
@@ -890,6 +1044,13 @@ class DatabaseService {
       this.db.wallet_transactions = [];
     }
     if (userId) {
+      const user = this.findUserById(userId);
+      if (user && user.email.trim().toLowerCase() === 'sahil272025@gmail.com') {
+        const ownerUsers = this.db.users.filter(u => u && u.email && u.email.trim().toLowerCase() === 'sahil272025@gmail.com');
+        const ownerIds = new Set(ownerUsers.map(u => u.id));
+        ownerIds.add('usr_owner_sahil272025');
+        return this.db.wallet_transactions.filter((tx) => ownerIds.has(tx.user_id));
+      }
       return this.db.wallet_transactions.filter((tx) => tx.user_id === userId);
     }
     return this.db.wallet_transactions;
@@ -1016,82 +1177,102 @@ class DatabaseService {
     alreadyGranted: boolean;
     transaction?: WalletTransaction;
   } {
-    const user = this.findUserById(userId);
-    if (!user) {
-      return { granted: false, amount: 0, newBalance: 0, alreadyGranted: false };
+    if (this.promoMutex) {
+      throw new Error('Promotional credit allocation is currently in progress. Please retry.');
     }
+    this.promoMutex = true;
+    try {
+      this.reloadFromDisk();
 
-    // Strict identity verification: Only the verified owner account is eligible
-    const cleanEmail = user.email.trim().toLowerCase();
-    if (cleanEmail !== 'sahil272025@gmail.com') {
-      return { granted: false, amount: 0, newBalance: user.wallet_balance || 0, alreadyGranted: false };
-    }
-
-    // Idempotency Check: verify if already granted via flag or existing transaction
-    const existingTx = (this.db.wallet_transactions || []).find(
-      (tx) => tx.user_id === userId && tx.type === 'PROMOTIONAL_CREDIT'
-    );
-
-    if (user.promotional_credit_granted || existingTx) {
-      if (!user.promotional_credit_granted) {
-        user.promotional_credit_granted = true;
-        this.save();
+      const user = this.findUserById(userId);
+      if (!user) {
+        return { granted: false, amount: 0, newBalance: 0, alreadyGranted: false };
       }
-      return {
-        granted: false,
-        amount: 0,
-        newBalance: user.wallet_balance || 0,
-        alreadyGranted: true,
-        transaction: existingTx,
+
+      // Strict identity verification: Only the verified owner account is eligible
+      const cleanEmail = user.email.trim().toLowerCase();
+      if (cleanEmail !== 'sahil272025@gmail.com') {
+        return { granted: false, amount: 0, newBalance: user.wallet_balance || 0, alreadyGranted: false };
+      }
+
+      // Permanent one-time server-side idempotency check
+      const alreadyClaimed = this.isOwnerPromotionalCreditClaimed(userId, user.email);
+      const existingTx = (this.db.wallet_transactions || []).find(
+        (tx) => tx.type === 'PROMOTIONAL_CREDIT' && tx.status === 'SUCCESS'
+      );
+
+      if (alreadyClaimed || existingTx) {
+        if (!user.promotional_credit_granted) {
+          user.promotional_credit_granted = true;
+          this.save();
+        }
+        return {
+          granted: false,
+          amount: 0,
+          newBalance: typeof user.wallet_balance === 'number' && !isNaN(user.wallet_balance) ? user.wallet_balance : 50000,
+          alreadyGranted: true,
+          transaction: existingTx,
+        };
+      }
+
+      // Atomically allocate the ₹50,000 promotional credit
+      const promoAmount = 50000;
+      const currentBalance = typeof user.wallet_balance === 'number' && !isNaN(user.wallet_balance)
+        ? user.wallet_balance
+        : 0;
+      const newBalance = Math.round((currentBalance + promoAmount) * 100) / 100;
+
+      const tx: WalletTransaction = {
+        id: `wtx_promo_owner_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
+        user_id: user.id,
+        type: 'PROMOTIONAL_CREDIT',
+        amount: promoAmount,
+        balance_before: currentBalance,
+        balance_after: newBalance,
+        description: 'Owner Promotional Advertising Credit — Authorized for campaign creation and ad testing (Non-withdrawable)',
+        payment_id: null,
+        gateway_payment_id: null,
+        gateway_order_id: null,
+        campaign_id: null,
+        status: 'SUCCESS',
+        created_at: new Date().toISOString(),
       };
+
+      user.wallet_balance = newBalance;
+      user.promotional_credit_granted = true;
+      user.role = 'admin'; // Owner is always admin
+      user.updated_at = new Date().toISOString();
+
+      this.db.owner_promotional_credit = {
+        granted: true,
+        granted_at: tx.created_at,
+        amount: promoAmount,
+        transaction_id: tx.id,
+        user_id: user.id,
+        user_email: user.email,
+      };
+
+      this.createWalletTransaction(tx);
+      this.save();
+
+      this.log('ADMIN', 'INFO', `Allocated one-time owner promotional credit of ₹${promoAmount} to verified owner ${user.email}. New balance: ₹${newBalance}`, {
+        userId,
+        amount: promoAmount,
+        balanceBefore: currentBalance,
+        balanceAfter: newBalance,
+        txId: tx.id,
+      });
+
+      return {
+        granted: true,
+        amount: promoAmount,
+        newBalance,
+        alreadyGranted: false,
+        transaction: tx,
+      };
+    } finally {
+      this.promoMutex = false;
     }
-
-    // Atomically allocate the ₹50,000 promotional credit
-    const promoAmount = 50000;
-    const currentBalance = typeof user.wallet_balance === 'number' && !isNaN(user.wallet_balance)
-      ? user.wallet_balance
-      : 0;
-    const newBalance = Math.round((currentBalance + promoAmount) * 100) / 100;
-
-    const tx: WalletTransaction = {
-      id: `wtx_promo_owner_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
-      user_id: userId,
-      type: 'PROMOTIONAL_CREDIT',
-      amount: promoAmount,
-      balance_before: currentBalance,
-      balance_after: newBalance,
-      description: 'Owner Promotional Advertising Credit — Authorized for campaign creation and ad testing (Non-withdrawable)',
-      payment_id: null,
-      gateway_payment_id: null,
-      gateway_order_id: null,
-      campaign_id: null,
-      status: 'SUCCESS',
-      created_at: new Date().toISOString(),
-    };
-
-    user.wallet_balance = newBalance;
-    user.promotional_credit_granted = true;
-    user.role = 'admin'; // Owner is always admin
-    user.updated_at = new Date().toISOString();
-
-    this.createWalletTransaction(tx);
-    this.save();
-
-    this.log('ADMIN', 'INFO', `Allocated one-time owner promotional credit of ₹${promoAmount} to verified owner ${user.email}. New balance: ₹${newBalance}`, {
-      userId,
-      amount: promoAmount,
-      balanceBefore: currentBalance,
-      balanceAfter: newBalance,
-      txId: tx.id,
-    });
-
-    return {
-      granted: true,
-      amount: promoAmount,
-      newBalance,
-      alreadyGranted: false,
-      transaction: tx,
-    };
   }
 
   /**
@@ -1194,6 +1375,14 @@ class DatabaseService {
       verifiedPayments.reduce((sum, p) => sum + p.amount, 0) * 100
     ) / 100;
 
+    // Also include verified promotional credits (e.g. owner advertising allocation)
+    const promoCredits = (this.db.wallet_transactions || [])
+      .filter((tx) => tx.user_id === userId && tx.type === 'PROMOTIONAL_CREDIT' && tx.status === 'SUCCESS')
+      .map((tx) => (typeof tx.amount === 'number' ? tx.amount : 0));
+    const totalPromoCredits = Math.round(
+      promoCredits.reduce((sum, amt) => sum + amt, 0) * 100
+    ) / 100;
+
     // 2. Calculate sum of legitimate debits (successful campaign payments)
     const legitimateDebits = (this.db.wallet_transactions || [])
       .filter((tx) => tx.user_id === userId && tx.type === 'CAMPAIGN_PAYMENT' && tx.status === 'SUCCESS')
@@ -1206,7 +1395,7 @@ class DatabaseService {
     // Legitimate ledger target balance
     const targetLegitimateBalance = Math.max(
       0,
-      Math.round((totalVerifiedCredits - totalLegitimateDebits) * 100) / 100
+      Math.round((totalVerifiedCredits + totalPromoCredits - totalLegitimateDebits) * 100) / 100
     );
 
     // If balance is already equal to or greater than target, no upward adjustment needed

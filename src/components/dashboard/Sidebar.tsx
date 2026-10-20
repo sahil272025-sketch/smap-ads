@@ -15,6 +15,7 @@ import {
   X,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
 
 interface SidebarProps {
   currentTab: string;
@@ -32,17 +33,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onViewPlans,
 }) => {
   const { user } = useAuth();
+  const { t } = useLanguage();
 
   const navItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard className="h-4 w-4" /> },
-    { id: 'wallet', label: 'Wallet & Funds', icon: <Wallet className="h-4 w-4" /> },
-    { id: 'create-ad', label: 'Create Ad', icon: <Plus className="h-4 w-4" /> },
-    { id: 'my-campaigns', label: 'Campaigns', icon: <Megaphone className="h-4 w-4" /> },
-    { id: 'ad-library', label: 'Ad Library', icon: <Layers className="h-4 w-4" /> },
-    { id: 'payments', label: 'Payments', icon: <CreditCard className="h-4 w-4" /> },
-    { id: 'reports', label: 'Reports', icon: <BarChart3 className="h-4 w-4" /> },
-    { id: 'profile', label: 'Account', icon: <User className="h-4 w-4" /> },
-    { id: 'settings', label: 'Settings', icon: <Settings className="h-4 w-4" /> },
+    { id: 'dashboard', label: t.nav.dashboard, icon: <LayoutDashboard className="h-4 w-4" /> },
+    { id: 'wallet', label: t.nav.wallet, icon: <Wallet className="h-4 w-4" /> },
+    { id: 'create-ad', label: t.nav.createAd, icon: <Plus className="h-4 w-4" /> },
+    { id: 'my-campaigns', label: t.nav.campaigns, icon: <Megaphone className="h-4 w-4" /> },
+    { id: 'ad-library', label: t.nav.adLibrary, icon: <Layers className="h-4 w-4" /> },
+    { id: 'payments', label: t.nav.payments, icon: <CreditCard className="h-4 w-4" /> },
+    { id: 'reports', label: t.nav.reports, icon: <BarChart3 className="h-4 w-4" /> },
+    { id: 'profile', label: t.nav.profile, icon: <User className="h-4 w-4" /> },
+    { id: 'settings', label: t.nav.settings, icon: <Settings className="h-4 w-4" /> },
   ];
 
   const handleItemClick = (id: string) => {
@@ -70,7 +72,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 SMAP ADS
               </span>
               <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400">
-                Campaign Hub
+                {t.nav.hub}
               </span>
             </div>
           </button>
@@ -120,7 +122,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               }`}
             >
               <ShieldCheck className="h-4 w-4" />
-              <span>Admin Panel</span>
+              <span>{t.nav.admin}</span>
             </button>
           )}
         </nav>

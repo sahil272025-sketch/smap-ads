@@ -539,11 +539,15 @@ export class WalletService {
     ) / 100;
 
     const txs = db.getWalletTransactions(userId);
+    const promoCredits = txs
+      .filter((tx) => tx.type === 'PROMOTIONAL_CREDIT' && tx.status === 'SUCCESS')
+      .reduce((sum, tx) => sum + tx.amount, 0);
+
     const campaignDebits = txs
       .filter((tx) => tx.type === 'CAMPAIGN_PAYMENT' && tx.status === 'SUCCESS')
       .reduce((sum, tx) => sum + tx.amount, 0);
 
-    const targetBalance = Math.max(0, Math.round((totalVerifiedCredits - campaignDebits) * 100) / 100);
+    const targetBalance = Math.max(0, Math.round((totalVerifiedCredits + promoCredits - campaignDebits) * 100) / 100);
     const discrepancy = Math.round((targetBalance - currentBalance) * 100) / 100;
 
     return {

@@ -15,7 +15,11 @@ import { CampaignQueueService } from './campaignQueue.js';
 export const apiRouter = express.Router();
 
 // File upload configuration using multer
-const uploadDir = path.resolve(process.cwd(), 'data/uploads');
+const DEFAULT_DATA_DIR = path.resolve(process.cwd(), 'data');
+const DATA_DIR = process.env.RENDER_DISK_PATH ||
+  process.env.DATA_DIR ||
+  (fs.existsSync('/var/data') ? '/var/data' : DEFAULT_DATA_DIR);
+const uploadDir = path.join(DATA_DIR, 'uploads');
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
@@ -33,15 +37,15 @@ const storage = multer.diskStorage({
 
 const upload = multer({
   storage,
-  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB max
+  limits: { fileSize: 100 * 1024 * 1024 }, // 100MB max to support high-def 70s videos & lossless images
   fileFilter: (_req, file, cb) => {
-    const allowed = /jpeg|jpg|png|webp|mp4|mov|webm/;
+    const allowed = /jpeg|jpg|png|webp|mp4|mov|webm/i;
     const ext = path.extname(file.originalname).toLowerCase().replace('.', '');
-    const mime = file.mimetype;
+    const mime = file.mimetype.toLowerCase();
     if (allowed.test(ext) || allowed.test(mime)) {
       cb(null, true);
     } else {
-      cb(new Error('Invalid file format. Only JPEG, PNG, WEBP, MP4, MOV, and WEBM files are allowed.'));
+      cb(new Error('Invalid file format. High-resolution images (JPG, JPEG, PNG, WEBP) and compatible videos (MP4, MOV) up to 70s are supported.'));
     }
   },
 });
@@ -586,6 +590,12 @@ apiRouter.post('/auth/login', async (req, res) => {
 apiRouter.get('/auth/me', requireAuth, (req: AuthenticatedRequest, res) => {
   const user = req.user!;
   const metaConnection = db.findMetaConnectionByUserId(user.id);
+  const isOwner = user.email.trim().toLowerCase() === 'sahil272025@gmail.com';
+  const promoClaimed = Boolean(
+    user.promotional_credit_granted ||
+    (isOwner && db.isOwnerPromotionalCreditClaimed(user.id, user.email))
+  );
+  const balance = db.getWalletBalance(user.id);
 
   res.json({
     user: {
@@ -598,6 +608,9 @@ apiRouter.get('/auth/me', requireAuth, (req: AuthenticatedRequest, res) => {
       phone: user.phone,
       role: user.role,
       status: user.status,
+      wallet_balance: balance,
+      promotional_credit_granted: promoClaimed,
+      language: user.language || 'en',
       created_at: user.created_at,
       last_login_at: user.last_login_at,
     },
@@ -627,7 +640,28 @@ apiRouter.get('/auth/me', requireAuth, (req: AuthenticatedRequest, res) => {
 apiRouter.put('/auth/profile', requireAuth, (req: AuthenticatedRequest, res) => {
   try {
     const updated = AuthService.updateProfile(req.user!.id, req.body);
-    res.json({ user: updated });
+    const promoClaimed = Boolean(
+      updated.promotional_credit_granted ||
+      (updated.role === 'admin' && db.isOwnerPromotionalCreditClaimed(updated.id, updated.email))
+    );
+    res.json({
+      user: {
+        id: updated.id,
+        google_sub: updated.google_sub,
+        name: updated.name,
+        email: updated.email,
+        email_verified: updated.email_verified,
+        profile_picture: updated.profile_picture,
+        phone: updated.phone,
+        role: updated.role,
+        status: updated.status,
+        wallet_balance: db.getWalletBalance(updated.id),
+        promotional_credit_granted: promoClaimed,
+        language: updated.language || 'en',
+        created_at: updated.created_at,
+        last_login_at: updated.last_login_at,
+      },
+    });
   } catch (err: any) {
     res.status(400).json({ error: err.message || 'Profile update failed' });
   }
@@ -937,7 +971,15 @@ apiRouter.post('/payments/sandbox/simulate-webhook', (req, res) => {
 apiRouter.get('/wallet', requireAuth, async (req: AuthenticatedRequest, res) => {
   try {
     const data = await WalletService.getWalletData(req.user!.id);
-    res.json(data);
+    const isOwner = req.user!.email.trim().toLowerCase() === 'sahil272025@gmail.com';
+    const promoClaimed = Boolean(
+      req.user!.promotional_credit_granted ||
+      (isOwner && db.isOwnerPromotionalCreditClaimed(req.user!.id, req.user!.email))
+    );
+    res.json({
+      ...data,
+      promotional_credit_granted: promoClaimed,
+    });
   } catch (err: any) {
     res.status(500).json({ error: err.message || 'Failed to fetch wallet data' });
   }
@@ -1346,6 +1388,8 @@ apiRouter.get('/admin/customers', requireAdmin, (_req, res) => {
     email: u.email,
     phone: u.phone,
     role: u.role,
+    wallet_balance: typeof u.wallet_balance === 'number' && !isNaN(u.wallet_balance) ? u.wallet_balance : db.getWalletBalance(u.id),
+    promotional_credit_granted: Boolean(u.promotional_credit_granted || (u.email.toLowerCase() === 'sahil272025@gmail.com' && db.isOwnerPromotionalCreditClaimed(u.id, u.email))),
     created_at: u.created_at,
   }));
   res.json({ customers: users });

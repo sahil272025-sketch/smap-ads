@@ -404,7 +404,27 @@ export class AuthService {
     const isAdmin = isOwner || adminList.includes(cleanEmail);
     const role: 'customer' | 'admin' = isAdmin ? 'admin' : 'customer';
 
-    // 1. Check by stable Google Subject ID (sub)
+    // 1. Special handling for verified owner account: guarantee single canonical user ID and status
+    if (isOwner) {
+      let owner = db.findUserByEmail(AuthService.OWNER_EMAIL) || db.findUserById('usr_owner_sahil272025');
+      if (owner) {
+        const isClaimed = db.isOwnerPromotionalCreditClaimed(owner.id, owner.email);
+        const updated = db.updateUser(owner.id, {
+          google_sub: profile.sub,
+          email_verified: profile.email_verified,
+          name: profile.name || owner.name,
+          profile_picture: profile.picture || owner.profile_picture,
+          role: 'admin',
+          last_login_at: now,
+          promotional_credit_granted: Boolean(owner.promotional_credit_granted || isClaimed),
+        })!;
+        db.log('AUTH', 'INFO', `Owner signed in with Google: ${updated.email} (sub: ${profile.sub})`, { userId: updated.id });
+        const token = this.generateSessionToken(updated);
+        return { user: updated, token };
+      }
+    }
+
+    // 2. Check by stable Google Subject ID (sub)
     let user = db.findUserByGoogleSub(profile.sub);
 
     if (user) {
@@ -473,7 +493,7 @@ export class AuthService {
     }
   }
 
-  public static updateProfile(userId: string, data: { name?: string; phone?: string }): User {
+  public static updateProfile(userId: string, data: { name?: string; phone?: string; language?: 'en' | 'hi' }): User {
     const user = db.findUserById(userId);
     if (!user) {
       throw new Error('User account not found');
@@ -486,9 +506,12 @@ export class AuthService {
     if (data.phone && data.phone.trim()) {
       updates.phone = data.phone.trim();
     }
+    if (data.language && (data.language === 'en' || data.language === 'hi')) {
+      updates.language = data.language;
+    }
 
     const updated = db.updateUser(userId, updates);
-    db.log('AUTH', 'INFO', `User profile updated: ${user.email}`, { userId });
+    db.log('AUTH', 'INFO', `User profile updated: ${user.email}`, { userId, language: data.language });
     return updated!;
   }
 
