@@ -1140,6 +1140,61 @@ async function runTests() {
   assert(custPromo.granted === false, 'Non-owner customer cannot claim owner promotional credit');
   assert(custPromo.amount === 0, 'Zero credit granted to non-owner customer');
 
+  // TEST 35: Simplified Ad Creative: Heading (max 100) and Description (max 400) with Safe Automated Defaults
+  console.log('\n--- TEST 35: Simplified Ad Creative: Heading, Description & Safe Defaults ---');
+  // 1. Missing heading rejected
+  let missingHeadingErr = '';
+  try {
+    await CampaignService.createDraft(testUserId, {
+      packageId: 'pkg_starter_200',
+      headline: '',
+      description: 'A valid description within four hundred characters.',
+    });
+  } catch (e: any) {
+    missingHeadingErr = e.message;
+  }
+  assert(missingHeadingErr.includes('required'), 'Empty heading is strictly rejected');
+
+  // 2. Heading exceeding 100 characters rejected
+  let longHeadingErr = '';
+  try {
+    await CampaignService.createDraft(testUserId, {
+      packageId: 'pkg_starter_200',
+      headline: 'A'.repeat(101),
+      description: 'A valid description within four hundred characters.',
+    });
+  } catch (e: any) {
+    longHeadingErr = e.message;
+  }
+  assert(longHeadingErr.includes('100 characters'), 'Heading exceeding 100 characters is rejected');
+
+  // 3. Description exceeding 400 characters rejected
+  let longDescErr = '';
+  try {
+    await CampaignService.createDraft(testUserId, {
+      packageId: 'pkg_starter_200',
+      headline: 'Festive Flash Sale - 50% Off Today Only',
+      description: 'D'.repeat(401),
+    });
+  } catch (e: any) {
+    longDescErr = e.message;
+  }
+  assert(longDescErr.includes('400 characters'), 'Description exceeding 400 characters is rejected');
+
+  // 4. Successful creation with ONLY Heading and Description, verifying safe automated defaults
+  const simplifiedDraft = await CampaignService.createDraft(testUserId, {
+    packageId: 'pkg_starter_200',
+    headline: 'Special Festive Discount on All Orders',
+    description: 'Discover curated high-quality collections with nationwide fast delivery. Shop now and enjoy verified satisfaction!',
+  });
+  assert(simplifiedDraft.campaign.headline === 'Special Festive Discount on All Orders', 'Heading is preserved');
+  assert(simplifiedDraft.campaign.description?.includes('curated high-quality collections'), 'Description is preserved');
+  assert(Boolean(simplifiedDraft.campaign.business_name), 'Business name receives safe default');
+  assert(Boolean(simplifiedDraft.campaign.creative_url), 'Creative media URL receives safe lossless default');
+  assert(simplifiedDraft.campaign.destination_url.startsWith('http'), 'Destination URL receives safe verified default');
+  assert(simplifiedDraft.campaign.call_to_action === 'LEARN_MORE', 'Call-to-Action receives safe default');
+  assert(simplifiedDraft.campaign.primary_text === simplifiedDraft.campaign.description, 'Primary text is safely synthesized from description');
+
   console.log('\n====================================================');
   console.log(`🎉 ALL ${passedTests}/${totalTests} TESTS PASSED SUCCESSFULLY!`);
   console.log('====================================================\n');

@@ -665,7 +665,12 @@ export const CreateAdFlow: React.FC<CreateAdFlowProps> = ({
       case 1:
         return !!objective;
       case 2:
-        return !!businessName.trim() && !!headline.trim() && !!primaryText.trim() && !!destinationUrl.trim() && !!creativeUrl;
+        return (
+          !!headline.trim() &&
+          headline.trim().length <= 100 &&
+          !!description.trim() &&
+          description.trim().length <= 400
+        );
       case 3:
         return selectedPlacements.length > 0;
       case 4:
@@ -688,18 +693,26 @@ export const CreateAdFlow: React.FC<CreateAdFlowProps> = ({
     setCheckoutError(null);
 
     try {
+      const finalHeadline = headline.trim();
+      const finalDescription = description.trim();
+      const finalPrimaryText = finalDescription || finalHeadline;
+      const finalBusinessName = businessName.trim() || user?.name || 'SMAP Verified Merchant';
+      const finalCreativeUrl = creativeUrl || '/smap_hero_visual_1790756029679.jpg';
+      const finalDestinationUrl = destinationUrl.trim() || 'https://smap-ads.onrender.com';
+      const finalCallToAction = callToAction || 'LEARN_MORE';
+
       const payload = {
         packageId: selectedPackage.id,
         objective,
-        businessName: businessName.trim(),
-        headline: headline.trim(),
-        primaryText: primaryText.trim(),
-        description: description.trim(),
-        callToAction,
-        destinationType,
-        destinationUrl: destinationUrl.trim(),
-        creativeUrl,
-        creativeType,
+        businessName: finalBusinessName,
+        headline: finalHeadline,
+        primaryText: finalPrimaryText,
+        description: finalDescription,
+        callToAction: finalCallToAction,
+        destinationType: destinationType || 'website',
+        destinationUrl: finalDestinationUrl,
+        creativeUrl: finalCreativeUrl,
+        creativeType: creativeType || 'image',
         placements: selectedPlacements,
         targeting: {
           country: 'IN',
@@ -732,7 +745,14 @@ export const CreateAdFlow: React.FC<CreateAdFlowProps> = ({
     }
   };
 
-  const stepTitles = [
+  const stepTitles = language === 'hi' ? [
+    'उद्देश्य',
+    'विज्ञापन सामग्री',
+    'प्लेसमेंट्स',
+    'लक्षित दर्शक',
+    'योजना और अवधि',
+    'समीक्षा और भुगतान',
+  ] : [
     'Objective',
     'Ad Creative',
     'Placements',
@@ -749,14 +769,16 @@ export const CreateAdFlow: React.FC<CreateAdFlowProps> = ({
           <div>
             <div className="flex items-center gap-2">
               <span className="inline-flex items-center justify-center h-6 px-2.5 rounded-full bg-violet-600/10 text-violet-600 dark:text-violet-400 font-bold text-xs">
-                {step <= 6 ? `Step ${step} of 6` : 'Complete'}
+                {step <= 6 ? (language === 'hi' ? `चरण ${step} / 6` : `Step ${step} of 6`) : (language === 'hi' ? 'पूर्ण' : 'Complete')}
               </span>
               <h1 className="text-lg font-bold text-slate-900 dark:text-white">
-                {step <= 6 ? stepTitles[step - 1] : 'Campaign Draft Created'}
+                {step <= 6 ? stepTitles[step - 1] : (language === 'hi' ? 'अभियान ड्राफ्ट तैयार' : 'Campaign Draft Created')}
               </h1>
             </div>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-              Create and preview Facebook & Instagram advertising campaigns with verified Meta Marketing API integration.
+              {language === 'hi'
+                ? 'आधिकारिक मेटा मार्केटिंग API एकीकरण के साथ फेसबुक और इंस्टाग्राम विज्ञापन अभियान बनाएं और पूर्वावलोकन करें।'
+                : 'Create and preview Facebook & Instagram advertising campaigns with verified Meta Marketing API integration.'}
             </p>
           </div>
 
@@ -766,7 +788,7 @@ export const CreateAdFlow: React.FC<CreateAdFlowProps> = ({
               onClick={onCancel}
               className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-900 px-3.5 py-1.5 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
             >
-              Exit Builder
+              {language === 'hi' ? 'बिल्डर से बाहर निकलें' : 'Exit Builder'}
             </button>
           </div>
         </div>
@@ -880,250 +902,100 @@ export const CreateAdFlow: React.FC<CreateAdFlowProps> = ({
       {/* ======================================================== */}
       {step === 2 && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* Left Form (7 cols) */}
+          {/* Left Form (7 cols) - Simplified Ad Creative Page */}
           <div className="lg:col-span-7 rounded-2xl border border-card bg-card p-6 space-y-5 shadow-sm transition-colors">
             <div>
               <h2 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">
-                Design Your Ad Creative
+                {language === 'hi' ? 'विज्ञापन सामग्री तैयार करें' : 'Design Your Ad Creative'}
               </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                Upload your media, write your ad copy, select a call-to-action, and set your destination.
+                {language === 'hi'
+                  ? 'केवल अपना शीर्षक (Heading) और विवरण (Description) दर्ज करें। मीडिया, मेटा प्लेसमेंट और तकनीकी सेटिंग्स स्वचालित रूप से प्रबंधित की जाती हैं।'
+                  : 'Enter only your ad Heading and Description. Media, Meta placement specs, and destination settings are automatically configured.'}
               </p>
             </div>
 
-            {/* Business Name */}
-            <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                Business / Brand Name <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                value={businessName}
-                onChange={(e) => setBusinessName(e.target.value)}
-                placeholder="e.g. Sahil Gupta Fashion Store"
-                className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 py-2.5 px-3 text-xs text-slate-900 dark:text-white focus:border-violet-500 focus:outline-none"
-              />
-            </div>
-
-            {/* Media Upload */}
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
-                  Upload Ad Creative (Image or Video) <span className="text-red-500">*</span>
+            {/* Field 1: Heading (Required, max 100 characters) */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <label className="block text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200">
+                  {t.createAd.heading || 'Heading'} <span className="text-red-500">*</span>
                 </label>
-                <span className="text-[10px] font-medium text-slate-400">
-                  Lossless Quality • Meta Validated
+                <span className="text-[10px] text-slate-400 font-medium">
+                  {headline.length}/100 chars
                 </span>
               </div>
-
-              <div
-                onClick={() => fileInputRef.current?.click()}
-                className="cursor-pointer border-2 border-dashed border-slate-200 dark:border-slate-800 hover:border-violet-500 dark:hover:border-violet-500 rounded-2xl p-4 text-center transition-all bg-slate-50 dark:bg-slate-900/40"
-              >
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp,video/mp4,video/quicktime"
-                  onChange={handleFileUpload}
-                  className="hidden"
-                />
-                <div className="flex flex-col items-center gap-1.5">
-                  <div className="p-2.5 rounded-full bg-violet-600/10 text-violet-600">
-                    <UploadCloud className="h-5 w-5" />
-                  </div>
-                  <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">
-                    {isUploading ? 'Inspecting & uploading media...' : creativeFile ? creativeFile.name : 'Click to upload high-res image or video'}
-                  </span>
-                  <span className="text-[11px] text-slate-400 max-w-md">
-                    JPG, PNG (up to 30MB) • MP4, MOV videos up to 70 seconds (1m 10s, up to 100MB)
-                  </span>
-                </div>
-              </div>
-
-              {/* Upload Error Alert */}
-              {uploadError && (
-                <div className="rounded-xl border border-red-500/20 bg-red-500/10 p-3 mt-2 text-[11px] text-red-500 flex items-start gap-2">
-                  <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
-                  <div>
-                    <span className="font-semibold">Upload Validation Notice: </span>
-                    {uploadError}
-                  </div>
-                </div>
-              )}
-
-              {/* Validated Media Telemetry Badges */}
-              {mediaMetadata && !uploadError && (
-                <div className="mt-2.5 space-y-2">
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold bg-violet-500/10 text-violet-600 dark:text-violet-400 border border-violet-500/20">
-                      {creativeType === 'video' ? <Film className="h-3 w-3" /> : <ImageIcon className="h-3 w-3" />}
-                      {mediaMetadata.format}
-                    </span>
-
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
-                      {mediaMetadata.width} × {mediaMetadata.height} px
-                    </span>
-
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
-                      {mediaMetadata.aspectRatio}
-                    </span>
-
-                    {mediaMetadata.durationFormatted && (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
-                        <Clock className="h-3 w-3" />
-                        {mediaMetadata.durationFormatted} / 70s max
-                      </span>
-                    )}
-
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                      <ShieldCheck className="h-3 w-3" />
-                      Original Lossless Quality
-                    </span>
-
-                    <span className="text-[10px] text-slate-400 ml-auto">
-                      {mediaMetadata.sizeFormatted}
-                    </span>
-                  </div>
-
-                  {mediaMetadata.recommendation && (
-                    <div className="text-[11px] text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-900/60 p-2 rounded-xl border border-slate-200/60 dark:border-slate-800 flex items-center gap-1.5">
-                      <Sparkles className="h-3.5 w-3.5 text-violet-500 shrink-0" />
-                      <span>{mediaMetadata.recommendation}</span>
-                    </div>
-                  )}
-
-                  {mediaMetadata.warningNotice && (
-                    <div className="text-[11px] text-amber-600 dark:text-amber-400 bg-amber-500/10 p-2 rounded-xl border border-amber-500/20 flex items-center gap-1.5">
-                      <Info className="h-3.5 w-3.5 shrink-0" />
-                      <span>{mediaMetadata.warningNotice}</span>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Placement Aspect Ratio Guidelines Hint */}
-              {!mediaMetadata && !uploadError && (
-                <div className="mt-2 text-[10px] text-slate-400 dark:text-slate-500 flex flex-wrap items-center gap-2">
-                  <span className="font-semibold text-slate-600 dark:text-slate-400">Meta Placement Specs:</span>
-                  <span className="bg-slate-100 dark:bg-slate-800/80 px-2 py-0.5 rounded">1:1 (1080×1080) Feeds</span>
-                  <span className="bg-slate-100 dark:bg-slate-800/80 px-2 py-0.5 rounded">4:5 (1080×1350) Feeds</span>
-                  <span className="bg-slate-100 dark:bg-slate-800/80 px-2 py-0.5 rounded">9:16 (1080×1920) Reels & Stories</span>
-                  <span className="bg-slate-100 dark:bg-slate-800/80 px-2 py-0.5 rounded">Videos up to 70s</span>
-                </div>
-              )}
-            </div>
-
-            {/* Headline */}
-            <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                Headline <span className="text-red-500">*</span>
-              </label>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                {t.createAd.headingHint || 'Required • Maximum 100 characters. Keep it punchy and engaging.'}
+              </p>
               <input
                 type="text"
                 value={headline}
                 onChange={(e) => setHeadline(e.target.value)}
                 maxLength={100}
-                placeholder="e.g. Special Festive Discount - Flat 30% Off"
-                className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 py-2.5 px-3 text-xs text-slate-900 dark:text-white focus:border-violet-500 focus:outline-none"
+                placeholder={t.createAd.headingPlaceholder || 'e.g., Special Festive Discount on All Orders'}
+                className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 py-3 px-3.5 text-xs sm:text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:border-violet-500 focus:ring-1 focus:ring-violet-500 focus:outline-none transition-all shadow-inner"
               />
-              <span className="text-[10px] text-slate-400 block text-right mt-0.5">
-                {headline.length}/100 chars
-              </span>
+              {headline.trim().length === 0 && (
+                <span className="text-[10px] text-amber-500 font-medium block">
+                  {language === 'hi' ? 'शीर्षक आवश्यक है (अधिकतम 100 वर्ण)' : 'Heading is required (maximum 100 characters)'}
+                </span>
+              )}
             </div>
 
-            {/* Primary Text */}
-            <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                Primary Text <span className="text-red-500">*</span>
-              </label>
-              <textarea
-                value={primaryText}
-                onChange={(e) => setPrimaryText(e.target.value)}
-                rows={3}
-                maxLength={400}
-                placeholder="Tell potential customers about what you are offering..."
-                className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 py-2.5 px-3 text-xs text-slate-900 dark:text-white focus:border-violet-500 focus:outline-none"
-              />
-              <span className="text-[10px] text-slate-400 block text-right mt-0.5">
-                {primaryText.length}/400 chars
-              </span>
-            </div>
-
-            {/* Description (Optional) */}
-            <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                Description <span className="text-slate-400 font-normal">(Optional news feed link description)</span>
-              </label>
-              <input
-                type="text"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="e.g. Free shipping across India • 100% genuine products"
-                className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 py-2.5 px-3 text-xs text-slate-900 dark:text-white focus:border-violet-500 focus:outline-none"
-              />
-            </div>
-
-            {/* Call to Action Selection */}
-            <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                Call-to-Action Button <span className="text-red-500">*</span>
-              </label>
-              <select
-                value={callToAction}
-                onChange={(e) => setCallToAction(e.target.value)}
-                className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 py-2.5 px-3 text-xs text-slate-900 dark:text-white focus:border-violet-500 focus:outline-none"
-              >
-                {CTA_OPTIONS.map((cta) => (
-                  <option key={cta.value} value={cta.value}>
-                    {cta.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Destination */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                  Destination Type
+            {/* Field 2: Description (Required, max 400 characters) */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <label className="block text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200">
+                  {t.createAd.description || 'Description'} <span className="text-red-500">*</span>
                 </label>
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setDestinationType('website')}
-                    className={`flex-1 py-2 rounded-xl text-xs font-semibold border transition-all ${
-                      destinationType === 'website'
-                        ? 'border-violet-600 bg-violet-600/10 text-violet-600'
-                        : 'border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400'
-                    }`}
-                  >
-                    Website / Store
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setDestinationType('whatsapp')}
-                    className={`flex-1 py-2 rounded-xl text-xs font-semibold border transition-all ${
-                      destinationType === 'whatsapp'
-                        ? 'border-emerald-600 bg-emerald-600/10 text-emerald-600'
-                        : 'border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400'
-                    }`}
-                  >
-                    WhatsApp Chat
-                  </button>
-                </div>
+                <span className="text-[10px] text-slate-400 font-medium">
+                  {description.length}/400 chars
+                </span>
               </div>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                {t.createAd.descriptionHint || 'Required • Maximum 400 characters. Tell customers about your products or offers.'}
+              </p>
+              <textarea
+                rows={4}
+                value={description}
+                onChange={(e) => {
+                  setDescription(e.target.value);
+                  setPrimaryText(e.target.value);
+                }}
+                maxLength={400}
+                placeholder={t.createAd.descriptionPlaceholder || 'e.g., Discover curated, high-quality collections with nationwide fast delivery. Shop now and enjoy verified satisfaction!'}
+                className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 py-3 px-3.5 text-xs sm:text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:border-violet-500 focus:ring-1 focus:ring-violet-500 focus:outline-none transition-all shadow-inner resize-y min-h-[110px]"
+              />
+              {description.trim().length === 0 && (
+                <span className="text-[10px] text-amber-500 font-medium block">
+                  {language === 'hi' ? 'विवरण आवश्यक है (अधिकतम 400 वर्ण)' : 'Description is required (maximum 400 characters)'}
+                </span>
+              )}
+            </div>
 
-              <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                  {destinationType === 'website' ? 'Destination Website URL' : 'WhatsApp Phone (+91...)'} <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={destinationUrl}
-                  onChange={(e) => setDestinationUrl(e.target.value)}
-                  placeholder={destinationType === 'website' ? 'https://yourwebsite.com/deal' : '+919876543210'}
-                  className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 py-2.5 px-3 text-xs text-slate-900 dark:text-white focus:border-violet-500 focus:outline-none"
-                />
+            {/* Automated Safe Defaults Card */}
+            <div className="rounded-xl border border-violet-500/20 bg-violet-500/5 dark:bg-violet-950/20 p-3.5 sm:p-4 space-y-1.5 text-xs">
+              <div className="flex items-center gap-2 font-bold text-violet-700 dark:text-violet-300">
+                <Sparkles className="h-4 w-4 text-violet-500 flex-shrink-0" />
+                <span>{t.createAd.safeDefaultsTitle || 'Automated Meta Setup & Safe Defaults'}</span>
+              </div>
+              <p className="text-[11px] sm:text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                {t.createAd.safeDefaultsDesc || 'High-res lossless visual, verified merchant identity, "Learn More" action, and secured destination are pre-configured for Meta Marketing API compliance.'}
+              </p>
+              <div className="pt-2 flex flex-wrap items-center gap-2 text-[10px] text-slate-500 dark:text-slate-400">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                  <Check className="h-3 w-3 text-emerald-500" />
+                  {language === 'hi' ? 'सत्यापित मर्चेंट पहचान' : 'Verified Merchant Identity'}
+                </span>
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                  <Check className="h-3 w-3 text-emerald-500" />
+                  {language === 'hi' ? 'उच्च-रिज़ॉल्यूशन विज़ुअल' : 'Lossless Visual Template'}
+                </span>
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                  <Check className="h-3 w-3 text-emerald-500" />
+                  CTA: Learn More
+                </span>
               </div>
             </div>
 
@@ -1131,10 +1003,10 @@ export const CreateAdFlow: React.FC<CreateAdFlowProps> = ({
               <button
                 type="button"
                 onClick={() => setStep(1)}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-800 px-4 py-2 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-800 px-4 py-2 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-95 transition-all"
               >
                 <ArrowLeft className="h-4 w-4" />
-                <span>Back</span>
+                <span>{language === 'hi' ? 'वापस' : 'Back'}</span>
               </button>
 
               <button
@@ -1143,7 +1015,7 @@ export const CreateAdFlow: React.FC<CreateAdFlowProps> = ({
                 disabled={!canProceedStep(2)}
                 className="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-6 py-2.5 text-xs sm:text-sm font-semibold text-white shadow-md shadow-violet-600/25 hover:bg-violet-500 active:scale-95 transition-all disabled:opacity-50"
               >
-                <span>Continue to Placements</span>
+                <span>{language === 'hi' ? 'प्लेसमेंट के लिए आगे बढ़ें' : 'Continue to Placements'}</span>
                 <ArrowRight className="h-4 w-4" />
               </button>
             </div>
@@ -1240,28 +1112,21 @@ export const CreateAdFlow: React.FC<CreateAdFlowProps> = ({
               {/* Primary text for feeds */}
               {(previewPlacement === 'facebook_feed' || previewPlacement === 'instagram_feed') && (
                 <div className="px-3 py-2 text-xs leading-relaxed text-slate-700 dark:text-slate-300">
-                  {primaryText || 'Your primary ad copy will be displayed here.'}
+                  {description || primaryText || 'Your ad description will be displayed here.'}
                 </div>
               )}
 
               {/* Creative Media Preview */}
               <div className="relative bg-slate-100 dark:bg-slate-900 aspect-square overflow-hidden flex items-center justify-center">
-                {creativeUrl ? (
-                  <img
-                    src={creativeUrl}
-                    alt="Ad Creative"
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      (e.currentTarget as HTMLImageElement).src =
-                        'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=800&auto=format&fit=crop&q=80';
-                    }}
-                  />
-                ) : (
-                  <div className="text-center p-6 text-slate-400">
-                    <UploadCloud className="h-10 w-10 mx-auto mb-2 opacity-50" />
-                    <span>Upload your creative image or video</span>
-                  </div>
-                )}
+                <img
+                  src={creativeUrl || '/smap_hero_visual_1790756029679.jpg'}
+                  alt="Ad Creative"
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    (e.currentTarget as HTMLImageElement).src =
+                      'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=800&auto=format&fit=crop&q=80';
+                  }}
+                />
 
                 {/* Vertical Story/Reels Overlay */}
                 {(previewPlacement === 'instagram_stories' || previewPlacement === 'instagram_reels') && (
@@ -1278,12 +1143,12 @@ export const CreateAdFlow: React.FC<CreateAdFlowProps> = ({
 
                     <div className="space-y-2">
                       <p className="text-xs line-clamp-2 drop-shadow">
-                        {primaryText}
+                        {description || primaryText}
                       </p>
                       <div className="p-2.5 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-between">
-                        <span className="font-bold text-xs">{headline}</span>
+                        <span className="font-bold text-xs">{headline || 'Headline'}</span>
                         <span className="text-[10px] font-bold bg-white text-slate-900 px-3 py-1 rounded-lg">
-                          {CTA_OPTIONS.find((c) => c.value === callToAction)?.label}
+                          {CTA_OPTIONS.find((c) => c.value === callToAction)?.label || 'Learn More'}
                         </span>
                       </div>
                     </div>

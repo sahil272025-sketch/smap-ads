@@ -7,15 +7,15 @@ export class CampaignService {
   public static async createDraft(userId: string, data: {
     packageId?: string;
     objective?: 'AWARENESS' | 'TRAFFIC' | 'ENGAGEMENT' | 'LEADS' | 'SALES';
-    creativeUrl: string;
+    creativeUrl?: string;
     creativeType?: 'image' | 'video';
-    businessName: string;
-    primaryText: string;
+    businessName?: string;
+    primaryText?: string;
     headline: string;
     description?: string;
     callToAction?: string;
     destinationType?: 'website' | 'whatsapp' | 'facebook_page' | 'instagram_profile';
-    destinationUrl: string;
+    destinationUrl?: string;
     placements?: Array<'facebook_feed' | 'instagram_feed' | 'instagram_stories' | 'instagram_reels'>;
     targeting?: CampaignTargeting;
     dailyBudget?: number;
@@ -25,13 +25,24 @@ export class CampaignService {
     syncToMeta?: boolean;
     status?: CampaignStatus;
   }): Promise<{ campaign: Campaign; payment?: any; metaResult?: any }> {
-    // Validate required fields
-    if (!data.businessName || !data.headline || !data.primaryText || !data.destinationUrl) {
-      throw new Error('Required campaign fields missing: Business name, headline, primary text, and destination URL');
+    const user = db.findUserById(userId);
+    const businessName = (data.businessName?.trim()) || user?.name || 'SMAP Verified Business';
+    const headline = data.headline?.trim();
+    if (!headline) {
+      throw new Error('Heading (Headline) is required (max 100 characters)');
     }
-
+    if (headline.length > 100) {
+      throw new Error('Heading must be 100 characters or fewer');
+    }
+    const description = (data.description?.trim()) || '';
+    if (description.length > 400) {
+      throw new Error('Description must be 400 characters or fewer');
+    }
+    const primaryText = (data.primaryText?.trim()) || description || headline;
+    const creativeUrl = data.creativeUrl || '/smap_hero_visual_1790756029679.jpg';
     const destinationType = data.destinationType || 'website';
-    const destinationUrl = data.destinationUrl.trim();
+    const destinationUrl = (data.destinationUrl?.trim()) || 'https://smap-ads.onrender.com';
+    const callToAction = data.callToAction || 'LEARN_MORE';
 
     // Validate destination based on type
     if (destinationType === 'website') {
@@ -88,13 +99,13 @@ export class CampaignService {
       user_id: userId,
       package_id: data.packageId || 'custom_campaign',
       objective: data.objective || 'TRAFFIC',
-      creative_url: data.creativeUrl,
+      creative_url: creativeUrl,
       creative_type: data.creativeType || 'image',
-      business_name: data.businessName.trim(),
-      primary_text: data.primaryText.trim(),
-      headline: data.headline.trim(),
-      description: data.description ? data.description.trim() : '',
-      call_to_action: data.callToAction || 'LEARN_MORE',
+      business_name: businessName,
+      primary_text: primaryText,
+      headline: headline,
+      description: description,
+      call_to_action: callToAction,
       destination_type: destinationType,
       destination_url: destinationUrl,
       placements,
@@ -315,15 +326,15 @@ export class CampaignService {
   public static async checkoutWithWallet(userId: string, data: {
     packageId: string;
     objective?: 'AWARENESS' | 'TRAFFIC' | 'ENGAGEMENT' | 'LEADS' | 'SALES';
-    creativeUrl: string;
+    creativeUrl?: string;
     creativeType?: 'image' | 'video';
-    businessName: string;
-    primaryText: string;
+    businessName?: string;
+    primaryText?: string;
     headline: string;
     description?: string;
     callToAction?: string;
     destinationType?: 'website' | 'whatsapp' | 'facebook_page' | 'instagram_profile';
-    destinationUrl: string;
+    destinationUrl?: string;
     placements?: Array<'facebook_feed' | 'instagram_feed' | 'instagram_stories' | 'instagram_reels'>;
     targeting?: CampaignTargeting;
     startDate?: string;
@@ -354,13 +365,24 @@ export class CampaignService {
     const durationDays = pkg.duration_days;
     const dailyBudget = Math.round(finalPackagePrice / durationDays);
 
-    // Validate campaign inputs
-    if (!data.businessName?.trim() || !data.headline?.trim() || !data.primaryText?.trim() || !data.destinationUrl?.trim()) {
-      throw new Error('Required campaign fields missing: Business name, headline, primary text, and destination URL');
+    // Validate campaign inputs with safe existing defaults
+    const businessName = (data.businessName?.trim()) || user.name || 'SMAP Verified Business';
+    const headline = data.headline?.trim();
+    if (!headline) {
+      throw new Error('Heading (Headline) is required (max 100 characters)');
     }
-
+    if (headline.length > 100) {
+      throw new Error('Heading must be 100 characters or fewer');
+    }
+    const description = (data.description?.trim()) || '';
+    if (description.length > 400) {
+      throw new Error('Description must be 400 characters or fewer');
+    }
+    const primaryText = (data.primaryText?.trim()) || description || headline;
+    const creativeUrl = data.creativeUrl || '/smap_hero_visual_1790756029679.jpg';
     const destinationType = data.destinationType || 'website';
-    const destinationUrl = data.destinationUrl.trim();
+    const destinationUrl = (data.destinationUrl?.trim()) || 'https://smap-ads.onrender.com';
+    const callToAction = data.callToAction || 'LEARN_MORE';
 
     if (destinationType === 'website') {
       try {
@@ -468,13 +490,13 @@ export class CampaignService {
       user_id: userId,
       package_id: pkg.id,
       objective: data.objective || 'TRAFFIC',
-      creative_url: data.creativeUrl,
+      creative_url: creativeUrl,
       creative_type: data.creativeType || 'image',
-      business_name: data.businessName.trim(),
-      primary_text: data.primaryText.trim(),
-      headline: data.headline.trim(),
-      description: data.description ? data.description.trim() : '',
-      call_to_action: data.callToAction || 'LEARN_MORE',
+      business_name: businessName,
+      primary_text: primaryText,
+      headline: headline,
+      description: description,
+      call_to_action: callToAction,
       destination_type: destinationType,
       destination_url: destinationUrl,
       placements,

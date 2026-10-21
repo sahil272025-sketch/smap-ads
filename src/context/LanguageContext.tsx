@@ -184,12 +184,14 @@ export interface Translations {
     selectPackage: string;
     popularBadge: string;
     daysDuration: string;
-    campaignHeadline: string;
-    campaignHeadlineHint: string;
-    headlinePlaceholder: string;
-    primaryText: string;
-    primaryTextHint: string;
-    primaryTextPlaceholder: string;
+    heading: string;
+    headingHint: string;
+    headingPlaceholder: string;
+    description: string;
+    descriptionHint: string;
+    descriptionPlaceholder: string;
+    safeDefaultsTitle: string;
+    safeDefaultsDesc: string;
     destinationUrl: string;
     destinationUrlHint: string;
     destinationUrlPlaceholder: string;
@@ -476,12 +478,14 @@ const enTranslations: Translations = {
     selectPackage: 'Select an Advertising Package',
     popularBadge: 'Most Popular',
     daysDuration: 'days active',
-    campaignHeadline: 'Campaign Headline',
-    campaignHeadlineHint: 'Punchy 5-10 word title that immediately captures attention.',
-    headlinePlaceholder: 'e.g., Special 20% Off All Orders This Week!',
-    primaryText: 'Primary Text / Description',
-    primaryTextHint: 'Describe your products, services, value proposition, and customer benefits.',
-    primaryTextPlaceholder: 'Describe your product, service, or promotional offer in detail...',
+    heading: 'Heading',
+    headingHint: 'Required • Maximum 100 characters. Keep it punchy and engaging.',
+    headingPlaceholder: 'e.g., Special Festive Discount on All Orders',
+    description: 'Description',
+    descriptionHint: 'Required • Maximum 400 characters. Tell customers about your products or offers.',
+    descriptionPlaceholder: 'e.g., Discover curated, high-quality collections with nationwide fast delivery. Shop now and enjoy verified satisfaction!',
+    safeDefaultsTitle: 'Automated Meta Setup & Safe Defaults',
+    safeDefaultsDesc: 'High-res lossless visual, verified merchant identity, "Learn More" action, and secured destination are pre-configured for Meta Marketing API compliance.',
     destinationUrl: 'Destination Website or Landing Page URL',
     destinationUrlHint: 'Where customers will be directed after clicking your ad.',
     destinationUrlPlaceholder: 'https://yourwebsite.com/special-offer',
@@ -768,12 +772,14 @@ const hiTranslations: Translations = {
     selectPackage: 'विज्ञापन पैकेज चुनें',
     popularBadge: 'सबसे लोकप्रिय',
     daysDuration: 'दिन सक्रिय',
-    campaignHeadline: 'विज्ञापन शीर्षक (Headline)',
-    campaignHeadlineHint: 'आकर्षक 5-10 शब्दों का शीर्षक जो तुरंत ध्यान खींचे।',
-    headlinePlaceholder: 'उदा. इस सप्ताह सभी ऑर्डर पर 20% की विशेष छूट!',
-    primaryText: 'मुख्य विवरण (Primary Text / Description)',
-    primaryTextHint: 'अपने उत्पाद, सेवा, छूट और ग्राहक लाभों का स्पष्ट विवरण दें।',
-    primaryTextPlaceholder: 'अपने उत्पाद, सेवा या ऑफ़र का पूरा विवरण यहां लिखें...',
+    heading: 'शीर्षक (Heading)',
+    headingHint: 'आवश्यक • अधिकतम 100 वर्ण। इसे प्रभावशाली और आकर्षक बनाएं।',
+    headingPlaceholder: 'उदा. सभी ऑर्डर पर विशेष त्यौहारी छूट',
+    description: 'विवरण (Description)',
+    descriptionHint: 'आवश्यक • अधिकतम 400 वर्ण। अपने उत्पादों, छूट और ऑफ़र के बारे में बताएं।',
+    descriptionPlaceholder: 'उदा. हमारे खास संग्रह और देशव्यापी त्वरित डिलीवरी का लाभ उठाएं। अभी खरीदें और सत्यापित संतुष्टि पाएं!',
+    safeDefaultsTitle: 'स्वचालित मेटा सेटअप और सुरक्षित डिफ़ॉल्ट्स',
+    safeDefaultsDesc: 'उच्च-रिज़ॉल्यूशन विज़ुअल, सत्यापित मर्चेंट पहचान, "Learn More" बटन, और सुरक्षित गंतव्य लिंक मेटा मार्केटिंग API के लिए स्वचालित रूप से सेट हैं।',
     destinationUrl: 'वेबसाइट या लैंडिंग पृष्ठ लिंक (URL)',
     destinationUrlHint: 'विज्ञापन पर क्लिक करने के बाद ग्राहक इस लिंक पर पहुंचेंगे।',
     destinationUrlPlaceholder: 'https://yourwebsite.com/special-offer',
