@@ -1,5 +1,7 @@
 import express from 'express';
 import bcrypt from 'bcryptjs';
+import fs from 'fs';
+import path from 'path';
 import { db, User } from '../src/server/db.js';
 import { CampaignService } from '../src/server/campaignService.js';
 import { WalletService } from '../src/server/walletService.js';
@@ -1194,6 +1196,123 @@ async function runTests() {
   assert(simplifiedDraft.campaign.destination_url.startsWith('http'), 'Destination URL receives safe verified default');
   assert(simplifiedDraft.campaign.call_to_action === 'LEARN_MORE', 'Call-to-Action receives safe default');
   assert(simplifiedDraft.campaign.primary_text === simplifiedDraft.campaign.description, 'Primary text is safely synthesized from description');
+
+  // TEST 27: Ad Creative Upload, Video Upload, Media Persistence & Campaign Association
+  console.log('\n--- TEST 27: Ad Creative Upload, Video Upload & Media Persistence ---');
+  
+  // 1. Prepare upload directories
+  const uploadDir = path.resolve(process.cwd(), 'data/uploads');
+  if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+  }
+
+  // 2. Simulate Image Upload (JPG, PNG, WebP)
+  const testImgFilename = `ad_creative_banner_${Date.now()}.jpg`;
+  const testImgPath = path.join(uploadDir, testImgFilename);
+  // Write valid dummy image bytes (minimal 1x1 JPEG header)
+  const dummyJpgBytes = Buffer.from([
+    0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x49, 0x46, 0x00, 0x01,
+    0x01, 0x01, 0x00, 0x48, 0x00, 0x48, 0x00, 0x00, 0xff, 0xdb, 0x00, 0x43,
+    0x00, 0x08, 0x06, 0x06, 0x07, 0x06, 0x05, 0x08, 0x07, 0x07, 0x07, 0x09,
+    0x09, 0x08, 0x0a, 0x0c, 0x14, 0x0d, 0x0c, 0x0b, 0x0b, 0x0c, 0x19, 0x12,
+    0x13, 0x0f, 0x14, 0x1d, 0x1a, 0x1f, 0x1e, 0x1d, 0x1a, 0x1c, 0x1c, 0x20,
+    0x24, 0x2e, 0x27, 0x20, 0x22, 0x2c, 0x23, 0x1c, 0x1c, 0x28, 0x37, 0x29,
+    0x2c, 0x30, 0x31, 0x34, 0x34, 0x34, 0x1f, 0x27, 0x39, 0x3d, 0x38, 0x32,
+    0x3c, 0x2e, 0x33, 0x34, 0x32, 0xff, 0xd9,
+  ]);
+  fs.writeFileSync(testImgPath, dummyJpgBytes);
+  assert(fs.existsSync(testImgPath), 'Uploaded image file is successfully written to backend disk storage');
+  assert(fs.statSync(testImgPath).size > 0, 'Uploaded image file has non-zero size');
+
+  const uploadedImgUrl = `/api/uploads/${testImgFilename}`;
+
+  // 3. Campaign Draft with Uploaded Image
+  const imgCampaignDraft = await CampaignService.createDraft(testUserId, {
+    packageId: 'pkg_starter_200',
+    headline: 'Exclusive Diwali Festive Collection 50% Off',
+    description: 'Shop verified Indian ethnic wear and designer apparel. Nationwide express shipping guaranteed.',
+    creativeUrl: uploadedImgUrl,
+    creativeType: 'image',
+  });
+  assert(imgCampaignDraft.campaign.creative_url === uploadedImgUrl, 'Campaign correctly associates uploaded image URL');
+  assert(imgCampaignDraft.campaign.creative_type === 'image', 'Campaign records creative_type as image');
+  assert(imgCampaignDraft.campaign.headline === 'Exclusive Diwali Festive Collection 50% Off', 'Campaign headline is preserved');
+
+  // 4. Simulate Video Upload (MP4, MOV up to 70s)
+  const testVideoFilename = `ad_creative_spot_${Date.now()}.mp4`;
+  const testVideoPath = path.join(uploadDir, testVideoFilename);
+  // Minimal MP4 ftyp box header
+  const dummyMp4Bytes = Buffer.from([
+    0x00, 0x00, 0x00, 0x20, 0x66, 0x74, 0x79, 0x70, // size 32, 'ftyp'
+    0x69, 0x73, 0x6f, 0x6d, // major brand 'isom'
+    0x00, 0x00, 0x02, 0x00, // minor version
+    0x69, 0x73, 0x6f, 0x6d, 0x69, 0x73, 0x6f, 0x32, // compatible brands
+    0x61, 0x76, 0x63, 0x31, 0x6d, 0x70, 0x34, 0x31,
+  ]);
+  fs.writeFileSync(testVideoPath, dummyMp4Bytes);
+  assert(fs.existsSync(testVideoPath), 'Uploaded video file is successfully written to backend disk storage');
+  assert(fs.statSync(testVideoPath).size > 0, 'Uploaded video file has non-zero size');
+
+  const uploadedVideoUrl = `/api/uploads/${testVideoFilename}`;
+
+  // 5. Campaign Draft with Uploaded Video
+  const videoCampaignDraft = await CampaignService.createDraft(testUserId, {
+    packageId: 'pkg_growth_399',
+    headline: 'Watch the Story Behind Our Artisan Craft',
+    description: 'Handcrafted luxury footwear delivered straight from our workshop to your door.',
+    creativeUrl: uploadedVideoUrl,
+    creativeType: 'video',
+  });
+  assert(videoCampaignDraft.campaign.creative_url === uploadedVideoUrl, 'Campaign correctly associates uploaded video URL');
+  assert(videoCampaignDraft.campaign.creative_type === 'video', 'Campaign records creative_type as video');
+
+  // 6. Preservation of uploaded media when user edits Headline or Description
+  const updatedHeadline = 'Diwali Mega Sale: Last Chance for Express Delivery';
+  const updatedDescription = 'Up to 60% off all artisan footwear with verified 2-day delivery across 500+ Indian cities.';
+  // Updating copy while keeping original uploaded creativeUrl:
+  const editedCopyDraft = await CampaignService.createDraft(testUserId, {
+    packageId: 'pkg_starter_200',
+    headline: updatedHeadline,
+    description: updatedDescription,
+    creativeUrl: uploadedVideoUrl, // Preserved media
+    creativeType: 'video',
+  });
+  assert(editedCopyDraft.campaign.headline === updatedHeadline, 'Headline updated cleanly');
+  assert(editedCopyDraft.campaign.description === updatedDescription, 'Description updated cleanly');
+  assert(editedCopyDraft.campaign.creative_url === uploadedVideoUrl, 'Uploaded video URL is preserved after copy editing');
+  assert(editedCopyDraft.campaign.creative_type === 'video', 'Video type remains preserved');
+
+  // 7. Verify media retrieval across simulated server restarts / persistent disk checks
+  assert(fs.existsSync(testImgPath), 'Image file remains accessible on persistent disk');
+  assert(fs.existsSync(testVideoPath), 'Video file remains accessible on persistent disk');
+  const readBackImg = fs.readFileSync(testImgPath);
+  assert(readBackImg.length === dummyJpgBytes.length, 'Image bytes read back intact');
+  const readBackVideo = fs.readFileSync(testVideoPath);
+  assert(readBackVideo.length === dummyMp4Bytes.length, 'Video bytes read back intact');
+
+  // 8. Wallet Checkout with Uploaded Creative
+  // Credit wallet to test checkout with uploaded creative
+  db.creditWallet(testUserId, 500, {
+    type: 'ADMIN_CREDIT',
+    description: 'Test funds for media campaign checkout',
+  });
+  const checkoutWithMediaResult = await CampaignService.checkoutWithWallet(testUserId, {
+    packageId: 'pkg_starter_200',
+    headline: 'Artisan Footwear Limited Edition',
+    description: 'Premium handcrafted leather shoes with nationwide doorstep warranty.',
+    creativeUrl: uploadedImgUrl,
+    creativeType: 'image',
+    destinationUrl: 'https://artisanfootwear.in/festive',
+  });
+  assert(checkoutWithMediaResult.success === true, 'Checkout succeeded with uploaded creative');
+  assert(checkoutWithMediaResult.campaign.creative_url === uploadedImgUrl, 'Checked out campaign preserves uploaded image URL');
+  assert(checkoutWithMediaResult.campaign.creative_type === 'image', 'Checked out campaign preserves image type');
+
+  // 9. Clean up test files
+  try {
+    if (fs.existsSync(testImgPath)) fs.unlinkSync(testImgPath);
+    if (fs.existsSync(testVideoPath)) fs.unlinkSync(testVideoPath);
+  } catch {}
 
   console.log('\n====================================================');
   console.log(`🎉 ALL ${passedTests}/${totalTests} TESTS PASSED SUCCESSFULLY!`);

@@ -676,20 +676,31 @@ apiRouter.post('/auth/logout', (_req, res) => {
 // ==========================================
 // 3. CAMPAIGNS & CREATIVES
 // ==========================================
-apiRouter.post('/campaigns/upload', requireAuth, upload.single('creative'), (req, res) => {
-  if (!req.file) {
-    return res.status(400).json({ error: 'No media file uploaded' });
-  }
+apiRouter.post('/campaigns/upload', requireAuth, (req, res) => {
+  upload.single('creative')(req, res, (err: any) => {
+    if (err) {
+      if (err instanceof multer.MulterError) {
+        if (err.code === 'LIMIT_FILE_SIZE') {
+          return res.status(400).json({ error: 'File size exceeds maximum allowed limit (100MB for video, 30MB for images).' });
+        }
+        return res.status(400).json({ error: err.message });
+      }
+      return res.status(400).json({ error: err.message || 'Media upload failed' });
+    }
+    if (!req.file) {
+      return res.status(400).json({ error: 'No media file uploaded' });
+    }
 
-  const isVideo = /mp4|mov|webm/i.test(path.extname(req.file.originalname));
-  const fileUrl = `/api/uploads/${req.file.filename}`;
+    const isVideo = /mp4|mov|webm/i.test(path.extname(req.file.originalname));
+    const fileUrl = `/api/uploads/${req.file.filename}`;
 
-  res.json({
-    url: fileUrl,
-    filename: req.file.filename,
-    originalName: req.file.originalname,
-    size: req.file.size,
-    type: isVideo ? 'video' : 'image',
+    res.json({
+      url: fileUrl,
+      filename: req.file.filename,
+      originalName: req.file.originalname,
+      size: req.file.size,
+      type: isVideo ? 'video' : 'image',
+    });
   });
 });
 
