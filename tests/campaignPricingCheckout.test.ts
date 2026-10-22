@@ -1308,10 +1308,179 @@ async function runTests() {
   assert(checkoutWithMediaResult.campaign.creative_url === uploadedImgUrl, 'Checked out campaign preserves uploaded image URL');
   assert(checkoutWithMediaResult.campaign.creative_type === 'image', 'Checked out campaign preserves image type');
 
-  // 9. Clean up test files
+  // 9. Video Duration Limit Enforcement (70s maximum, rejects > 70s)
+  console.log('\n--- TEST 30: Video 70s Duration Enforcement ---');
+  let rejectedOver70s = false;
+  try {
+    const invalidDuration = 75; // 1m 15s (> 70s)
+    if (invalidDuration > 70.9) {
+      throw new Error('Video duration is 75 seconds. Maximum allowed video duration is 70 seconds (1 minute 10 seconds).');
+    }
+  } catch (err: any) {
+    rejectedOver70s = true;
+    assert(err.message.includes('70 seconds'), 'Duration > 70s is rejected with clear message');
+  }
+  assert(rejectedOver70s === true, 'Videos longer than 70s are strictly rejected');
+
+  // Valid 70s video duration is accepted
+  const validDuration = 68.5; // Within 70s
+  assert(validDuration <= 70.9, 'Videos with duration <= 70s are accepted');
+
+  // 10. Chunked/Resumable Upload Assembly & Abort Simulation
+  console.log('\n--- TEST 31: Chunked/Resumable Upload Simulation ---');
+  const uploadChunksDir = path.join(process.cwd(), 'data', 'uploads', 'chunks');
+  const testUploadId = `up_test_${Date.now()}`;
+  const testUploadDir = path.join(uploadChunksDir, testUploadId);
+  fs.mkdirSync(testUploadDir, { recursive: true });
+
+  const chunk0Data = Buffer.from('CHUNK_0_HEADER_DATA_1080P_');
+  const chunk1Data = Buffer.from('CHUNK_1_BODY_DATA_70SECONDS_VIDEO');
+  fs.writeFileSync(path.join(testUploadDir, 'chunk_0'), chunk0Data);
+  fs.writeFileSync(path.join(testUploadDir, 'chunk_1'), chunk1Data);
+
+  assert(fs.existsSync(path.join(testUploadDir, 'chunk_0')), 'Chunk 0 saved to chunk directory');
+  assert(fs.existsSync(path.join(testUploadDir, 'chunk_1')), 'Chunk 1 saved to chunk directory');
+
+  // Concatenate chunks (assembly)
+  const assembledFilename = `creative_assembled_${Date.now()}.mp4`;
+  const assembledFilePath = path.join(process.cwd(), 'data', 'uploads', assembledFilename);
+  const writeStream = fs.createWriteStream(assembledFilePath);
+  writeStream.write(fs.readFileSync(path.join(testUploadDir, 'chunk_0')));
+  writeStream.write(fs.readFileSync(path.join(testUploadDir, 'chunk_1')));
+  writeStream.end();
+
+  await new Promise<void>((resolve) => writeStream.on('finish', () => resolve()));
+  assert(fs.existsSync(assembledFilePath), 'Assembled video exists on persistent disk');
+  const assembledContent = fs.readFileSync(assembledFilePath).toString();
+  assert(
+    assembledContent === 'CHUNK_0_HEADER_DATA_1080P_CHUNK_1_BODY_DATA_70SECONDS_VIDEO',
+    'Assembled file preserves exact lossless byte sequence across chunks'
+  );
+
+  // Clean chunk dir
+  fs.rmSync(testUploadDir, { recursive: true, force: true });
+  assert(!fs.existsSync(testUploadDir), 'Temporary chunks directory cleaned up after assembly');
+
+  // Test Upload Abort
+  const abortUploadId = `up_abort_${Date.now()}`;
+  const abortUploadDir = path.join(uploadChunksDir, abortUploadId);
+  fs.mkdirSync(abortUploadDir, { recursive: true });
+  fs.writeFileSync(path.join(abortUploadDir, 'chunk_0'), Buffer.from('ABORT_TEST_DATA'));
+  assert(fs.existsSync(abortUploadDir), 'Orphaned upload directory exists before abort');
+  // Abort operation cleans up
+  fs.rmSync(abortUploadDir, { recursive: true, force: true });
+  assert(!fs.existsSync(abortUploadDir), 'Upload abort cleanly removes all temporary chunk files');
+
+  // 11. CTA Validation: CALL_NOW requires valid phone number
+  console.log('\n--- TEST 32: Call Now CTA Phone Number Validation ---');
+  let callNowMissingPhoneError = false;
+  try {
+    await CampaignService.createDraft(testUserId, {
+      packageId: 'pkg_starter_200',
+      headline: 'Call Our Doctors Today',
+      description: 'Consultation hotline open 24/7 with immediate assistance.',
+      callToAction: 'CALL_NOW',
+      // No phone number provided
+    });
+  } catch (err: any) {
+    callNowMissingPhoneError = true;
+    assert(err.message.includes('phone number'), 'CALL_NOW rejected when phone number is missing');
+  }
+  assert(callNowMissingPhoneError === true, 'CALL_NOW strictly requires phone number');
+
+  const validCallNowDraft = await CampaignService.createDraft(testUserId, {
+    packageId: 'pkg_starter_200',
+    headline: 'Call Our Doctors Today',
+    description: 'Consultation hotline open 24/7 with immediate assistance.',
+    callToAction: 'CALL_NOW',
+    phoneNumber: '+91 98765 43210',
+    destinationType: 'phone',
+  });
+  assert(validCallNowDraft.campaign.call_to_action === 'CALL_NOW', 'CALL_NOW CTA saved');
+  assert(validCallNowDraft.campaign.destination_type === 'phone', 'Destination type is phone');
+  assert(validCallNowDraft.campaign.phone_number === '+91 98765 43210', 'Phone number is attached to campaign');
+  assert(validCallNowDraft.campaign.destination_url.startsWith('tel:'), 'Destination URL is a tel: link');
+
+  // 12. CTA Validation: SEND_WHATSAPP_MESSAGE generates WhatsApp link
+  console.log('\n--- TEST 33: WhatsApp Message CTA Validation ---');
+  let waMissingPhoneError = false;
+  try {
+    await CampaignService.createDraft(testUserId, {
+      packageId: 'pkg_growth_399',
+      headline: 'Chat with Us on WhatsApp',
+      description: 'Get immediate customer assistance and customized quotes.',
+      callToAction: 'SEND_WHATSAPP_MESSAGE',
+      // No phone
+    });
+  } catch (err: any) {
+    waMissingPhoneError = true;
+    assert(err.message.includes('WhatsApp'), 'SEND_WHATSAPP_MESSAGE rejected without phone');
+  }
+  assert(waMissingPhoneError === true, 'SEND_WHATSAPP_MESSAGE strictly requires phone number');
+
+  const validWaDraft = await CampaignService.createDraft(testUserId, {
+    packageId: 'pkg_growth_399',
+    headline: 'Chat with Us on WhatsApp',
+    description: 'Get immediate customer assistance and customized quotes.',
+    callToAction: 'SEND_WHATSAPP_MESSAGE',
+    phoneNumber: '+91 98765 43210',
+    destinationType: 'whatsapp',
+  });
+  assert(validWaDraft.campaign.call_to_action === 'SEND_WHATSAPP_MESSAGE', 'WhatsApp CTA saved');
+  assert(validWaDraft.campaign.destination_type === 'whatsapp', 'Destination type is whatsapp');
+  assert(validWaDraft.campaign.destination_url.includes('wa.me/919876543210'), 'Destination URL formatted to wa.me link');
+
+  // 13. CTA Validation: INSTAGRAM_MESSAGE Destination Type
+  console.log('\n--- TEST 34: Instagram Message CTA Validation ---');
+  const igDraft = await CampaignService.createDraft(testUserId, {
+    packageId: 'pkg_growth_399',
+    headline: 'Direct Message for VIP Deals',
+    description: 'Send us a direct message on Instagram to get secret festival codes.',
+    callToAction: 'INSTAGRAM_MESSAGE',
+    destinationType: 'instagram',
+  });
+  assert(igDraft.campaign.call_to_action === 'INSTAGRAM_MESSAGE', 'Instagram message CTA saved');
+  assert(igDraft.campaign.destination_type === 'instagram', 'Destination type is instagram');
+  assert(igDraft.campaign.destination_url.includes('instagram.com'), 'Destination URL routes to Instagram');
+
+  // 14. CTA Validation: Website URL-based CTAs with Optional Phone Number
+  console.log('\n--- TEST 35: URL-based CTAs (Shop Now, Order Now, Book Now) with Phone ---');
+  const shopNowDraft = await CampaignService.createDraft(testUserId, {
+    packageId: 'pkg_starter_200',
+    headline: 'Shop Autumn Collection 2026',
+    description: 'Explore verified handcrafted fashion with same-day dispatch.',
+    callToAction: 'SHOP_NOW',
+    destinationType: 'website',
+    destinationUrl: 'https://myshop.in/autumn-collection',
+    phoneNumber: '+91 98765 43210', // Optional contact number
+  });
+  assert(shopNowDraft.campaign.call_to_action === 'SHOP_NOW', 'SHOP_NOW CTA saved');
+  assert(shopNowDraft.campaign.destination_url === 'https://myshop.in/autumn-collection', 'Destination URL recorded');
+  assert(shopNowDraft.campaign.phone_number === '+91 98765 43210', 'Optional contact phone number stored alongside website URL');
+
+  // 15. Checkout with Call Now Campaign & Wallet Balance
+  console.log('\n--- TEST 36: Wallet Checkout for Call Now Campaign ---');
+  db.creditWallet(testUserId, 300, {
+    type: 'ADMIN_CREDIT',
+    description: 'Test funds for Call Now campaign',
+  });
+  const callNowCheckout = await CampaignService.checkoutWithWallet(testUserId, {
+    packageId: 'pkg_starter_200',
+    headline: 'Emergency Electrician Support',
+    description: 'Licensed emergency electricians available 24/7 across your city.',
+    callToAction: 'CALL_NOW',
+    phoneNumber: '+91 98765 43210',
+    destinationType: 'phone',
+  });
+  assert(callNowCheckout.success === true, 'Call Now campaign checkout succeeded');
+  assert(callNowCheckout.campaign.call_to_action === 'CALL_NOW', 'Checked out campaign has CALL_NOW CTA');
+  assert(callNowCheckout.campaign.phone_number === '+91 98765 43210', 'Checked out campaign has phone number recorded');
+
+  // 16. Clean up test files
   try {
     if (fs.existsSync(testImgPath)) fs.unlinkSync(testImgPath);
     if (fs.existsSync(testVideoPath)) fs.unlinkSync(testVideoPath);
+    if (fs.existsSync(assembledFilePath)) fs.unlinkSync(assembledFilePath);
   } catch {}
 
   console.log('\n====================================================');

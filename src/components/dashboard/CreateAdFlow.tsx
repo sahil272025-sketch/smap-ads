@@ -43,6 +43,9 @@ import {
   Video,
   Trash2,
   RefreshCw,
+  Phone,
+  MessageCircle,
+  Globe,
 } from 'lucide-react';
 
 const ALL_28_INDIAN_STATES = [
@@ -202,15 +205,25 @@ const PLACEMENTS_LIST: PlacementOption[] = [
   },
 ];
 
-const CTA_OPTIONS = [
-  { value: 'LEARN_MORE', label: 'Learn More' },
-  { value: 'SHOP_NOW', label: 'Shop Now' },
-  { value: 'SIGN_UP', label: 'Sign Up' },
-  { value: 'CONTACT_US', label: 'Contact Us' },
-  { value: 'ORDER_NOW', label: 'Order Now' },
-  { value: 'BOOK_NOW', label: 'Book Now' },
-  { value: 'GET_OFFER', label: 'Get Offer' },
-  { value: 'SEND_WHATSAPP_MESSAGE', label: 'Send WhatsApp Message' },
+export interface CTAOption {
+  value: string;
+  label: string;
+  category: 'url' | 'phone' | 'whatsapp' | 'instagram';
+  badge: string;
+  objectives: ObjectiveKey[];
+}
+
+const CTA_OPTIONS: CTAOption[] = [
+  { value: 'LEARN_MORE', label: 'Learn More', category: 'url', badge: 'Website Link', objectives: ['TRAFFIC', 'AWARENESS', 'ENGAGEMENT', 'LEADS', 'SALES'] },
+  { value: 'SHOP_NOW', label: 'Shop Now', category: 'url', badge: 'Online Store', objectives: ['SALES', 'TRAFFIC', 'AWARENESS'] },
+  { value: 'SIGN_UP', label: 'Sign Up', category: 'url', badge: 'Registration Link', objectives: ['LEADS', 'TRAFFIC', 'SALES'] },
+  { value: 'CONTACT_US', label: 'Contact Us', category: 'url', badge: 'Contact Form / Phone', objectives: ['LEADS', 'TRAFFIC', 'AWARENESS'] },
+  { value: 'ORDER_NOW', label: 'Order Now', category: 'url', badge: 'Direct Order', objectives: ['SALES', 'TRAFFIC'] },
+  { value: 'BOOK_NOW', label: 'Book Now', category: 'url', badge: 'Appointment / Booking', objectives: ['LEADS', 'TRAFFIC', 'SALES'] },
+  { value: 'GET_OFFER', label: 'Get Offer', category: 'url', badge: 'Promotion / Deal', objectives: ['SALES', 'LEADS', 'TRAFFIC'] },
+  { value: 'CALL_NOW', label: 'Call Now', category: 'phone', badge: 'Direct Phone Call', objectives: ['LEADS', 'TRAFFIC', 'SALES'] },
+  { value: 'SEND_WHATSAPP_MESSAGE', label: 'WhatsApp Message', category: 'whatsapp', badge: 'WhatsApp Chat', objectives: ['ENGAGEMENT', 'TRAFFIC', 'LEADS', 'SALES'] },
+  { value: 'INSTAGRAM_MESSAGE', label: 'Send Message / Instagram Direct', category: 'instagram', badge: 'Instagram Direct Message', objectives: ['ENGAGEMENT', 'TRAFFIC', 'LEADS'] },
 ];
 
 export interface CampaignPackageOption {
@@ -298,6 +311,7 @@ export const CAMPAIGN_PACKAGES: CampaignPackageOption[] = [
 export interface MediaMetadata {
   width: number;
   height: number;
+  resolution?: string;
   aspectRatio: string;
   ratioValue: number;
   duration?: number;
@@ -328,16 +342,47 @@ export const CreateAdFlow: React.FC<CreateAdFlowProps> = ({
   // STEP 1: Campaign Objective
   const [objective, setObjective] = useState<ObjectiveKey>('TRAFFIC');
 
-  // STEP 2: Ad Creative & Copy
+  // STEP 2: Ad Creative, Copy & Destination
   const [businessName, setBusinessName] = useState<string>('SMAP Merchant Store');
-  const [headline, setHeadline] = useState<string>('Special Festive Discount on All Orders');
+  const [headline, setHeadline] = useState<string>(() => {
+    try {
+      return localStorage.getItem('smap_draft_headline') || 'Special Festive Discount on All Orders';
+    } catch {
+      return 'Special Festive Discount on All Orders';
+    }
+  });
   const [primaryText, setPrimaryText] = useState<string>(
     'Discover curated, high-quality collections with nationwide fast delivery. Shop now and enjoy verified satisfaction!'
   );
-  const [description, setDescription] = useState<string>('Limited time offer • Free delivery across India');
-  const [callToAction, setCallToAction] = useState<string>('LEARN_MORE');
-  const [destinationType, setDestinationType] = useState<'website' | 'whatsapp'>('website');
-  const [destinationUrl, setDestinationUrl] = useState<string>('https://example.com/festive-deal');
+  const [description, setDescription] = useState<string>(() => {
+    try {
+      return localStorage.getItem('smap_draft_description') || 'Limited time offer • Free delivery across India';
+    } catch {
+      return 'Limited time offer • Free delivery across India';
+    }
+  });
+  const [callToAction, setCallToAction] = useState<string>(() => {
+    try {
+      return localStorage.getItem('smap_draft_cta') || 'LEARN_MORE';
+    } catch {
+      return 'LEARN_MORE';
+    }
+  });
+  const [phoneNumber, setPhoneNumber] = useState<string>(() => {
+    try {
+      return localStorage.getItem('smap_draft_phone') || '';
+    } catch {
+      return '';
+    }
+  });
+  const [destinationType, setDestinationType] = useState<'website' | 'whatsapp' | 'phone' | 'instagram'>('website');
+  const [destinationUrl, setDestinationUrl] = useState<string>(() => {
+    try {
+      return localStorage.getItem('smap_draft_destination_url') || 'https://example.com/festive-deal';
+    } catch {
+      return 'https://example.com/festive-deal';
+    }
+  });
   
   // Media Upload & Preview
   const [creativeFile, setCreativeFile] = useState<File | null>(null);
@@ -346,10 +391,13 @@ export const CreateAdFlow: React.FC<CreateAdFlowProps> = ({
   const [mediaMetadata, setMediaMetadata] = useState<MediaMetadata | null>(null);
   const [isUploading, setIsUploading] = useState<boolean>(false);
   const [uploadProgress, setUploadProgress] = useState<number>(0);
+  const [uploadDetail, setUploadDetail] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const [restoredFileName, setRestoredFileName] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const uploadAbortRef = useRef<(() => void) | null>(null);
+  const lastSelectedFileRef = useRef<File | null>(null);
   const [previewPlacement, setPreviewPlacement] = useState<PlacementKey>('instagram_feed');
 
   // STEP 3: Placements
@@ -494,13 +542,14 @@ export const CreateAdFlow: React.FC<CreateAdFlowProps> = ({
     return `${(bytes / 1024).toFixed(0)} KB`;
   };
 
-  // High-Quality Image & 70s Video Media Pre-Flight Inspection & Upload Handler
+  // High-Quality Image & 70s Video Media Pre-Flight Inspection & Resumable/Chunked Upload Handler
   const processMediaFile = async (file: File) => {
     if (!file) return;
 
-    // Reset previous errors
+    lastSelectedFileRef.current = file;
     setUploadError(null);
-    setUploadProgress(10);
+    setUploadDetail(null);
+    setUploadProgress(5);
 
     const ext = file.name.split('.').pop()?.toLowerCase() || '';
     const mime = file.type.toLowerCase();
@@ -518,10 +567,22 @@ export const CreateAdFlow: React.FC<CreateAdFlowProps> = ({
       return;
     }
 
+    // Real Infrastructure Storage Limit check: 512MB backend disk capacity
+    const MAX_STORAGE_BYTES = 512 * 1024 * 1024;
+    if (file.size > MAX_STORAGE_BYTES) {
+      setUploadError(
+        language === 'hi'
+          ? `फ़ाइल का आकार (${formatFileSize(file.size)}) सर्वर संग्रहण सीमा (512MB) से अधिक है। कृपया एक छोटी फ़ाइल चुनें।`
+          : `File size (${formatFileSize(file.size)}) exceeds the server storage capacity of 512MB. Please select a smaller file.`
+      );
+      setUploadProgress(0);
+      return;
+    }
+
     const hasStoriesOrReels = selectedPlacements.some((p) => p.includes('stories') || p.includes('reels'));
     const isStoriesOnly = selectedPlacements.every((p) => p.includes('stories'));
 
-    // Image Validation
+    // Image Validation (Meta Ads image limit: 30MB)
     if (isImage) {
       if (file.size > 30 * 1024 * 1024) {
         setUploadError(
@@ -534,7 +595,8 @@ export const CreateAdFlow: React.FC<CreateAdFlowProps> = ({
       }
 
       setIsUploading(true);
-      setUploadProgress(30);
+      setUploadProgress(20);
+      setUploadDetail(language === 'hi' ? 'छवि का सत्यापन और विश्लेषण किया जा रहा है...' : 'Validating image resolution & dimensions...');
       const objectUrl = URL.createObjectURL(file);
       try {
         const img = new Image();
@@ -556,6 +618,7 @@ export const CreateAdFlow: React.FC<CreateAdFlowProps> = ({
           );
           setIsUploading(false);
           setUploadProgress(0);
+          setUploadDetail(null);
           return;
         }
 
@@ -580,10 +643,18 @@ export const CreateAdFlow: React.FC<CreateAdFlowProps> = ({
           }
         }
 
-        setUploadProgress(65);
+        let resolutionLabel = '';
+        if (w >= 1920 || h >= 1920) resolutionLabel = '1080p+ High Res';
+        else if (w >= 1080 || h >= 1080) resolutionLabel = '1080p Standard';
+        else if (w >= 720 || h >= 720) resolutionLabel = '720p HD';
+        else resolutionLabel = `${w}×${h}`;
+
+        setUploadProgress(50);
+        setUploadDetail(language === 'hi' ? 'छवि सुरक्षित रूप से सर्वर पर अपलोड की जा रही है...' : 'Uploading image asset to persistent storage...');
         // Upload original uncompressed image directly to backend storage
         const uploaded = await api.uploadCreative(file);
         setUploadProgress(100);
+        setUploadDetail(null);
         setCreativeFile(file);
         setCreativeUrl(uploaded.url);
         setCreativeType('image');
@@ -591,6 +662,7 @@ export const CreateAdFlow: React.FC<CreateAdFlowProps> = ({
         const metadata: MediaMetadata = {
           width: w,
           height: h,
+          resolution: resolutionLabel,
           aspectRatio: ratioLabel,
           ratioValue: ratio,
           format: ext.toUpperCase() || 'IMAGE',
@@ -606,22 +678,16 @@ export const CreateAdFlow: React.FC<CreateAdFlowProps> = ({
       } finally {
         URL.revokeObjectURL(objectUrl);
         setIsUploading(false);
-        setTimeout(() => setUploadProgress(0), 400);
+        setTimeout(() => {
+          setUploadProgress(0);
+          setUploadDetail(null);
+        }, 500);
       }
     } else {
-      // Video Validation (up to 70 seconds / 100MB)
-      if (file.size > 100 * 1024 * 1024) {
-        setUploadError(
-          language === 'hi'
-            ? `वीडियो फ़ाइल आकार (${formatFileSize(file.size)}) अधिकतम 100MB सीमा से अधिक है।`
-            : `Video file size (${formatFileSize(file.size)}) exceeds the maximum 100MB limit for Meta video ads.`
-        );
-        setUploadProgress(0);
-        return;
-      }
-
+      // High-Quality Video Pre-Flight Inspection & Chunked/Resumable Upload
       setIsUploading(true);
-      setUploadProgress(25);
+      setUploadProgress(15);
+      setUploadDetail(language === 'hi' ? 'वीडियो अवधि और रिज़ॉल्यूशन की जांच की जा रही है...' : 'Validating video duration & resolution specifications...');
       const objectUrl = URL.createObjectURL(file);
       try {
         const video = document.createElement('video');
@@ -637,6 +703,7 @@ export const CreateAdFlow: React.FC<CreateAdFlowProps> = ({
         const h = video.videoHeight || 1920;
         const ratio = w / h;
 
+        // Minimum duration check
         if (duration < 3) {
           setUploadError(
             language === 'hi'
@@ -645,9 +712,11 @@ export const CreateAdFlow: React.FC<CreateAdFlowProps> = ({
           );
           setIsUploading(false);
           setUploadProgress(0);
+          setUploadDetail(null);
           return;
         }
 
+        // Maximum 70 seconds duration check (1 minute 10 seconds)
         if (duration > 70.9) {
           setUploadError(
             language === 'hi'
@@ -656,21 +725,33 @@ export const CreateAdFlow: React.FC<CreateAdFlowProps> = ({
           );
           setIsUploading(false);
           setUploadProgress(0);
+          setUploadDetail(null);
           return;
         }
+
+        // Resolution Detection (supports 360p through 1080p and higher)
+        const minDim = Math.min(w, h);
+        const maxDim = Math.max(w, h);
+        let resolutionLabel = '';
+        if (minDim >= 2160 || maxDim >= 3840) resolutionLabel = '4K UHD';
+        else if (minDim >= 1080 || maxDim >= 1920) resolutionLabel = '1080p FHD';
+        else if (minDim >= 720 || maxDim >= 1280) resolutionLabel = '720p HD';
+        else if (minDim >= 480 || maxDim >= 854) resolutionLabel = '480p SD';
+        else if (minDim >= 360 || maxDim >= 640) resolutionLabel = '360p Standard';
+        else resolutionLabel = `${w}×${h} Low Res`;
 
         let warningNotice = '';
         if (duration > 60 && isStoriesOnly) {
           warningNotice = language === 'hi'
             ? `नोट: स्टैंडअलोन इंस्टाग्राम स्टोरी कार्ड अधिकतम 60 सेकंड प्रति कार्ड दिखाते हैं।`
-            : `Note: Standalone Instagram Stories cards display up to 60s per card. Since your video is ${Math.round(duration)}s, ensure Instagram Reels and Feed placements are enabled for seamless 70s continuous playback.`;
+            : `Note: Standalone Instagram Stories cards display up to 60s per card. Since your video is ${Math.round(duration)}s, Instagram Reels and Feeds placements ensure seamless 70s full playback.`;
         }
 
         let ratioLabel = 'Custom';
         let recommendation = '';
         if (Math.abs(ratio - (9 / 16)) <= 0.08) {
           ratioLabel = '9:16 Full Screen (1080 × 1920)';
-          recommendation = language === 'hi' ? 'इंस्टाग्राम रील्स, फेसबुक रील्स और स्टोरीज़ के लिए उपयुक्त।' : 'Perfect for Instagram Reels, Facebook Reels, and Stories.';
+          recommendation = language === 'hi' ? 'इंस्टाग्राम रील्स, फेसबुक रील्स और स्टोरीज़ के लिए उपयुक्त।' : 'Optimal for Instagram Reels, Facebook Reels, and Stories.';
         } else if (Math.abs(ratio - 1.0) <= 0.08) {
           ratioLabel = '1:1 Square (1080 × 1080)';
           recommendation = language === 'hi' ? 'फ़ीड वीडियो प्लेसमेंट के लिए उपयुक्त।' : 'Optimal for Feed video placements.';
@@ -685,17 +766,63 @@ export const CreateAdFlow: React.FC<CreateAdFlowProps> = ({
         const secs = Math.round(duration % 60);
         const durationFormatted = `${mins > 0 ? `${mins}m ` : ''}${secs}s`;
 
-        setUploadProgress(60);
-        // Upload original uncompressed video
-        const uploaded = await api.uploadCreative(file);
+        let uploadedUrl = '';
+        const CHUNK_THRESHOLD = 20 * 1024 * 1024; // Use chunked/resumable upload for files > 20MB
+
+        if (file.size > CHUNK_THRESHOLD) {
+          // Chunked Resumable Upload
+          const CHUNK_SIZE = 10 * 1024 * 1024; // 10MB chunks
+          const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
+          const uploadId = 'up_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
+
+          let isAborted = false;
+          uploadAbortRef.current = () => {
+            isAborted = true;
+            api.abortCreativeUpload(uploadId).catch(() => {});
+          };
+
+          for (let i = 0; i < totalChunks; i++) {
+            if (isAborted) {
+              throw new Error(language === 'hi' ? 'अपलोड उपयोगकर्ता द्वारा रद्द कर दिया गया था।' : 'Upload was cancelled.');
+            }
+
+            const start = i * CHUNK_SIZE;
+            const end = Math.min(start + CHUNK_SIZE, file.size);
+            const chunkSlice = file.slice(start, end);
+
+            const chunkPct = Math.round(((i + 1) / totalChunks) * 85);
+            setUploadProgress(Math.max(20, chunkPct));
+            setUploadDetail(
+              language === 'hi'
+                ? `भाग ${i + 1}/${totalChunks} अपलोड हो रहा है (${formatFileSize(end)} / ${formatFileSize(file.size)})...`
+                : `Uploading chunk ${i + 1} of ${totalChunks} (${formatFileSize(end)} / ${formatFileSize(file.size)})...`
+            );
+
+            await api.uploadCreativeChunk(chunkSlice, uploadId, i, totalChunks);
+          }
+
+          setUploadProgress(95);
+          setUploadDetail(language === 'hi' ? 'वीडियो फ़ाइल अंतिम रूप दी जा रही है...' : 'Verifying and finalizing video creative...');
+          const completeResult = await api.completeCreativeUpload(uploadId, file.name, file.type, duration);
+          uploadedUrl = completeResult.url;
+        } else {
+          // Standard Direct Upload for smaller files (<20MB)
+          setUploadProgress(40);
+          setUploadDetail(language === 'hi' ? 'वीडियो सुरक्षित रूप से अपलोड किया जा रहा है...' : 'Uploading video file...');
+          const uploaded = await api.uploadCreative(file);
+          uploadedUrl = uploaded.url;
+        }
+
         setUploadProgress(100);
+        setUploadDetail(null);
         setCreativeFile(file);
-        setCreativeUrl(uploaded.url);
+        setCreativeUrl(uploadedUrl);
         setCreativeType('video');
         setRestoredFileName(file.name);
         const metadata: MediaMetadata = {
           width: w,
           height: h,
+          resolution: resolutionLabel,
           aspectRatio: ratioLabel,
           ratioValue: ratio,
           duration,
@@ -708,14 +835,35 @@ export const CreateAdFlow: React.FC<CreateAdFlowProps> = ({
           warningNotice,
         };
         setMediaMetadata(metadata);
-        persistMediaDraft(uploaded.url, 'video', metadata, file.name);
+        persistMediaDraft(uploadedUrl, 'video', metadata, file.name);
       } catch (err: any) {
         setUploadError(err.message || 'Video processing failed. Please verify the file.');
       } finally {
+        uploadAbortRef.current = null;
         URL.revokeObjectURL(objectUrl);
         setIsUploading(false);
-        setTimeout(() => setUploadProgress(0), 400);
+        setTimeout(() => {
+          setUploadProgress(0);
+          setUploadDetail(null);
+        }, 500);
       }
+    }
+  };
+
+  const handleCancelUpload = () => {
+    if (uploadAbortRef.current) {
+      uploadAbortRef.current();
+      uploadAbortRef.current = null;
+    }
+    setIsUploading(false);
+    setUploadProgress(0);
+    setUploadDetail(null);
+    setUploadError(language === 'hi' ? 'अपलोड रद्द कर दिया गया।' : 'Upload was cancelled.');
+  };
+
+  const handleRetryUpload = () => {
+    if (lastSelectedFileRef.current) {
+      processMediaFile(lastSelectedFileRef.current);
     }
   };
 
@@ -795,14 +943,29 @@ export const CreateAdFlow: React.FC<CreateAdFlowProps> = ({
     switch (s) {
       case 1:
         return !!objective;
-      case 2:
-        return (
-          !isUploading &&
-          !!headline.trim() &&
-          headline.trim().length <= 100 &&
-          !!description.trim() &&
-          description.trim().length <= 400
-        );
+      case 2: {
+        if (isUploading) return false;
+        if (!headline.trim() || headline.trim().length > 100) return false;
+        if (!description.trim() || description.trim().length > 400) return false;
+
+        const currentCta = CTA_OPTIONS.find((c) => c.value === callToAction);
+        const ctaCategory = currentCta?.category || 'url';
+
+        if (ctaCategory === 'phone' || ctaCategory === 'whatsapp') {
+          const digits = phoneNumber.replace(/\D/g, '');
+          if (digits.length < 10) return false;
+        } else if (ctaCategory === 'url') {
+          const trimmedUrl = destinationUrl.trim();
+          if (!trimmedUrl) return false;
+          try {
+            const parsed = new URL(trimmedUrl.startsWith('http://') || trimmedUrl.startsWith('https://') ? trimmedUrl : `https://${trimmedUrl}`);
+            if (!parsed.hostname || !parsed.hostname.includes('.')) return false;
+          } catch {
+            return false;
+          }
+        }
+        return true;
+      }
       case 3:
         return selectedPlacements.length > 0;
       case 4:
@@ -830,8 +993,31 @@ export const CreateAdFlow: React.FC<CreateAdFlowProps> = ({
       const finalPrimaryText = finalDescription || finalHeadline;
       const finalBusinessName = businessName.trim() || user?.name || 'SMAP Verified Merchant';
       const finalCreativeUrl = creativeUrl || '/smap_hero_visual_1790756029679.jpg';
-      const finalDestinationUrl = destinationUrl.trim() || 'https://smap-ads.onrender.com';
       const finalCallToAction = callToAction || 'LEARN_MORE';
+
+      const currentCta = CTA_OPTIONS.find((c) => c.value === finalCallToAction);
+      const ctaCategory = currentCta?.category || 'url';
+      let finalDestType: 'website' | 'whatsapp' | 'phone' | 'instagram' = 'website';
+      let finalDestUrl = destinationUrl.trim();
+
+      if (ctaCategory === 'phone') {
+        finalDestType = 'phone';
+        finalDestUrl = `tel:${phoneNumber.replace(/\s+/g, '')}`;
+      } else if (ctaCategory === 'whatsapp') {
+        finalDestType = 'whatsapp';
+        const cleanPhone = phoneNumber.replace(/\D/g, '');
+        const waNumber = cleanPhone.length === 10 ? `91${cleanPhone}` : cleanPhone;
+        finalDestUrl = `https://wa.me/${waNumber}`;
+      } else if (ctaCategory === 'instagram') {
+        finalDestType = 'instagram';
+        const igHandle = metaConnection?.instagram_username || 'ravi105065';
+        finalDestUrl = `https://instagram.com/${igHandle}`;
+      } else {
+        finalDestType = 'website';
+        if (!finalDestUrl.startsWith('http://') && !finalDestUrl.startsWith('https://')) {
+          finalDestUrl = `https://${finalDestUrl}`;
+        }
+      }
 
       const payload = {
         packageId: selectedPackage.id,
@@ -841,8 +1027,9 @@ export const CreateAdFlow: React.FC<CreateAdFlowProps> = ({
         primaryText: finalPrimaryText,
         description: finalDescription,
         callToAction: finalCallToAction,
-        destinationType: destinationType || 'website',
-        destinationUrl: finalDestinationUrl,
+        destinationType: finalDestType,
+        destinationUrl: finalDestUrl,
+        phoneNumber: phoneNumber.trim() || undefined,
         creativeUrl: finalCreativeUrl,
         creativeType: creativeType || 'image',
         placements: selectedPlacements,
@@ -1054,7 +1241,7 @@ export const CreateAdFlow: React.FC<CreateAdFlowProps> = ({
                   {t.createAd.uploadCreative || 'Ad Creative (Image or Video)'}
                 </label>
                 <span className="text-[10px] text-slate-400 font-medium">
-                  {language === 'hi' ? 'छवि ≤ 30MB • वीडियो ≤ 100MB (3-70s)' : 'Image ≤ 30MB • Video ≤ 100MB (3-70s)'}
+                  {language === 'hi' ? 'छवि ≤ 30MB • वीडियो 360p–1080p (3–70s)' : 'Image ≤ 30MB • Video 360p–1080p (3–70s)'}
                 </span>
               </div>
 
@@ -1084,11 +1271,21 @@ export const CreateAdFlow: React.FC<CreateAdFlowProps> = ({
                       style={{ width: `${uploadProgress}%` }}
                     />
                   </div>
-                  <p className="text-[11px] text-slate-500">
-                    {language === 'hi'
-                      ? 'मेटा विज्ञापनों के लिए प्रारूप, रिज़ॉल्यूशन और पहलू अनुपात की जांच की जा रही है।'
-                      : 'Verifying dimensions, lossless quality, and Meta placement compliance.'}
-                  </p>
+                  {uploadDetail && (
+                    <p className="text-[11px] text-slate-600 dark:text-slate-400 font-medium">
+                      {uploadDetail}
+                    </p>
+                  )}
+                  <div className="pt-1">
+                    <button
+                      type="button"
+                      onClick={handleCancelUpload}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/30 text-xs font-semibold text-red-600 dark:text-red-400 hover:bg-red-100 transition-colors cursor-pointer"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                      <span>{language === 'hi' ? 'अपलोड रद्द करें' : 'Cancel Upload'}</span>
+                    </button>
+                  </div>
                 </div>
               ) : creativeFile || (creativeUrl && creativeUrl !== '/smap_hero_visual_1790756029679.jpg') || restoredFileName ? (
                 /* Uploaded File Card with Preview, Meta info, Replace and Remove */
@@ -1127,6 +1324,11 @@ export const CreateAdFlow: React.FC<CreateAdFlowProps> = ({
                         <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-violet-600 text-white">
                           {creativeType === 'video' ? 'Video' : 'Image'}
                         </span>
+                        {mediaMetadata?.resolution && (
+                          <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
+                            {mediaMetadata.resolution}
+                          </span>
+                        )}
                         {mediaMetadata?.aspectRatio && (
                           <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
                             {mediaMetadata.aspectRatio}
@@ -1207,8 +1409,8 @@ export const CreateAdFlow: React.FC<CreateAdFlowProps> = ({
                       </p>
                       <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
                         {language === 'hi'
-                          ? 'समर्थित प्रारूप: JPG, JPEG, PNG, WEBP (अधिकतम 30MB) • MP4, MOV (अधिकतम 100MB, 3-70s)'
-                          : 'JPG, JPEG, PNG, WEBP (up to 30MB) • MP4, MOV up to 70s (up to 100MB)'}
+                          ? 'JPG, JPEG, PNG, WEBP (≤ 30MB) • उच्च-गुणवत्ता MP4, MOV (360p–1080p, 3–70s)'
+                          : 'JPG, JPEG, PNG, WEBP (up to 30MB) • High-Res MP4, MOV (360p–1080p, 3–70s)'}
                       </p>
                     </div>
 
@@ -1227,14 +1429,28 @@ export const CreateAdFlow: React.FC<CreateAdFlowProps> = ({
                 </div>
               )}
 
-              {/* Upload Validation Error Notice */}
+              {/* Upload Validation Error Notice with Retry Button */}
               {uploadError && (
-                <div className="p-3.5 rounded-xl bg-red-500/10 border border-red-500/30 text-red-600 dark:text-red-400 text-xs flex items-start gap-2.5">
-                  <AlertCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />
-                  <div className="flex-1">
-                    <span className="font-semibold">{language === 'hi' ? 'अपलोड त्रुटि:' : 'Upload validation notice:'}</span>{' '}
-                    <span>{uploadError}</span>
+                <div className="p-3.5 rounded-xl bg-red-500/10 border border-red-500/30 text-red-600 dark:text-red-400 text-xs space-y-2">
+                  <div className="flex items-start gap-2.5">
+                    <AlertCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />
+                    <div className="flex-1">
+                      <span className="font-semibold">{language === 'hi' ? 'अपलोड त्रुटि:' : 'Upload validation notice:'}</span>{' '}
+                      <span>{uploadError}</span>
+                    </div>
                   </div>
+                  {lastSelectedFileRef.current && (
+                    <div className="pl-6">
+                      <button
+                        type="button"
+                        onClick={handleRetryUpload}
+                        className="inline-flex items-center gap-1 px-3 py-1 rounded-lg bg-red-600 hover:bg-red-500 text-white text-[11px] font-semibold cursor-pointer shadow-sm"
+                      >
+                        <RefreshCw className="h-3 w-3" />
+                        <span>{language === 'hi' ? 'पुनः प्रयास करें' : 'Retry Upload'}</span>
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -1246,11 +1462,11 @@ export const CreateAdFlow: React.FC<CreateAdFlowProps> = ({
                 </div>
                 <div className="p-2 rounded-xl bg-slate-100 dark:bg-slate-900/60 border border-slate-200/60 dark:border-slate-800/60 text-center">
                   <span className="font-bold text-slate-700 dark:text-slate-300 block">Stories & Reels</span>
-                  <span>9:16 Full Screen</span>
+                  <span>9:16 (360p–1080p)</span>
                 </div>
                 <div className="p-2 rounded-xl bg-slate-100 dark:bg-slate-900/60 border border-slate-200/60 dark:border-slate-800/60 text-center">
                   <span className="font-bold text-slate-700 dark:text-slate-300 block">Video Duration</span>
-                  <span>3s to 70s</span>
+                  <span>3s to 70s max</span>
                 </div>
               </div>
             </div>
@@ -1271,7 +1487,11 @@ export const CreateAdFlow: React.FC<CreateAdFlowProps> = ({
               <input
                 type="text"
                 value={headline}
-                onChange={(e) => setHeadline(e.target.value)}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setHeadline(val);
+                  try { localStorage.setItem('smap_draft_headline', val); } catch {}
+                }}
                 maxLength={100}
                 placeholder={t.createAd.headingPlaceholder || 'e.g., Special Festive Discount on All Orders'}
                 className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 py-3 px-3.5 text-xs sm:text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:border-violet-500 focus:ring-1 focus:ring-violet-500 focus:outline-none transition-all shadow-inner"
@@ -1300,17 +1520,223 @@ export const CreateAdFlow: React.FC<CreateAdFlowProps> = ({
                 rows={4}
                 value={description}
                 onChange={(e) => {
-                  setDescription(e.target.value);
-                  setPrimaryText(e.target.value);
+                  const val = e.target.value;
+                  setDescription(val);
+                  setPrimaryText(val);
+                  try { localStorage.setItem('smap_draft_description', val); } catch {}
                 }}
                 maxLength={400}
                 placeholder={t.createAd.descriptionPlaceholder || 'e.g., Discover curated, high-quality collections with nationwide fast delivery. Shop now and enjoy verified satisfaction!'}
-                className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 py-3 px-3.5 text-xs sm:text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:border-violet-500 focus:ring-1 focus:ring-violet-500 focus:outline-none transition-all shadow-inner resize-y min-h-[110px]"
+                className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 py-3 px-3.5 text-xs sm:text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:border-violet-500 focus:ring-1 focus:ring-violet-500 focus:outline-none transition-all shadow-inner resize-y min-h-[100px]"
               />
               {description.trim().length === 0 && (
                 <span className="text-[10px] text-amber-500 font-medium block">
                   {language === 'hi' ? 'विवरण आवश्यक है (अधिकतम 400 वर्ण)' : 'Description is required (maximum 400 characters)'}
                 </span>
+              )}
+            </div>
+
+            {/* Field 3: Call-to-Action (CTA) Selector (10 Options) */}
+            <div className="space-y-1.5">
+              <label className="block text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200">
+                {language === 'hi' ? 'कॉल-टू-एक्शन (CTA) बटन' : 'Call-to-Action (CTA) Button'} <span className="text-red-500">*</span>
+              </label>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                {language === 'hi'
+                  ? 'चुनें कि आपके विज्ञापन पर कौन सा बटन दिखेगा।'
+                  : 'Choose the action button shown to prospective customers on Meta platforms.'}
+              </p>
+              <div className="relative">
+                <select
+                  value={callToAction}
+                  onChange={(e) => {
+                    const newCta = e.target.value;
+                    setCallToAction(newCta);
+                    try { localStorage.setItem('smap_draft_cta', newCta); } catch {}
+                    const opt = CTA_OPTIONS.find((c) => c.value === newCta);
+                    if (opt) {
+                      if (opt.category === 'phone') setDestinationType('phone');
+                      else if (opt.category === 'whatsapp') setDestinationType('whatsapp');
+                      else if (opt.category === 'instagram') setDestinationType('instagram');
+                      else setDestinationType('website');
+                    }
+                  }}
+                  className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 py-3 px-3.5 text-xs sm:text-sm text-slate-900 dark:text-white focus:border-violet-500 focus:ring-1 focus:ring-violet-500 focus:outline-none transition-all shadow-inner cursor-pointer"
+                >
+                  <optgroup label="Website & Conversion CTAs">
+                    <option value="LEARN_MORE">Learn More (Default Website Action)</option>
+                    <option value="SHOP_NOW">Shop Now (Online Store Catalog)</option>
+                    <option value="SIGN_UP">Sign Up (Registration / Membership)</option>
+                    <option value="ORDER_NOW">Order Now (Direct Food / Product Orders)</option>
+                    <option value="BOOK_NOW">Book Now (Reservations / Appointments)</option>
+                    <option value="CONTACT_US">Contact Us (Lead Forms & Queries)</option>
+                    <option value="GET_OFFER">Get Offer (Promotions & Coupons)</option>
+                  </optgroup>
+                  <optgroup label="Phone Call & Chat CTAs">
+                    <option value="CALL_NOW">Call Now (Direct Inbound Phone Call)</option>
+                    <option value="SEND_WHATSAPP_MESSAGE">WhatsApp Message (WhatsApp Business Chat)</option>
+                    <option value="INSTAGRAM_MESSAGE">Send Message / Instagram Direct (Direct IG Message)</option>
+                  </optgroup>
+                </select>
+              </div>
+            </div>
+
+            {/* Field 4: Dynamic Destination & Contact Settings */}
+            <div className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/40 space-y-3">
+              {/* Case A: Call Now CTA -> Phone Number Required */}
+              {callToAction === 'CALL_NOW' && (
+                <div className="space-y-1.5">
+                  <div className="flex items-center gap-1.5">
+                    <Phone className="h-4 w-4 text-violet-500" />
+                    <label className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200">
+                      {language === 'hi' ? 'व्यवसाय फ़ोन नंबर (आवश्यक)' : 'Business / Contact Phone Number (Required)'} <span className="text-red-500">*</span>
+                    </label>
+                  </div>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                    {language === 'hi'
+                      ? 'ग्राहक जो "Call Now" पर टैप करेंगे वे सीधे इस नंबर पर कॉल करेंगे।'
+                      : 'Customers who tap "Call Now" will immediately place a phone call to this number.'}
+                  </p>
+                  <input
+                    type="tel"
+                    value={phoneNumber}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setPhoneNumber(val);
+                      try { localStorage.setItem('smap_draft_phone', val); } catch {}
+                    }}
+                    placeholder="+91 98765 43210"
+                    className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 py-2.5 px-3.5 text-xs sm:text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:border-violet-500 focus:outline-none"
+                  />
+                  {phoneNumber.replace(/\D/g, '').length < 10 && (
+                    <span className="text-[10px] text-amber-500 font-medium block">
+                      {language === 'hi' ? 'कम से कम 10 अंकों का मान्य फ़ोन नंबर दर्ज करें।' : 'Please enter a valid phone number with at least 10 digits.'}
+                    </span>
+                  )}
+                </div>
+              )}
+
+              {/* Case B: WhatsApp Message CTA -> WhatsApp Business Phone Number Required */}
+              {callToAction === 'SEND_WHATSAPP_MESSAGE' && (
+                <div className="space-y-1.5">
+                  <div className="flex items-center gap-1.5">
+                    <MessageCircle className="h-4 w-4 text-emerald-500" />
+                    <label className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200">
+                      {language === 'hi' ? 'व्हाट्सएप बिजनेस फ़ोन नंबर (आवश्यक)' : 'WhatsApp Business Phone Number (Required)'} <span className="text-red-500">*</span>
+                    </label>
+                  </div>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                    {language === 'hi'
+                      ? 'विज्ञापन पर टैप करने वाले संभावित ग्राहक सीधे आपके व्हाट्सएप चैट में पहुंचेंगे।'
+                      : 'Users tapping "WhatsApp Message" will open a verified WhatsApp chat conversation with this number.'}
+                  </p>
+                  <input
+                    type="tel"
+                    value={phoneNumber}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setPhoneNumber(val);
+                      try { localStorage.setItem('smap_draft_phone', val); } catch {}
+                    }}
+                    placeholder="+91 98765 43210"
+                    className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 py-2.5 px-3.5 text-xs sm:text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:border-violet-500 focus:outline-none"
+                  />
+                  {phoneNumber.replace(/\D/g, '').length < 10 && (
+                    <span className="text-[10px] text-amber-500 font-medium block">
+                      {language === 'hi' ? 'कम से कम 10 अंकों का व्हाट्सएप नंबर दर्ज करें।' : 'Please enter a valid WhatsApp phone number with at least 10 digits.'}
+                    </span>
+                  )}
+                </div>
+              )}
+
+              {/* Case C: Instagram Direct CTA */}
+              {callToAction === 'INSTAGRAM_MESSAGE' && (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-1.5">
+                    <Instagram className="h-4 w-4 text-pink-500" />
+                    <label className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200">
+                      {language === 'hi' ? 'इंस्टाग्राम डायरेक्ट गंतव्य' : 'Instagram Direct Destination'}
+                    </label>
+                  </div>
+                  <div className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-between text-xs">
+                    <div className="flex items-center gap-2">
+                      <div className="h-7 w-7 rounded-full bg-gradient-to-tr from-amber-500 to-rose-500 flex items-center justify-center text-white font-bold text-[10px]">
+                        IG
+                      </div>
+                      <div>
+                        <span className="font-bold text-slate-900 dark:text-white">
+                          @{metaConnection?.instagram_username || 'ravi105065'}
+                        </span>
+                        <span className="text-[10px] text-emerald-600 dark:text-emerald-400 block font-medium">
+                          ✓ Verified Connected Account
+                        </span>
+                      </div>
+                    </div>
+                    <span className="text-[10px] px-2 py-0.5 rounded bg-violet-500/10 text-violet-600 dark:text-violet-400 font-bold uppercase">
+                      Direct Chat
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                    {language === 'hi'
+                      ? 'विज्ञापन पर टैप करने वाले लोग सीधे आपके अधिकृत इंस्टाग्राम इनबॉक्स में संदेश भेज सकेंगे।'
+                      : 'Shoppers who tap the ad will be taken directly into an Instagram Direct Message conversation with your connected business profile.'}
+                  </p>
+                </div>
+              )}
+
+              {/* Case D: Standard URL-based CTAs -> Destination URL Required + Optional Phone */}
+              {CTA_OPTIONS.find((c) => c.value === callToAction)?.category === 'url' && (
+                <>
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-1.5">
+                      <Globe className="h-4 w-4 text-violet-500" />
+                      <label className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200">
+                        {language === 'hi' ? 'गंतव्य वेबसाइट या लैंडिंग पेज URL (आवश्यक)' : 'Destination Website or Landing Page URL (Required)'} <span className="text-red-500">*</span>
+                      </label>
+                    </div>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                      {language === 'hi'
+                        ? 'विज्ञापन पर क्लिक करने पर ग्राहक जिस वेबसाइट या ऑनलाइन स्टोर पर पहुंचेंगे।'
+                        : 'The secure website URL or landing page shoppers visit after tapping your ad.'}
+                    </p>
+                    <input
+                      type="url"
+                      value={destinationUrl}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setDestinationUrl(val);
+                        try { localStorage.setItem('smap_draft_destination_url', val); } catch {}
+                      }}
+                      placeholder="https://yourstore.com/festive-deal"
+                      className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 py-2.5 px-3.5 text-xs sm:text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:border-violet-500 focus:outline-none"
+                    />
+                    {(!destinationUrl.trim() || (!destinationUrl.startsWith('http://') && !destinationUrl.startsWith('https://'))) && (
+                      <span className="text-[10px] text-amber-500 font-medium block">
+                        {language === 'hi' ? 'कृपया एक मान्य वेबसाइट URL (https://...) दर्ज करें।' : 'Please enter a valid website URL starting with https:// or http://.'}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="space-y-1.5 pt-2 border-t border-slate-200 dark:border-slate-800">
+                    <div className="flex items-center gap-1.5">
+                      <Phone className="h-4 w-4 text-slate-400" />
+                      <label className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200">
+                        {language === 'hi' ? 'व्यवसाय संपर्क फ़ोन नंबर (वैकल्पिक)' : 'Business / Contact Phone Number (Optional)'}
+                      </label>
+                    </div>
+                    <input
+                      type="tel"
+                      value={phoneNumber}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setPhoneNumber(val);
+                        try { localStorage.setItem('smap_draft_phone', val); } catch {}
+                      }}
+                      placeholder="+91 98765 43210 (optional)"
+                      className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 py-2 px-3.5 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 focus:border-violet-500 focus:outline-none"
+                    />
+                  </div>
+                </>
               )}
             </div>
 
@@ -1321,7 +1747,7 @@ export const CreateAdFlow: React.FC<CreateAdFlowProps> = ({
                 <span>{t.createAd.safeDefaultsTitle || 'Automated Meta Setup & Safe Defaults'}</span>
               </div>
               <p className="text-[11px] sm:text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-                {t.createAd.safeDefaultsDesc || 'High-res lossless visual, verified merchant identity, "Learn More" action, and secured destination are pre-configured for Meta Marketing API compliance.'}
+                {t.createAd.safeDefaultsDesc || 'High-res lossless visual, verified merchant identity, selected CTA, and secured destination are pre-configured for Meta Marketing API compliance.'}
               </p>
               <div className="pt-2 flex flex-wrap items-center gap-2 text-[10px] text-slate-500 dark:text-slate-400">
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
@@ -1334,7 +1760,7 @@ export const CreateAdFlow: React.FC<CreateAdFlowProps> = ({
                 </span>
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
                   <Check className="h-3 w-3 text-emerald-500" />
-                  CTA: Learn More
+                  CTA: {CTA_OPTIONS.find((c) => c.value === callToAction)?.label || 'Learn More'}
                 </span>
               </div>
             </div>
@@ -1512,7 +1938,20 @@ export const CreateAdFlow: React.FC<CreateAdFlowProps> = ({
                 <div className="p-3 bg-slate-50 dark:bg-slate-950 flex items-center justify-between border-t border-slate-100 dark:border-slate-900">
                   <div className="flex-1 mr-2 overflow-hidden">
                     <span className="text-[10px] text-slate-400 uppercase tracking-wider block truncate">
-                      {destinationType === 'website' ? new URL(destinationUrl || 'https://example.com').hostname : 'WhatsApp Business'}
+                      {callToAction === 'CALL_NOW'
+                        ? (phoneNumber ? `Call: ${phoneNumber}` : 'Direct Phone Call')
+                        : callToAction === 'SEND_WHATSAPP_MESSAGE'
+                        ? (phoneNumber ? `WhatsApp: ${phoneNumber}` : 'WhatsApp Business')
+                        : callToAction === 'INSTAGRAM_MESSAGE'
+                        ? `@${metaConnection?.instagram_username || 'ravi105065'}`
+                        : (() => {
+                            try {
+                              const u = new URL(destinationUrl.startsWith('http') ? destinationUrl : `https://${destinationUrl}`);
+                              return u.hostname;
+                            } catch {
+                              return destinationUrl || 'yourstore.com';
+                            }
+                          })()}
                     </span>
                     <h4 className="font-bold text-xs truncate text-slate-900 dark:text-white">
                       {headline || 'Headline'}
@@ -1523,9 +1962,12 @@ export const CreateAdFlow: React.FC<CreateAdFlowProps> = ({
                   </div>
                   <button
                     type="button"
-                    className="flex-shrink-0 px-3 py-1.5 rounded-lg bg-slate-900 text-white dark:bg-white dark:text-slate-900 font-bold text-[11px] shadow-sm"
+                    className="flex-shrink-0 px-3 py-1.5 rounded-lg bg-slate-900 text-white dark:bg-white dark:text-slate-900 font-bold text-[11px] shadow-sm flex items-center gap-1"
                   >
-                    {CTA_OPTIONS.find((c) => c.value === callToAction)?.label}
+                    {callToAction === 'CALL_NOW' && <Phone className="h-3 w-3 inline" />}
+                    {callToAction === 'SEND_WHATSAPP_MESSAGE' && <MessageCircle className="h-3 w-3 inline text-emerald-400" />}
+                    {callToAction === 'INSTAGRAM_MESSAGE' && <Instagram className="h-3 w-3 inline text-pink-400" />}
+                    <span>{CTA_OPTIONS.find((c) => c.value === callToAction)?.label || 'Learn More'}</span>
                   </button>
                 </div>
               )}
@@ -2162,9 +2604,23 @@ export const CreateAdFlow: React.FC<CreateAdFlowProps> = ({
               <div className="pt-2 border-t border-slate-100 dark:border-slate-800 text-[11px] text-slate-500 flex justify-between">
                 <span>Destination:</span>
                 <span className="font-medium text-slate-700 dark:text-slate-300 truncate max-w-[200px]">
-                  {destinationUrl}
+                  {callToAction === 'CALL_NOW'
+                    ? (phoneNumber ? `Call: ${phoneNumber}` : 'Direct Phone Call')
+                    : callToAction === 'SEND_WHATSAPP_MESSAGE'
+                    ? `WhatsApp: ${phoneNumber || 'Business Chat'}`
+                    : callToAction === 'INSTAGRAM_MESSAGE'
+                    ? `@${metaConnection?.instagram_username || 'ravi105065'} (Instagram Direct)`
+                    : destinationUrl}
                 </span>
               </div>
+              {phoneNumber && callToAction !== 'CALL_NOW' && callToAction !== 'SEND_WHATSAPP_MESSAGE' && (
+                <div className="text-[11px] text-slate-500 flex justify-between">
+                  <span>Contact Phone:</span>
+                  <span className="font-medium text-slate-700 dark:text-slate-300">
+                    {phoneNumber}
+                  </span>
+                </div>
+              )}
             </div>
 
             {/* Box 2: Objective & Placements */}

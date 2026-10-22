@@ -56,12 +56,12 @@ const isProduction = process.env.NODE_ENV === 'production';
 
 // Body parsing & cookies
 app.use(express.json({
-  limit: '10mb',
+  limit: '50mb',
   verify: (req: any, _res, buf) => {
     req.rawBody = buf;
   },
 }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(cookieParser());
 
 // Static uploads directory
@@ -161,6 +161,9 @@ if (!isProduction) {
   });
 }
 
-app.listen(PORT, '0.0.0.0', () => {
+const server = app.listen(PORT, '0.0.0.0', () => {
   console.log(`SMAP advertising server running at http://0.0.0.0:${PORT} [${isProduction ? 'PRODUCTION' : 'DEVELOPMENT'}]`);
 });
+server.timeout = 600000; // 10 minutes timeout for high-res video uploads
+server.keepAliveTimeout = 65000;
+server.headersTimeout = 66000;

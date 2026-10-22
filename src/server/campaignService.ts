@@ -14,8 +14,11 @@ export class CampaignService {
     headline: string;
     description?: string;
     callToAction?: string;
-    destinationType?: 'website' | 'whatsapp' | 'facebook_page' | 'instagram_profile';
+    destinationType?: 'website' | 'whatsapp' | 'facebook_page' | 'instagram_profile' | 'instagram' | 'phone';
     destinationUrl?: string;
+    phoneNumber?: string;
+    phone_number?: string;
+    phone?: string;
     placements?: Array<'facebook_feed' | 'instagram_feed' | 'instagram_stories' | 'instagram_reels'>;
     targeting?: CampaignTargeting;
     dailyBudget?: number;
@@ -40,12 +43,52 @@ export class CampaignService {
     }
     const primaryText = (data.primaryText?.trim()) || description || headline;
     const creativeUrl = data.creativeUrl || '/smap_hero_visual_1790756029679.jpg';
-    const destinationType = data.destinationType || 'website';
-    const destinationUrl = (data.destinationUrl?.trim()) || 'https://smap-ads.onrender.com';
     const callToAction = data.callToAction || 'LEARN_MORE';
 
-    // Validate destination based on type
-    if (destinationType === 'website') {
+    const rawPhoneNumber = (data.phoneNumber || data.phone_number || data.phone)?.trim();
+    let phoneNumber = rawPhoneNumber || undefined;
+    if (callToAction === 'CALL_NOW') {
+      const phoneDigits = (phoneNumber || data.destinationUrl || '').replace(/[^0-9]/g, '');
+      if (phoneDigits.length < 10) {
+        throw new Error('Call Now requires a valid contact phone number with at least 10 digits (e.g. +91 98765 43210)');
+      }
+      if (!phoneNumber && phoneDigits) {
+        phoneNumber = data.destinationUrl?.startsWith('+') ? data.destinationUrl : `+91 ${phoneDigits}`;
+      }
+    } else if (phoneNumber) {
+      const phoneDigits = phoneNumber.replace(/[^0-9]/g, '');
+      if (phoneDigits.length < 10) {
+        throw new Error('Please enter a valid contact phone number with at least 10 digits');
+      }
+    }
+
+    let destinationType: 'website' | 'whatsapp' | 'facebook_page' | 'instagram_profile' | 'instagram' | 'phone' = data.destinationType || (callToAction === 'CALL_NOW' ? 'phone' : (callToAction === 'SEND_WHATSAPP_MESSAGE' ? 'whatsapp' : (callToAction === 'INSTAGRAM_MESSAGE' ? 'instagram' : 'website')));
+    let destinationUrl = (data.destinationUrl?.trim()) || '';
+
+    if (callToAction === 'CALL_NOW') {
+      destinationType = 'phone';
+      if (!destinationUrl) {
+        destinationUrl = `tel:${phoneNumber}`;
+      }
+    } else if (callToAction === 'SEND_WHATSAPP_MESSAGE' || destinationType === 'whatsapp') {
+      destinationType = 'whatsapp';
+      const cleanPhone = (destinationUrl || phoneNumber || '').replace(/[^0-9]/g, '');
+      if (cleanPhone.length < 10) {
+        throw new Error('Please enter a valid WhatsApp phone number with country code (e.g. 919876543210)');
+      }
+      if (!destinationUrl.startsWith('http')) {
+        destinationUrl = `https://wa.me/${cleanPhone}`;
+      }
+    } else if (callToAction === 'INSTAGRAM_MESSAGE' || destinationType === 'instagram_profile' || destinationType === 'instagram') {
+      destinationType = data.destinationType === 'instagram_profile' ? 'instagram_profile' : 'instagram';
+      if (!destinationUrl) {
+        destinationUrl = 'https://instagram.com/smap';
+      }
+    } else {
+      destinationType = 'website';
+      if (!destinationUrl) {
+        destinationUrl = 'https://smap-ads.onrender.com';
+      }
       try {
         const u = new URL(destinationUrl);
         if (u.protocol !== 'http:' && u.protocol !== 'https:') {
@@ -53,11 +96,6 @@ export class CampaignService {
         }
       } catch {
         throw new Error('Please enter a valid website URL (e.g. https://yourbusiness.com)');
-      }
-    } else if (destinationType === 'whatsapp') {
-      const cleanPhone = destinationUrl.replace(/[^0-9]/g, '');
-      if (cleanPhone.length < 10) {
-        throw new Error('Please enter a valid WhatsApp phone number with country code');
       }
     }
 
@@ -108,6 +146,7 @@ export class CampaignService {
       call_to_action: callToAction,
       destination_type: destinationType,
       destination_url: destinationUrl,
+      phone_number: phoneNumber,
       placements,
       targeting,
       daily_budget: dailyBudget,
@@ -333,8 +372,11 @@ export class CampaignService {
     headline: string;
     description?: string;
     callToAction?: string;
-    destinationType?: 'website' | 'whatsapp' | 'facebook_page' | 'instagram_profile';
+    destinationType?: 'website' | 'whatsapp' | 'facebook_page' | 'instagram_profile' | 'instagram' | 'phone';
     destinationUrl?: string;
+    phoneNumber?: string;
+    phone_number?: string;
+    phone?: string;
     placements?: Array<'facebook_feed' | 'instagram_feed' | 'instagram_stories' | 'instagram_reels'>;
     targeting?: CampaignTargeting;
     startDate?: string;
@@ -380,11 +422,52 @@ export class CampaignService {
     }
     const primaryText = (data.primaryText?.trim()) || description || headline;
     const creativeUrl = data.creativeUrl || '/smap_hero_visual_1790756029679.jpg';
-    const destinationType = data.destinationType || 'website';
-    const destinationUrl = (data.destinationUrl?.trim()) || 'https://smap-ads.onrender.com';
     const callToAction = data.callToAction || 'LEARN_MORE';
 
-    if (destinationType === 'website') {
+    const rawPhoneNumber = (data.phoneNumber || data.phone_number || data.phone)?.trim();
+    let phoneNumber = rawPhoneNumber || undefined;
+    if (callToAction === 'CALL_NOW') {
+      const phoneDigits = (phoneNumber || data.destinationUrl || '').replace(/[^0-9]/g, '');
+      if (phoneDigits.length < 10) {
+        throw new Error('Call Now requires a valid contact phone number with at least 10 digits (e.g. +91 98765 43210)');
+      }
+      if (!phoneNumber && phoneDigits) {
+        phoneNumber = data.destinationUrl?.startsWith('+') ? data.destinationUrl : `+91 ${phoneDigits}`;
+      }
+    } else if (phoneNumber) {
+      const phoneDigits = phoneNumber.replace(/[^0-9]/g, '');
+      if (phoneDigits.length < 10) {
+        throw new Error('Please enter a valid contact phone number with at least 10 digits');
+      }
+    }
+
+    let destinationType: 'website' | 'whatsapp' | 'facebook_page' | 'instagram_profile' | 'instagram' | 'phone' = data.destinationType || (callToAction === 'CALL_NOW' ? 'phone' : (callToAction === 'SEND_WHATSAPP_MESSAGE' ? 'whatsapp' : (callToAction === 'INSTAGRAM_MESSAGE' ? 'instagram' : 'website')));
+    let destinationUrl = (data.destinationUrl?.trim()) || '';
+
+    if (callToAction === 'CALL_NOW') {
+      destinationType = 'phone';
+      if (!destinationUrl) {
+        destinationUrl = `tel:${phoneNumber}`;
+      }
+    } else if (callToAction === 'SEND_WHATSAPP_MESSAGE' || destinationType === 'whatsapp') {
+      destinationType = 'whatsapp';
+      const cleanPhone = (destinationUrl || phoneNumber || '').replace(/[^0-9]/g, '');
+      if (cleanPhone.length < 10) {
+        throw new Error('Please enter a valid WhatsApp phone number with country code (e.g. 919876543210)');
+      }
+      if (!destinationUrl.startsWith('http')) {
+        destinationUrl = `https://wa.me/${cleanPhone}`;
+      }
+    } else if (callToAction === 'INSTAGRAM_MESSAGE' || destinationType === 'instagram_profile' || destinationType === 'instagram') {
+      destinationType = data.destinationType === 'instagram_profile' ? 'instagram_profile' : 'instagram';
+      if (!destinationUrl) {
+        destinationUrl = 'https://instagram.com/smap';
+      }
+    } else {
+      destinationType = 'website';
+      if (!destinationUrl) {
+        destinationUrl = 'https://smap-ads.onrender.com';
+      }
       try {
         const u = new URL(destinationUrl);
         if (u.protocol !== 'http:' && u.protocol !== 'https:') {
@@ -392,11 +475,6 @@ export class CampaignService {
         }
       } catch {
         throw new Error('Please enter a valid website URL (e.g. https://yourbusiness.com)');
-      }
-    } else if (destinationType === 'whatsapp') {
-      const cleanPhone = destinationUrl.replace(/[^0-9]/g, '');
-      if (cleanPhone.length < 10) {
-        throw new Error('Please enter a valid WhatsApp phone number with country code');
       }
     }
 
@@ -499,6 +577,7 @@ export class CampaignService {
       call_to_action: callToAction,
       destination_type: destinationType,
       destination_url: destinationUrl,
+      phone_number: phoneNumber,
       placements,
       targeting,
       daily_budget: dailyBudget,

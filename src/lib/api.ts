@@ -174,6 +174,66 @@ class ApiClient {
     });
   }
 
+  public async uploadCreativeChunk(
+    chunkOrFormData: Blob | FormData,
+    uploadId?: string,
+    chunkIndex?: number,
+    totalChunks?: number,
+    signal?: AbortSignal
+  ): Promise<{ success: boolean; uploadId: string; chunkIndex: number; totalChunks: number; size: number }> {
+    let body: FormData;
+    if (chunkOrFormData instanceof FormData) {
+      body = chunkOrFormData;
+    } else {
+      body = new FormData();
+      body.append('chunk', chunkOrFormData);
+      if (uploadId) body.append('uploadId', uploadId);
+      if (chunkIndex !== undefined) body.append('chunkIndex', String(chunkIndex));
+      if (totalChunks !== undefined) body.append('totalChunks', String(totalChunks));
+    }
+    return this.request('/campaigns/upload/chunk', {
+      method: 'POST',
+      body,
+      signal,
+    });
+  }
+
+  public async completeCreativeUpload(
+    payloadOrUploadId: { uploadId: string; totalChunks?: number; filename: string; duration?: number } | string,
+    filename?: string,
+    fileType?: string,
+    duration?: number
+  ): Promise<{
+    url: string;
+    filename: string;
+    originalName: string;
+    size: number;
+    type: 'image' | 'video';
+    duration?: number;
+  }> {
+    let payload: any;
+    if (typeof payloadOrUploadId === 'string') {
+      payload = {
+        uploadId: payloadOrUploadId,
+        filename: filename || 'creative.mp4',
+        duration,
+      };
+    } else {
+      payload = payloadOrUploadId;
+    }
+    return this.request('/campaigns/upload/complete', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  }
+
+  public async abortCreativeUpload(uploadId: string): Promise<{ success: boolean }> {
+    return this.request('/campaigns/upload/abort', {
+      method: 'POST',
+      body: JSON.stringify({ uploadId }),
+    });
+  }
+
   // Campaigns
   public createCampaign(payload: {
     packageId?: string;
@@ -187,6 +247,7 @@ class ApiClient {
     callToAction?: string;
     destinationType?: string;
     destinationUrl: string;
+    phoneNumber?: string;
     placements?: string[];
     targeting?: any;
     dailyBudget?: number;
@@ -214,6 +275,7 @@ class ApiClient {
     callToAction?: string;
     destinationType?: string;
     destinationUrl: string;
+    phoneNumber?: string;
     placements?: string[];
     targeting?: any;
     startDate?: string;

@@ -80,8 +80,9 @@ export interface Campaign {
   headline: string;
   description: string;
   call_to_action?: string;
-  destination_type: 'website' | 'whatsapp' | 'facebook_page' | 'instagram_profile';
+  destination_type: 'website' | 'whatsapp' | 'facebook_page' | 'instagram_profile' | 'instagram' | 'phone';
   destination_url: string;
+  phone_number?: string;
   placements?: PlacementType[];
   targeting: CampaignTargeting;
   daily_budget?: number;

@@ -20,8 +20,12 @@ const DATA_DIR = process.env.RENDER_DISK_PATH ||
   process.env.DATA_DIR ||
   (fs.existsSync('/var/data') ? '/var/data' : DEFAULT_DATA_DIR);
 const uploadDir = path.join(DATA_DIR, 'uploads');
+const chunkDir = path.join(uploadDir, 'chunks');
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
+}
+if (!fs.existsSync(chunkDir)) {
+  fs.mkdirSync(chunkDir, { recursive: true });
 }
 
 const storage = multer.diskStorage({
@@ -37,17 +41,33 @@ const storage = multer.diskStorage({
 
 const upload = multer({
   storage,
-  limits: { fileSize: 100 * 1024 * 1024 }, // 100MB max to support high-def 70s videos & lossless images
+  limits: { fileSize: 512 * 1024 * 1024 }, // 512MB max for high-resolution 1080p 70s videos and lossless images
   fileFilter: (_req, file, cb) => {
-    const allowed = /jpeg|jpg|png|webp|mp4|mov|webm/i;
+    const allowed = /jpeg|jpg|png|webp|mp4|mov|webm|quicktime/i;
     const ext = path.extname(file.originalname).toLowerCase().replace('.', '');
     const mime = file.mimetype.toLowerCase();
     if (allowed.test(ext) || allowed.test(mime)) {
       cb(null, true);
     } else {
-      cb(new Error('Invalid file format. High-resolution images (JPG, JPEG, PNG, WEBP) and compatible videos (MP4, MOV) up to 70s are supported.'));
+      cb(new Error('Invalid file format. High-resolution images (JPG, JPEG, PNG, WEBP) and videos (MP4, MOV) up to 70s are supported.'));
     }
   },
+});
+
+const chunkStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => {
+    cb(null, chunkDir);
+  },
+  filename: (req, _file, cb) => {
+    const uploadId = String(req.body.uploadId || 'temp').replace(/[^a-zA-Z0-9_-]/g, '');
+    const chunkIndex = String(req.body.chunkIndex || '0').replace(/[^0-9]/g, '');
+    cb(null, `${uploadId}_chunk_${chunkIndex}`);
+  },
+});
+
+const chunkUpload = multer({
+  storage: chunkStorage,
+  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB per chunk slice
 });
 
 // Auth Middleware
@@ -681,7 +701,7 @@ apiRouter.post('/campaigns/upload', requireAuth, (req, res) => {
     if (err) {
       if (err instanceof multer.MulterError) {
         if (err.code === 'LIMIT_FILE_SIZE') {
-          return res.status(400).json({ error: 'File size exceeds maximum allowed limit (100MB for video, 30MB for images).' });
+          return res.status(400).json({ error: 'File size exceeds server upload limit (512MB maximum).' });
         }
         return res.status(400).json({ error: err.message });
       }
@@ -691,7 +711,7 @@ apiRouter.post('/campaigns/upload', requireAuth, (req, res) => {
       return res.status(400).json({ error: 'No media file uploaded' });
     }
 
-    const isVideo = /mp4|mov|webm/i.test(path.extname(req.file.originalname));
+    const isVideo = /mp4|mov|webm|quicktime/i.test(path.extname(req.file.originalname));
     const fileUrl = `/api/uploads/${req.file.filename}`;
 
     res.json({
@@ -702,6 +722,103 @@ apiRouter.post('/campaigns/upload', requireAuth, (req, res) => {
       type: isVideo ? 'video' : 'image',
     });
   });
+});
+
+// Resumable & Chunked Upload for High-Definition 1080p Videos
+apiRouter.post('/campaigns/upload/chunk', requireAuth, (req, res) => {
+  chunkUpload.single('chunk')(req, res, (err: any) => {
+    if (err) {
+      return res.status(400).json({ error: err.message || 'Chunk upload failed' });
+    }
+    if (!req.file) {
+      return res.status(400).json({ error: 'No chunk file received' });
+    }
+    const uploadId = String(req.body.uploadId || '');
+    const chunkIndex = Number(req.body.chunkIndex);
+    const totalChunks = Number(req.body.totalChunks);
+
+    res.json({
+      success: true,
+      uploadId,
+      chunkIndex,
+      totalChunks,
+      size: req.file.size,
+    });
+  });
+});
+
+apiRouter.post('/campaigns/upload/complete', requireAuth, async (req, res) => {
+  try {
+    const { uploadId, totalChunks, filename, duration } = req.body;
+    if (!uploadId || !totalChunks || !filename) {
+      return res.status(400).json({ error: 'uploadId, totalChunks, and filename are required' });
+    }
+    const cleanUploadId = String(uploadId).replace(/[^a-zA-Z0-9_-]/g, '');
+    const numChunks = Number(totalChunks);
+    const ext = path.extname(filename).toLowerCase();
+    const cleanBase = path.basename(filename, ext).replace(/[^a-zA-Z0-9]/g, '_');
+    const finalFilename = `${cleanBase}_${Date.now()}${ext}`;
+    const finalFilePath = path.join(uploadDir, finalFilename);
+
+    // Verify all chunks exist
+    for (let i = 0; i < numChunks; i++) {
+      const chunkPath = path.join(chunkDir, `${cleanUploadId}_chunk_${i}`);
+      if (!fs.existsSync(chunkPath)) {
+        return res.status(400).json({ error: `Missing upload chunk ${i} of ${numChunks}. Please retry upload.` });
+      }
+    }
+
+    // Write all chunks in order
+    const writeStream = fs.createWriteStream(finalFilePath);
+    for (let i = 0; i < numChunks; i++) {
+      const chunkPath = path.join(chunkDir, `${cleanUploadId}_chunk_${i}`);
+      const chunkBuffer = fs.readFileSync(chunkPath);
+      writeStream.write(chunkBuffer);
+      try {
+        fs.unlinkSync(chunkPath);
+      } catch {}
+    }
+    writeStream.end();
+
+    const stat = fs.statSync(finalFilePath);
+    const isVideo = /mp4|mov|webm|quicktime/i.test(ext);
+
+    // Validate video duration server-side
+    if (isVideo && typeof duration === 'number' && duration > 70.9) {
+      try { fs.unlinkSync(finalFilePath); } catch {}
+      return res.status(400).json({
+        error: `Video duration is ${Math.round(duration)} seconds. Maximum allowed video duration is 1 minute 10 seconds (70 seconds). Please trim your video.`,
+      });
+    }
+
+    const fileUrl = `/api/uploads/${finalFilename}`;
+    res.json({
+      url: fileUrl,
+      filename: finalFilename,
+      originalName: filename,
+      size: stat.size,
+      type: isVideo ? 'video' : 'image',
+      duration: duration || undefined,
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || 'Failed to assemble uploaded chunks' });
+  }
+});
+
+apiRouter.post('/campaigns/upload/abort', requireAuth, (req, res) => {
+  const uploadId = req.body?.uploadId;
+  if (uploadId) {
+    const cleanUploadId = String(uploadId).replace(/[^a-zA-Z0-9_-]/g, '');
+    try {
+      const files = fs.readdirSync(chunkDir);
+      for (const f of files) {
+        if (f.startsWith(`${cleanUploadId}_chunk_`)) {
+          fs.unlinkSync(path.join(chunkDir, f));
+        }
+      }
+    } catch {}
+  }
+  res.json({ success: true, message: 'Upload cancelled and temporary chunks removed' });
 });
 
 apiRouter.post('/campaigns', requireAuth, async (req: AuthenticatedRequest, res) => {

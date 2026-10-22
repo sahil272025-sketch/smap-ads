@@ -105,8 +105,9 @@ export interface Campaign {
   headline: string;
   description: string;
   call_to_action?: string;
-  destination_type: 'website' | 'whatsapp' | 'facebook_page' | 'instagram_profile';
+  destination_type: 'website' | 'whatsapp' | 'facebook_page' | 'instagram_profile' | 'instagram' | 'phone';
   destination_url: string;
+  phone_number?: string;
   placements?: PlacementType[];
   targeting: CampaignTargeting;
   daily_budget?: number;
@@ -1090,6 +1091,7 @@ class DatabaseService {
     amount: number,
     meta: {
       description: string;
+      type?: WalletTransactionType | string;
       paymentId?: string;
       gatewayPaymentId?: string;
       gatewayOrderId?: string;
@@ -1135,7 +1137,7 @@ class DatabaseService {
     const tx: WalletTransaction = {
       id: `wtx_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
       user_id: userId,
-      type: 'ADD_FUNDS',
+      type: (meta.type as any) || 'ADD_FUNDS',
       amount: roundedAmount,
       balance_before: currentBalance,
       balance_after: newBalance,
