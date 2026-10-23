@@ -1295,6 +1295,43 @@ apiRouter.get('/meta/status', (req, res) => {
   res.json(status);
 });
 
+// Comprehensive Meta Activation Prerequisites and Blockers Checklist
+apiRouter.get('/meta/activation-status', async (_req, res) => {
+  try {
+    const activation = await MetaService.getActivationStatus();
+    res.json(activation);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || 'Failed to retrieve Meta activation status' });
+  }
+});
+
+// Safe Read-Only Campaign Pre-Flight Validation (Dry-Run Mode)
+apiRouter.post('/meta/validate-campaign', requireAuth, async (req: AuthenticatedRequest, res) => {
+  try {
+    let campaign: any = null;
+    if (req.body.campaignId) {
+      campaign = db.findCampaignById(req.body.campaignId);
+      if (!campaign) {
+        return res.status(404).json({ error: 'Campaign not found' });
+      }
+      if (req.user!.role !== 'admin' && campaign.user_id !== req.user!.id) {
+        return res.status(403).json({ error: 'Unauthorized' });
+      }
+    } else {
+      campaign = {
+        ...req.body,
+        user_id: req.user!.id,
+      };
+    }
+
+    const metaConn = db.findMetaConnectionByUserId(req.user!.id);
+    const result = await MetaService.validateCampaignPreFlight(campaign, metaConn);
+    res.json(result);
+  } catch (err: any) {
+    res.status(400).json({ error: err.message || 'Pre-flight validation failed' });
+  }
+});
+
 // Safe read-only verification of Meta API connection, assets and permissions
 apiRouter.get('/meta/verify', requireAuth, async (_req, res) => {
   try {

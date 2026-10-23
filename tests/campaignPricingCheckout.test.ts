@@ -1488,7 +1488,13 @@ async function runTests() {
   console.log('====================================================\n');
 }
 
-runTests().catch((err) => {
-  console.error('\n❌ TEST RUN ENCOUNTERED FATAL ERROR:', err);
-  process.exit(1);
-});
+runTests()
+  .then(() => {
+    CampaignQueueService.stop();
+    process.exit(0);
+  })
+  .catch((err) => {
+    CampaignQueueService.stop();
+    console.error('\n❌ TEST RUN ENCOUNTERED FATAL ERROR:', err);
+    process.exit(1);
+  });

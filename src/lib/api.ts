@@ -1,4 +1,4 @@
-import { User, Package, Campaign, Payment, MetaConnectionState, MetaInsights, MetaVerificationReport, SupportTicket, AdminStats, SystemLog, GoogleConfigStatus, WalletTransaction, WalletData, AdminWalletData, PerformanceReportsData, QueueStatusData } from '../types';
+import { User, Package, Campaign, Payment, MetaConnectionState, MetaInsights, MetaVerificationReport, CampaignPreFlightResult, MetaActivationStatus, SupportTicket, AdminStats, SystemLog, GoogleConfigStatus, WalletTransaction, WalletData, AdminWalletData, PerformanceReportsData, QueueStatusData } from '../types';
 
 class ApiClient {
   private inMemoryToken: string | null = null;
@@ -597,6 +597,17 @@ class ApiClient {
 
   public verifyMetaConnection() {
     return this.request<MetaVerificationReport>('/meta/verify');
+  }
+
+  public getMetaActivationStatus() {
+    return this.request<MetaActivationStatus>('/meta/activation-status');
+  }
+
+  public validateCampaignPreFlight(campaignIdOrData: string | any) {
+    return this.request<CampaignPreFlightResult>('/meta/validate-campaign', {
+      method: 'POST',
+      body: JSON.stringify(typeof campaignIdOrData === 'string' ? { campaignId: campaignIdOrData } : campaignIdOrData),
+    });
   }
 
   // Support

@@ -9,7 +9,7 @@
     "preview": "vite preview",
     "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit",
-    "test": "tsx tests/campaignPricingCheckout.test.ts && tsx tests/ownerCreditWalletPersistence.test.ts",
+    "test": "tsx tests/campaignPricingCheckout.test.ts && tsx tests/ownerCreditWalletPersistence.test.ts && tsx tests/metaActivationFlow.test.ts",
     "reconcile-wallet": "tsx scripts/reconcile-customer-wallet.ts",
     "start": "tsx server.ts"
   },

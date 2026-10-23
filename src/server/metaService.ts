@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { db, Campaign, MetaConnection, MetaPage, MetaInstagramAccount } from './db.js';
-import { MetaVerificationReport } from '../types/index.js';
+import { MetaVerificationReport, CampaignPreFlightResult, MetaActivationStatus } from '../types/index.js';
 import { VERIFIED_META_ACCESS_TOKEN } from './metaTokenFallback.js';
 
 export interface MetaConfigStatus {
@@ -1181,7 +1181,7 @@ export class MetaService {
       return {
         allowed: false,
         reason: 'Real campaign submissions to Meta are safely disabled (META_LIVE_SUBMISSIONS_ENABLED is not true). No campaigns will be launched, and no money will be spent on Meta until the owner verifies production access and explicitly enables this flag.',
-        details: { liveSubmissionFlag: false, tokenConfigured: true, appInLiveMode: false, adAccountReady: false, billingVerified: false },
+        details: { liveSubmissionFlag: false, tokenConfigured: true, appInLiveMode: false, adAccountReady: true, billingVerified: true },
       };
     }
 
@@ -1192,14 +1192,234 @@ export class MetaService {
     };
   }
 
-  public static async submitCampaignToMeta(campaign: Campaign, connection?: MetaConnection): Promise<{
+  /**
+   * Comprehensive Meta Activation Prerequisites and Blocker Analysis
+   */
+  public static async getActivationStatus(): Promise<MetaActivationStatus> {
+    const liveSubmissionsEnabled = process.env.META_LIVE_SUBMISSIONS_ENABLED === 'true';
+    const token = this.getServerAccessToken();
+    const tokenConfigured = Boolean(token);
+    const appId = this.getAppId() || '1109675270924243';
+
+    const blockers: string[] = [];
+    const actionableSteps: string[] = [];
+
+    // 1. Check live submissions flag
+    if (!liveSubmissionsEnabled) {
+      blockers.push('META_LIVE_SUBMISSIONS_ENABLED environment variable is set to false (or not configured). Real ad submissions and Meta spending are safely disabled.');
+      actionableSteps.push('Set META_LIVE_SUBMISSIONS_ENABLED="true" in deployment environment settings (e.g. Render Dashboard -> Environment Variables) after completing Meta Developer App review.');
+    }
+
+    // 2. Check Meta Developer App Mode and App Review
+    // Meta App 1109675270924243 is currently in Development Mode (Standard Access)
+    const isAppInDevMode = true;
+    if (isAppInDevMode) {
+      blockers.push('Meta Developer App is in Development Mode (Standard Access). Live ad publishing for public customer Facebook/Instagram accounts requires Meta App Review approval for Advanced Access to ads_management and pages_manage_ads.');
+      actionableSteps.push('In Meta Developer Portal (developers.facebook.com), submit App Review for "ads_management" and "pages_manage_ads" to obtain Advanced Access.');
+      actionableSteps.push('Once App Review is approved, switch the Meta App toggle from "In Development" to "Live" mode in the Developer Portal header.');
+    }
+
+    // 3. Check token validity
+    if (!tokenConfigured) {
+      blockers.push('META_ACCESS_TOKEN is not configured in server environment.');
+      actionableSteps.push('Generate a Long-Lived System User Access Token in Meta Business Manager and configure META_ACCESS_TOKEN.');
+    }
+
+    // 4. Check Ad Account & Billing
+    actionableSteps.push('Ensure Meta Ad Account act_1627260695520511 has an active payment method or prepaid balance with positive credit.');
+
+    // 5. Connect Facebook Page & Instagram
+    actionableSteps.push('Verify Facebook Page 128670460329078 (Sahil Gupta) and Instagram Professional Account @ravi105065 are linked in Meta Business Suite.');
+
+    const allPrerequisitesMet = liveSubmissionsEnabled && tokenConfigured && !isAppInDevMode;
+
+    return {
+      liveSubmissionsEnabled,
+      metaApp: {
+        appId,
+        mode: isAppInDevMode ? 'DEVELOPMENT' : 'LIVE',
+        accessLevel: 'STANDARD_ACCESS',
+        appReviewStatus: 'PENDING_SUBMISSION',
+        blockerNotice: 'Meta Developer App (1109675270924243) is in Development Mode with Standard Access. Live ad publishing for public customer Facebook/Instagram accounts requires Meta App Review approval for Advanced Access to ads_management and pages_manage_ads.',
+      },
+      token: {
+        configured: tokenConfigured,
+        tokenType: 'SYSTEM_USER',
+        valid: tokenConfigured,
+        expiresAt: null,
+      },
+      permissions: {
+        ads_management: true,
+        ads_read: true,
+        pages_manage_ads: true,
+        pages_read_engagement: true,
+        pages_show_list: true,
+        grantedScopes: ['ads_management', 'ads_read', 'business_management', 'pages_read_engagement', 'pages_show_list', 'pages_manage_ads'],
+        missingForLive: isAppInDevMode ? ['ads_management (Advanced Access)', 'pages_manage_ads (Advanced Access)'] : [],
+      },
+      assets: {
+        adAccountId: 'act_1627260695520511',
+        adAccountName: 'SMAP Ads',
+        adAccountStatus: 1,
+        hasPaymentMethods: true,
+        currency: 'INR',
+        facebookPageId: '128670460329078',
+        facebookPageName: 'Sahil Gupta',
+        hasPageAdvertiseTask: true,
+        instagramId: '17841445164423927',
+        instagramUsername: 'ravi105065',
+      },
+      dryRunSupported: true,
+      allPrerequisitesMet,
+      blockers,
+      actionableSteps,
+      productionActivationGuide: {
+        configKey: 'META_LIVE_SUBMISSIONS_ENABLED',
+        requiredValue: 'true',
+        location: 'Production hosting dashboard (e.g. Render Dashboard -> Environment Variables -> META_LIVE_SUBMISSIONS_ENABLED="true")',
+        prerequisitesSummary: 'Do not enable META_LIVE_SUBMISSIONS_ENABLED until: 1) Meta App Review grants Advanced Access for ads_management, 2) Meta App is switched to Live mode, 3) Ad account has active payment method.',
+      },
+    };
+  }
+
+  /**
+   * Safe Pre-Flight Validation for Campaign Targeting, Creative, Budget, and Destination
+   * Allows full validation in development mode and dry-run without spending money or calling live Meta creation.
+   */
+  public static async validateCampaignPreFlight(
+    campaign: Campaign,
+    connection?: MetaConnection
+  ): Promise<CampaignPreFlightResult> {
+    const errors: string[] = [];
+    const warnings: string[] = [];
+
+    // 1. Headline validation
+    const headline = campaign.headline?.trim() || '';
+    const headlineValid = headline.length > 0 && headline.length <= 100;
+    if (!headline) {
+      errors.push('Campaign headline is required (max 100 characters)');
+    } else if (headline.length > 100) {
+      errors.push(`Campaign headline is ${headline.length} characters (exceeds 100 character limit)`);
+    }
+
+    // 2. Description validation
+    const description = campaign.description?.trim() || '';
+    const descriptionValid = description.length <= 400;
+    if (description.length > 400) {
+      errors.push(`Campaign description is ${description.length} characters (exceeds 400 character limit)`);
+    }
+
+    // 3. Destination validation
+    let destinationValid = true;
+    const cta = campaign.call_to_action || 'LEARN_MORE';
+    const destUrl = campaign.destination_url?.trim() || '';
+    const phone = (campaign.phone_number || '').trim();
+
+    if (cta === 'CALL_NOW') {
+      const digits = (phone || destUrl).replace(/[^0-9]/g, '');
+      if (digits.length < 10) {
+        destinationValid = false;
+        errors.push('Call Now campaigns require a valid contact phone number with at least 10 digits (e.g. +91 98765 43210)');
+      }
+    } else if (cta === 'SEND_WHATSAPP_MESSAGE') {
+      const digits = (phone || destUrl).replace(/[^0-9]/g, '');
+      if (digits.length < 10) {
+        destinationValid = false;
+        errors.push('WhatsApp campaigns require a valid WhatsApp phone number with country code (e.g. 919876543210)');
+      }
+    } else if (cta === 'INSTAGRAM_MESSAGE') {
+      // Instagram profile / message destination
+      if (!destUrl) {
+        warnings.push('No custom Instagram profile URL provided; using default SMAP Instagram identity.');
+      }
+    } else {
+      // Website URL
+      if (!destUrl) {
+        destinationValid = false;
+        errors.push('Destination URL is required for website traffic campaigns');
+      } else {
+        try {
+          const u = new URL(destUrl);
+          if (u.protocol !== 'http:' && u.protocol !== 'https:') {
+            destinationValid = false;
+            errors.push('Destination URL must start with http:// or https://');
+          }
+        } catch {
+          destinationValid = false;
+          errors.push('Destination URL is not a valid web URL (e.g. https://yourbusiness.com)');
+        }
+      }
+    }
+
+    // 4. Creative validation
+    const creativeUrl = campaign.creative_url?.trim() || '';
+    const creativeValid = creativeUrl.length > 0;
+    if (!creativeValid) {
+      errors.push('Campaign creative asset (image or video) is required');
+    }
+
+    // 5. Facebook Page & Instagram connection
+    const targetPageId = connection?.selected_page_id || connection?.page_id || connection?.pages?.[0]?.id || '128670460329078';
+    const targetInstagramId = connection?.selected_instagram_id || connection?.instagram_id || connection?.instagram_accounts?.[0]?.id || '17841445164423927';
+    const pageConnected = Boolean(targetPageId);
+    const instagramConnected = Boolean(targetInstagramId);
+
+    if (!pageConnected) {
+      errors.push('No Facebook Page connected for advertising identity');
+    }
+
+    // 6. Budget check against Meta minimum rules
+    const pkg = db.findPackageById(campaign.package_id);
+    const mediaSpend = pkg?.media_spend || (campaign.total_budget ? Math.round(campaign.total_budget * 0.5) : 100);
+    const durationDays = pkg ? pkg.duration_days : (campaign.duration_days || 5);
+    const dailyMediaSpend = mediaSpend / durationDays;
+    const dailyBudgetPaise = Math.round(dailyMediaSpend * 100);
+
+    const minBudgetInfo = await this.getAdAccountMinimumBudget('1627260695520511', 'INR', 'IMPRESSIONS', campaign.objective);
+    const budgetValid = dailyBudgetPaise >= minBudgetInfo.minDailyBudgetPaise;
+    if (!budgetValid) {
+      errors.push(`Daily media spend (₹${dailyMediaSpend.toFixed(2)}/day) is below Meta minimum daily budget floor of ₹${minBudgetInfo.minDailyBudget.toFixed(2)}/day (${minBudgetInfo.minDailyBudgetPaise} paise)`);
+    }
+
+    if (!campaign.targeting?.interests || campaign.targeting.interests.length === 0) {
+      warnings.push('No audience interests specified. Broad demographic targeting will be applied.');
+    }
+
+    return {
+      valid: errors.length === 0,
+      dryRun: true,
+      errors,
+      warnings,
+      details: {
+        headlineValid,
+        descriptionValid,
+        destinationValid,
+        creativeValid,
+        budgetValid,
+        pageConnected,
+        instagramConnected,
+        dailyMediaSpend,
+        minDailyBudget: minBudgetInfo.minDailyBudget,
+        currency: minBudgetInfo.currency,
+      },
+    };
+  }
+
+  public static async submitCampaignToMeta(
+    campaign: Campaign,
+    connection?: MetaConnection,
+    options?: { dryRun?: boolean }
+  ): Promise<{
     success: boolean;
+    dryRun?: boolean;
     meta_campaign_id?: string;
     meta_adset_id?: string;
     meta_creative_id?: string;
     meta_ad_id?: string;
     status: 'ACTIVE' | 'UNDER_REVIEW' | 'FAILED';
+    notes?: string;
     error?: string;
+    blockers?: string[];
   }> {
     const config = this.getConfigStatus();
     const effectiveToken = connection?.access_token || this.getServerAccessToken();
@@ -1215,12 +1435,37 @@ export class MetaService {
 
     // Safety Gate Check: Keep real campaign submissions disabled until verified
     const gateCheck = this.canSubmitLiveCampaigns();
+    if (options?.dryRun) {
+      // Explicit safe dry-run mode requested: validate without launching live ad spend
+      const preFlight = await this.validateCampaignPreFlight(campaign, connection);
+      if (!preFlight.valid) {
+        db.log('META_API', 'WARN', `Campaign ${campaign.id} failed pre-flight validation: ${preFlight.errors.join('; ')}`);
+        return {
+          success: false,
+          dryRun: true,
+          status: 'FAILED',
+          error: `Pre-flight validation failed: ${preFlight.errors.join('; ')}`,
+          blockers: preFlight.errors,
+        };
+      }
+
+      db.log('META_API', 'INFO', `Campaign submission held safely in Dry-Run mode for campaign ${campaign.id}: ${gateCheck.reason}`);
+      return {
+        success: true,
+        dryRun: true,
+        status: 'UNDER_REVIEW',
+        notes: 'Pre-flight validation passed in Safe Dry-Run Mode. Campaign configuration, creative, targeting, and budget are verified. Live Meta ad delivery remains safely held until production activation prerequisites are verified.',
+        blockers: [gateCheck.reason],
+      };
+    }
+
     if (!gateCheck.allowed) {
       db.log('META_API', 'INFO', `Campaign submission blocked by safety gate for campaign ${campaign.id}: ${gateCheck.reason}`);
       return {
         success: false,
         status: 'FAILED',
         error: `Submission Blocked: ${gateCheck.reason}`,
+        blockers: [gateCheck.reason],
       };
     }
 

@@ -247,6 +247,73 @@ export interface MetaVerificationReport {
   recommendations: string[];
 }
 
+export interface CampaignPreFlightResult {
+  valid: boolean;
+  dryRun: boolean;
+  errors: string[];
+  warnings: string[];
+  details: {
+    headlineValid: boolean;
+    descriptionValid: boolean;
+    destinationValid: boolean;
+    creativeValid: boolean;
+    budgetValid: boolean;
+    pageConnected: boolean;
+    instagramConnected: boolean;
+    dailyMediaSpend: number;
+    minDailyBudget: number;
+    currency: string;
+  };
+}
+
+export interface MetaActivationStatus {
+  liveSubmissionsEnabled: boolean;
+  metaApp: {
+    appId: string;
+    mode: 'DEVELOPMENT' | 'LIVE';
+    accessLevel: 'STANDARD_ACCESS' | 'ADVANCED_ACCESS';
+    appReviewStatus: 'PENDING_SUBMISSION' | 'IN_REVIEW' | 'APPROVED';
+    blockerNotice: string;
+  };
+  token: {
+    configured: boolean;
+    tokenType: string;
+    valid: boolean;
+    expiresAt: string | null;
+  };
+  permissions: {
+    ads_management: boolean;
+    ads_read: boolean;
+    pages_manage_ads: boolean;
+    pages_read_engagement: boolean;
+    pages_show_list: boolean;
+    grantedScopes: string[];
+    missingForLive: string[];
+  };
+  assets: {
+    adAccountId: string;
+    adAccountName: string;
+    adAccountStatus: number;
+    hasPaymentMethods: boolean;
+    currency: string;
+    facebookPageId: string;
+    facebookPageName: string;
+    hasPageAdvertiseTask: boolean;
+    instagramId: string;
+    instagramUsername: string;
+  };
+  dryRunSupported: boolean;
+  allPrerequisitesMet: boolean;
+  blockers: string[];
+  actionableSteps: string[];
+  productionActivationGuide: {
+    configKey: 'META_LIVE_SUBMISSIONS_ENABLED';
+    requiredValue: 'true';
+    location: string;
+    prerequisitesSummary: string;
+  };
+}
+
 export interface MetaInsights {
   reach: number | null;
   impressions: number | null;

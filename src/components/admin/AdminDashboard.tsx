@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { AdminStats, User, Campaign, Payment, Package, SystemLog, SupportTicket, AdminWalletData, MetaVerificationReport } from '../../types';
+import { AdminStats, User, Campaign, Payment, Package, SystemLog, SupportTicket, AdminWalletData, MetaVerificationReport, MetaActivationStatus, CampaignPreFlightResult } from '../../types';
 import { api } from '../../lib/api';
 import { StatusBadge } from '../dashboard/CustomerDashboard';
 import {
@@ -24,6 +24,8 @@ import {
   ArrowUpRight,
   RotateCcw,
   Sparkles,
+  Play,
+  Info,
 } from 'lucide-react';
 
 export const AdminDashboard: React.FC = () => {
@@ -40,6 +42,10 @@ export const AdminDashboard: React.FC = () => {
   const [tickets, setTickets] = useState<SupportTicket[]>([]);
   const [metaStatus, setMetaStatus] = useState<any>(null);
   const [metaReport, setMetaReport] = useState<MetaVerificationReport | null>(null);
+  const [metaActivation, setMetaActivation] = useState<MetaActivationStatus | null>(null);
+  const [validationResult, setValidationResult] = useState<CampaignPreFlightResult | null>(null);
+  const [isValidatingPreFlight, setIsValidatingPreFlight] = useState<boolean>(false);
+  const [selectedValidationCmpId, setSelectedValidationCmpId] = useState<string>('');
   const [isVerifyingMeta, setIsVerifyingMeta] = useState<boolean>(false);
   const [walletData, setWalletData] = useState<AdminWalletData | null>(null);
   const [claimingPromo, setClaimingPromo] = useState(false);
@@ -63,12 +69,31 @@ export const AdminDashboard: React.FC = () => {
   const handleVerifyMeta = async () => {
     setIsVerifyingMeta(true);
     try {
-      const report = await api.verifyMetaConnection();
+      const [report, activation] = await Promise.all([
+        api.verifyMetaConnection(),
+        api.getMetaActivationStatus(),
+      ]);
       setMetaReport(report);
+      setMetaActivation(activation);
     } catch (e) {
       console.error('Meta verification failed', e);
     } finally {
       setIsVerifyingMeta(false);
+    }
+  };
+
+  const handleRunPreFlightValidation = async () => {
+    if (!campaigns || campaigns.length === 0) return;
+    const targetCmpId = selectedValidationCmpId || campaigns[0].id;
+    setIsValidatingPreFlight(true);
+    setValidationResult(null);
+    try {
+      const res = await api.validateCampaignPreFlight(targetCmpId);
+      setValidationResult(res);
+    } catch (err: any) {
+      alert(`Pre-flight validation failed: ${err.message}`);
+    } finally {
+      setIsValidatingPreFlight(false);
     }
   };
 
@@ -82,7 +107,7 @@ export const AdminDashboard: React.FC = () => {
   const loadAllAdminData = async () => {
     setLoading(true);
     try {
-      const [s, c, cmp, p, pkg, l, t, m, w] = await Promise.all([
+      const [s, c, cmp, p, pkg, l, t, m, w, act] = await Promise.all([
         api.getAdminStats(),
         api.getAdminCustomers(),
         api.getAdminCampaigns(),
@@ -92,6 +117,7 @@ export const AdminDashboard: React.FC = () => {
         api.getAdminTickets(),
         api.getMetaStatus(),
         api.getAdminWallets(),
+        api.getMetaActivationStatus().catch(() => null),
       ]);
       setStats(s);
       setCustomers(c.customers);
@@ -102,6 +128,7 @@ export const AdminDashboard: React.FC = () => {
       setTickets(t.tickets);
       setMetaStatus(m);
       setWalletData(w);
+      if (act) setMetaActivation(act);
     } catch (err) {
       console.error('Failed to load admin data', err);
     } finally {
@@ -1013,15 +1040,179 @@ export const AdminDashboard: React.FC = () => {
                   <span className="font-mono text-white">Sahil Gupta (128670460329078)</span>
                 </div>
                 <div className="flex justify-between border-b border-slate-800 pb-2.5">
+                  <span className="text-slate-400">Target Instagram Account:</span>
+                  <span className="font-mono text-white">@ravi105065 (17841445164423927)</span>
+                </div>
+                <div className="flex justify-between border-b border-slate-800 pb-2.5">
                   <span className="text-slate-400">Meta Graph API Version:</span>
                   <span className="font-mono text-white">{metaStatus?.apiVersion || 'v21.0'}</span>
                 </div>
                 <div className="flex justify-between pt-1">
-                  <span className="text-slate-400">Marketing API Readiness:</span>
-                  <span className="text-emerald-400 font-bold">
-                    Ready for Campaign Creation
+                  <span className="text-slate-400">Live Ad Spending Guard:</span>
+                  <span className={`font-mono font-bold ${metaActivation?.liveSubmissionsEnabled ? 'text-emerald-400' : 'text-amber-400'}`}>
+                    {metaActivation?.liveSubmissionsEnabled ? 'ENABLED (LIVE SPEND ACTIVE)' : 'SAFELY DISABLED (META_LIVE_SUBMISSIONS_ENABLED=false)'}
                   </span>
                 </div>
+              </div>
+
+              {/* SECTION: Production Activation Prerequisites & Blocker Audit */}
+              <div className="rounded-xl border border-slate-800 bg-[#090D18] p-5 space-y-4 text-xs">
+                <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                  <div className="flex items-center gap-2">
+                    <ShieldCheck className="h-5 w-5 text-amber-400" />
+                    <div>
+                      <h4 className="font-bold text-white text-sm">Meta Live Activation Prerequisites & Blocker Audit</h4>
+                      <p className="text-[11px] text-slate-400">Real campaign creation and ad spend are kept safely paused until all conditions are satisfied.</p>
+                    </div>
+                  </div>
+                  <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${metaActivation?.allPrerequisitesMet ? 'bg-emerald-950/60 text-emerald-400 border border-emerald-500/30' : 'bg-amber-950/60 text-amber-400 border border-amber-500/30'}`}>
+                    {metaActivation?.allPrerequisitesMet ? 'ALL PREREQUISITES VERIFIED' : 'ACTIVATION BLOCKED (SAFE GUARD ACTIVE)'}
+                  </span>
+                </div>
+
+                {/* Blocker Breakdown List */}
+                <div className="space-y-2">
+                  <span className="font-semibold text-slate-300 block">Current Activation Blockers:</span>
+                  {metaActivation?.blockers && metaActivation.blockers.length > 0 ? (
+                    <div className="space-y-1.5">
+                      {metaActivation.blockers.map((b, idx) => (
+                        <div key={idx} className="flex items-start gap-2 bg-amber-950/20 border border-amber-500/20 p-2.5 rounded-lg text-amber-200">
+                          <AlertTriangle className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
+                          <span className="text-[11px] leading-relaxed">{b}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-[11px] text-emerald-400 bg-emerald-950/20 border border-emerald-500/20 p-2.5 rounded-lg">
+                      No blockers identified.
+                    </div>
+                  )}
+                </div>
+
+                {/* Actionable Next Steps */}
+                <div className="space-y-2 pt-2">
+                  <span className="font-semibold text-slate-300 block">Actionable Next Steps to Safely Enable Live Meta Ads:</span>
+                  <div className="space-y-1 text-[11px] text-slate-300">
+                    <div className="flex items-start gap-2 bg-slate-900/60 p-2.5 rounded-lg border border-slate-800">
+                      <span className="font-bold text-indigo-400 font-mono">1.</span>
+                      <span><strong>Meta App Review:</strong> Go to <span className="font-mono text-indigo-300">developers.facebook.com</span> &rarr; Select App <strong>1109675270924243</strong> &rarr; App Review &rarr; Request Advanced Access for <span className="font-mono text-indigo-300">ads_management</span> and <span className="font-mono text-indigo-300">pages_manage_ads</span>.</span>
+                    </div>
+                    <div className="flex items-start gap-2 bg-slate-900/60 p-2.5 rounded-lg border border-slate-800">
+                      <span className="font-bold text-indigo-400 font-mono">2.</span>
+                      <span><strong>Switch to Live Mode:</strong> In Meta Developer Portal header, toggle the app switch from &ldquo;In Development&rdquo; to &ldquo;Live&rdquo;.</span>
+                    </div>
+                    <div className="flex items-start gap-2 bg-slate-900/60 p-2.5 rounded-lg border border-slate-800">
+                      <span className="font-bold text-indigo-400 font-mono">3.</span>
+                      <span><strong>Verify Billing:</strong> Ensure Meta Ad Account <span className="font-mono text-indigo-300">act_1627260695520511</span> has positive prepaid funds or an active primary payment method.</span>
+                    </div>
+                    <div className="flex items-start gap-2 bg-slate-900/60 p-2.5 rounded-lg border border-slate-800">
+                      <span className="font-bold text-indigo-400 font-mono">4.</span>
+                      <span><strong>Enable Production Environment Variable:</strong> In your production hosting dashboard (e.g. Render Dashboard &rarr; Environment Variables), add or update:
+                        <code className="block mt-1 font-mono text-emerald-300 bg-black/60 p-1.5 rounded">META_LIVE_SUBMISSIONS_ENABLED="true"</code>
+                        Restart the deployed web service to apply. Never hardcode this in source code!
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* SECTION: Interactive Pre-Flight Campaign Validator (Dry-Run Tester) */}
+              <div className="rounded-xl border border-slate-800 bg-[#090D18] p-5 space-y-4 text-xs">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-slate-800 pb-3">
+                  <div>
+                    <h4 className="font-bold text-white text-sm flex items-center gap-2">
+                      <Play className="h-4 w-4 text-indigo-400" />
+                      Safe Campaign Pre-Flight Validator (Dry-Run Tester)
+                    </h4>
+                    <p className="text-[11px] text-slate-400">Validate campaign targeting, headline/description lengths, daily media budget floors, and page linkages without spending any money.</p>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <select
+                      value={selectedValidationCmpId}
+                      onChange={(e) => setSelectedValidationCmpId(e.target.value)}
+                      className="rounded-lg border border-slate-700 bg-slate-900 py-1.5 px-2.5 text-xs text-white font-mono"
+                    >
+                      <option value="">Select a campaign...</option>
+                      {campaigns.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.headline || c.business_name} ({c.id.slice(-6)})
+                        </option>
+                      ))}
+                    </select>
+
+                    <button
+                      type="button"
+                      disabled={isValidatingPreFlight || campaigns.length === 0}
+                      onClick={handleRunPreFlightValidation}
+                      className="px-4 py-1.5 bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white rounded-lg text-xs font-semibold shrink-0 cursor-pointer"
+                    >
+                      {isValidatingPreFlight ? 'Validating...' : 'Run Pre-Flight Test'}
+                    </button>
+                  </div>
+                </div>
+
+                {validationResult && (
+                  <div className={`rounded-lg border p-4 text-xs space-y-2 animate-in fade-in duration-150 ${validationResult.valid ? 'border-emerald-500/30 bg-emerald-950/20' : 'border-red-500/30 bg-red-950/20'}`}>
+                    <div className="flex items-center justify-between font-bold">
+                      <span className={validationResult.valid ? 'text-emerald-400' : 'text-red-400'}>
+                        {validationResult.valid ? '✅ Pre-Flight Validation PASSED (Safe Dry-Run Mode)' : '❌ Pre-Flight Validation FAILED'}
+                      </span>
+                      <span className="text-[11px] font-mono text-slate-400">₹0 Spent · Safe Test Mode</span>
+                    </div>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 font-mono text-[11px]">
+                      <div className="bg-slate-900/60 p-2 rounded border border-slate-800">
+                        <span className="text-slate-400 block text-[10px]">Headline:</span>
+                        <span className={validationResult.details.headlineValid ? 'text-emerald-400 font-bold' : 'text-red-400 font-bold'}>
+                          {validationResult.details.headlineValid ? 'VALID' : 'INVALID'}
+                        </span>
+                      </div>
+                      <div className="bg-slate-900/60 p-2 rounded border border-slate-800">
+                        <span className="text-slate-400 block text-[10px]">Description:</span>
+                        <span className={validationResult.details.descriptionValid ? 'text-emerald-400 font-bold' : 'text-red-400 font-bold'}>
+                          {validationResult.details.descriptionValid ? 'VALID' : 'EXCEEDED'}
+                        </span>
+                      </div>
+                      <div className="bg-slate-900/60 p-2 rounded border border-slate-800">
+                        <span className="text-slate-400 block text-[10px]">Destination:</span>
+                        <span className={validationResult.details.destinationValid ? 'text-emerald-400 font-bold' : 'text-red-400 font-bold'}>
+                          {validationResult.details.destinationValid ? 'VALID' : 'INVALID'}
+                        </span>
+                      </div>
+                      <div className="bg-slate-900/60 p-2 rounded border border-slate-800">
+                        <span className="text-slate-400 block text-[10px]">Daily Spend Floor:</span>
+                        <span className={validationResult.details.budgetValid ? 'text-emerald-400 font-bold' : 'text-red-400 font-bold'}>
+                          ₹{validationResult.details.dailyMediaSpend.toFixed(2)} / ₹{validationResult.details.minDailyBudget.toFixed(2)} min
+                        </span>
+                      </div>
+                    </div>
+
+                    {validationResult.errors.length > 0 && (
+                      <div className="text-red-300 text-[11px] space-y-1 pt-1">
+                        <span className="font-bold block">Validation Errors:</span>
+                        {validationResult.errors.map((e, idx) => (
+                          <div key={idx} className="flex items-center gap-1.5">
+                            <span className="h-1.5 w-1.5 rounded-full bg-red-400"></span>
+                            {e}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {validationResult.warnings.length > 0 && (
+                      <div className="text-amber-300 text-[11px] space-y-1 pt-1">
+                        <span className="font-bold block">Notices / Warnings:</span>
+                        {validationResult.warnings.map((w, idx) => (
+                          <div key={idx} className="flex items-center gap-1.5">
+                            <span className="h-1.5 w-1.5 rounded-full bg-amber-400"></span>
+                            {w}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           )}

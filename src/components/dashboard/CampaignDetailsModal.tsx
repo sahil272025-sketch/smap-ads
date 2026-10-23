@@ -102,12 +102,18 @@ export const CampaignDetailsModal: React.FC<CampaignDetailsModalProps> = ({ camp
           <div className="mt-6 space-y-6">
 
             {metaError && (
-              <div className="rounded-xl border border-red-500/30 bg-red-950/40 p-4 text-xs text-red-300">
-                <div className="flex items-center gap-2 font-bold mb-1">
-                  <AlertCircle className="h-4 w-4 text-red-400" />
-                  Meta Submission Notice:
+              <div className="rounded-xl border border-amber-500/30 bg-amber-950/30 p-4 text-xs text-amber-200 space-y-2">
+                <div className="flex items-center gap-2 font-bold text-amber-300">
+                  <ShieldCheck className="h-4 w-4 text-amber-400" />
+                  <span>Meta Activation Notice & Safety Guard</span>
                 </div>
-                <p>{metaError}</p>
+                <p className="leading-relaxed text-slate-300">{metaError}</p>
+                <div className="rounded-lg bg-black/40 p-3 border border-amber-500/20 text-[11px] text-slate-300 space-y-1">
+                  <span className="font-semibold text-amber-300 block">Actionable Next Steps:</span>
+                  <div>1. Live Meta campaign submissions are safely disabled by default (<span className="font-mono text-amber-200">META_LIVE_SUBMISSIONS_ENABLED=false</span>) to protect against accidental ad spend.</div>
+                  <div>2. Meta Developer App requires Advanced Access via App Review for <span className="font-mono text-amber-200">ads_management</span> before live public ad serving.</div>
+                  <div>3. In development and dry-run mode, campaign targeting, budget, and creative assets are verified safely with ₹0 spend.</div>
+                </div>
               </div>
             )}
 
@@ -258,18 +264,44 @@ export const CampaignDetailsModal: React.FC<CampaignDetailsModalProps> = ({ camp
                   </div>
                 </div>
 
-                {/* Meta Rejection or Error Banner if present */}
-                {(data.campaign.rejection_reason || data.campaign.error_details) && (
-                  <div className="rounded-xl border border-red-500/30 bg-red-950/40 p-3.5 text-xs text-red-300 space-y-1">
-                    <div className="flex items-center gap-2 font-bold text-red-400">
-                      <AlertCircle className="h-4 w-4" />
-                      <span>Meta Delivery Notice:</span>
+                {/* Meta Status, Rejection or Safety Guard Banner */}
+                {Boolean(
+                  data.campaign.rejection_reason ||
+                  data.campaign.error_details ||
+                  data.campaign.meta_status_message
+                ) && (() => {
+                  const msg = data.campaign.rejection_reason || data.campaign.meta_status_message || data.campaign.error_details || '';
+                  const isSafeHold = msg.includes('Dry-Run') || msg.includes('safely disabled') || msg.includes('safety gate') || msg.includes('held safely') || msg.includes('non-delivering');
+
+                  if (isSafeHold) {
+                    return (
+                      <div className="rounded-xl border border-amber-500/30 bg-amber-950/30 p-3.5 text-xs text-amber-200 space-y-1.5">
+                        <div className="flex items-center gap-2 font-bold text-amber-300">
+                          <ShieldCheck className="h-4 w-4 text-amber-400 shrink-0" />
+                          <span>Pre-Flight Verified (Safe Dry-Run Mode):</span>
+                        </div>
+                        <p className="text-[11px] leading-relaxed text-slate-300">
+                          {msg}
+                        </p>
+                        <div className="text-[10px] text-amber-400 font-mono pt-0.5">
+                          Safety Status: ₹0 Meta ad spend · Assets validated · Awaiting owner live production activation
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div className="rounded-xl border border-red-500/30 bg-red-950/40 p-3.5 text-xs text-red-300 space-y-1">
+                      <div className="flex items-center gap-2 font-bold text-red-400">
+                        <AlertCircle className="h-4 w-4 shrink-0" />
+                        <span>Meta Validation Notice:</span>
+                      </div>
+                      <p className="text-[11px] leading-relaxed">
+                        {msg}
+                      </p>
                     </div>
-                    <p className="text-[11px] leading-relaxed">
-                      {data.campaign.rejection_reason || data.campaign.meta_status_message || data.campaign.error_details}
-                    </p>
-                  </div>
-                )}
+                  );
+                })()}
 
                 {/* Meta Identifiers */}
                 <div className="rounded-lg bg-slate-900/60 p-3 border border-slate-800 space-y-1.5 font-mono text-[11px]">

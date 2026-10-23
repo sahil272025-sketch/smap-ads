@@ -181,24 +181,43 @@ export class CampaignQueueService {
 
     try {
       const metaConn = db.findMetaConnectionByUserId(campaign.user_id);
-      const submitRes = await MetaService.submitCampaignToMeta(campaign, metaConn);
+      const isDryRun = !MetaService.canSubmitLiveCampaigns().allowed;
+      const submitRes = await MetaService.submitCampaignToMeta(campaign, metaConn, { dryRun: isDryRun });
 
       if (submitRes.success) {
-        // Successful submission to Meta
-        db.updateCampaign(campaignId, {
-          status: submitRes.status || 'UNDER_REVIEW',
-          queue_status: 'COMPLETED',
-          meta_campaign_id: submitRes.meta_campaign_id || null,
-          meta_adset_id: submitRes.meta_adset_id || null,
-          meta_creative_id: submitRes.meta_creative_id || null,
-          meta_ad_id: submitRes.meta_ad_id || null,
-          meta_status_message: 'Campaign submitted successfully to Meta. Under standard ad review.',
-          error_details: null,
-          rejection_reason: null,
-        });
+        if (submitRes.dryRun) {
+          // Dry-run mode: Pre-flight validation passed safely, campaign held pending Meta live activation
+          db.updateCampaign(campaignId, {
+            status: 'UNDER_REVIEW',
+            queue_status: 'COMPLETED',
+            meta_campaign_id: null,
+            meta_adset_id: null,
+            meta_creative_id: null,
+            meta_ad_id: null,
+            meta_status_message: submitRes.notes || 'Pre-flight validation passed (Safe Dry-Run Mode). Campaign held safely pending Meta Live Activation. ₹0 spent on Meta.',
+            error_details: null,
+            rejection_reason: null,
+          });
 
-        this.stats.completedCount++;
-        db.log('QUEUE', 'INFO', `Campaign ${campaignId} successfully processed and registered on Meta.`);
+          this.stats.completedCount++;
+          db.log('QUEUE', 'INFO', `Campaign ${campaignId} passed pre-flight validation in safe dry-run mode.`);
+        } else {
+          // Successful live submission to Meta Graph API
+          db.updateCampaign(campaignId, {
+            status: submitRes.status || 'UNDER_REVIEW',
+            queue_status: 'COMPLETED',
+            meta_campaign_id: submitRes.meta_campaign_id || null,
+            meta_adset_id: submitRes.meta_adset_id || null,
+            meta_creative_id: submitRes.meta_creative_id || null,
+            meta_ad_id: submitRes.meta_ad_id || null,
+            meta_status_message: 'Campaign submitted successfully to Meta Marketing API. Under standard ad review.',
+            error_details: null,
+            rejection_reason: null,
+          });
+
+          this.stats.completedCount++;
+          db.log('QUEUE', 'INFO', `Campaign ${campaignId} successfully processed and registered on Meta (ID: ${submitRes.meta_campaign_id}).`);
+        }
       } else {
         // Meta API returned error or rejection
         const errorMsg = submitRes.error || 'Meta campaign submission rejected';
