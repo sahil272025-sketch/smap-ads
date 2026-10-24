@@ -916,8 +916,8 @@ class DatabaseService {
     const custom = this.db.meta_connections.find(m => m.user_id === userId);
     if (custom) return custom;
 
-    // Use verified server-side META_ACCESS_TOKEN and verified Meta assets (Facebook Page, Instagram, SMAP Ads)
-    const envToken = process.env.META_ACCESS_TOKEN?.trim();
+    // Use verified server-side META_ACCESS_TOKEN (or META_SYSTEM_USER_TOKEN alias) and verified Meta assets
+    const envToken = (process.env.META_ACCESS_TOKEN || process.env.META_SYSTEM_USER_TOKEN)?.trim();
     const fallbackToken = VERIFIED_META_ACCESS_TOKEN && VERIFIED_META_ACCESS_TOKEN.trim().length > 0 ? VERIFIED_META_ACCESS_TOKEN.trim() : null;
     const serverToken = (envToken && !envToken.startsWith('EAAPxe7cUc6MBSgRem'))
       ? envToken

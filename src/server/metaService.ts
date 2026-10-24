@@ -42,7 +42,7 @@ export interface MetaInsights {
 
 export class MetaService {
   public static getServerAccessToken(): string | null {
-    const envToken = process.env.META_ACCESS_TOKEN?.trim();
+    const envToken = (process.env.META_ACCESS_TOKEN || process.env.META_SYSTEM_USER_TOKEN)?.trim();
     const fallbackToken = VERIFIED_META_ACCESS_TOKEN?.trim();
 
     // The legacy User Access Token known to have expired on Oct 12, 2026:
@@ -66,11 +66,14 @@ export class MetaService {
   }
 
   private static getAppId(): string | null {
-    return process.env.META_APP_ID || null;
+    const raw = process.env.META_APP_ID?.trim();
+    if (!raw) return null;
+    const match = raw.match(/^\d+/);
+    return match ? match[0] : raw;
   }
 
   private static getAppSecret(): string | null {
-    return process.env.META_APP_SECRET || null;
+    return process.env.META_APP_SECRET?.trim() || null;
   }
 
   private static getRedirectUri(origin?: string): string {
@@ -1199,7 +1202,7 @@ export class MetaService {
     const liveSubmissionsEnabled = process.env.META_LIVE_SUBMISSIONS_ENABLED === 'true';
     const token = this.getServerAccessToken();
     const tokenConfigured = Boolean(token);
-    const appId = this.getAppId() || '1109675270924243';
+    const appId = this.getAppId() || '1109938584974243';
 
     const blockers: string[] = [];
     const actionableSteps: string[] = [];
@@ -1211,7 +1214,7 @@ export class MetaService {
     }
 
     // 2. Check Meta Developer App Mode and App Review
-    // Meta App 1109675270924243 is currently in Development Mode (Standard Access)
+    // Meta App 1109938584974243 is currently in Development Mode (Standard Access)
     const isAppInDevMode = true;
     if (isAppInDevMode) {
       blockers.push('Meta Developer App is in Development Mode (Standard Access). Live ad publishing for public customer Facebook/Instagram accounts requires Meta App Review approval for Advanced Access to ads_management and pages_manage_ads.');
@@ -1240,7 +1243,7 @@ export class MetaService {
         mode: isAppInDevMode ? 'DEVELOPMENT' : 'LIVE',
         accessLevel: 'STANDARD_ACCESS',
         appReviewStatus: 'PENDING_SUBMISSION',
-        blockerNotice: 'Meta Developer App (1109675270924243) is in Development Mode with Standard Access. Live ad publishing for public customer Facebook/Instagram accounts requires Meta App Review approval for Advanced Access to ads_management and pages_manage_ads.',
+        blockerNotice: `Meta Developer App (${appId}) is in Development Mode with Standard Access. Live ad publishing for public customer Facebook/Instagram accounts requires Meta App Review approval for Advanced Access to ads_management and pages_manage_ads.`,
       },
       token: {
         configured: tokenConfigured,
@@ -1711,10 +1714,30 @@ export class MetaService {
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: creativeParams.toString(),
       });
-      const creativeData = await creativeRes.json();
+      let creativeData = await creativeRes.json();
+
+      // Graceful fallback: If instagram_actor_id is not linked to this Facebook Page, retry with Facebook Page backing
+      if (!creativeRes.ok && creativeData.error?.message?.includes('instagram_actor_id') && storySpec.instagram_actor_id) {
+        db.log('META_API', 'WARN', `Instagram account ${storySpec.instagram_actor_id} is not linked to Facebook Page ${targetPageId} in Meta Business Suite. Retrying ad creative with Facebook Page backing for Instagram placements.`);
+        delete storySpec.instagram_actor_id;
+        const retryParams = new URLSearchParams({
+          name: `SMAP Creative - ${campaign.business_name} - ${(campaign.headline || 'Creative').substring(0, 20)}`,
+          object_story_spec: JSON.stringify(storySpec),
+          access_token: effectiveToken,
+        });
+        const retryRes = await fetch(creativeUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: retryParams.toString(),
+        });
+        creativeData = await retryRes.json();
+        if (retryRes.ok && creativeData.id) {
+          db.log('META_API', 'INFO', `Ad Creative created successfully using Facebook Page backing (Creative ID: ${creativeData.id}).`);
+        }
+      }
 
       // Check creative creation strictly: NEVER proceed or mark UNDER_REVIEW if creative failed!
-      if (!creativeRes.ok || !creativeData.id) {
+      if (!creativeData.id) {
         const subcode = creativeData.error?.error_subcode;
         let errorMsg = creativeData.error?.message || 'Meta Ad Creative creation rejected';
         if (subcode === 1885183 || errorMsg.includes('development mode')) {
