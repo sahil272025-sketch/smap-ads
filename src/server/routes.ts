@@ -872,6 +872,134 @@ apiRouter.post('/campaigns/:id/submit-meta', requireAuth, async (req: Authentica
   }
 });
 
+// Interactive Budget Resolution (Adjust Duration for ₹0, Top-up Media Budget, or Full Wallet Refund)
+apiRouter.post('/campaigns/:id/adjust-budget', requireAuth, async (req: AuthenticatedRequest, res) => {
+  try {
+    const { action, topupAmount } = req.body;
+    const campaignId = req.params.id;
+    const campaign = db.findCampaignById(campaignId);
+    if (!campaign) {
+      return res.status(404).json({ error: 'Campaign not found' });
+    }
+    if (campaign.user_id !== req.user!.id && req.user!.role !== 'admin') {
+      return res.status(403).json({ error: 'Unauthorized to adjust this campaign' });
+    }
+
+    const pkg = db.findPackageById(campaign.package_id);
+    const mediaSpend = pkg?.media_spend || (campaign.total_budget ? Math.round(campaign.total_budget * 0.6) : 349);
+    const minBudgetInfo = await MetaService.getAdAccountMinimumBudget('1627260695520511', 'INR', 'IMPRESSIONS', campaign.objective);
+
+    if (action === 'adjust_duration') {
+      // Option 1: Adjust Duration to fit Meta minimum daily floor for ₹0 extra
+      const newDuration = Math.max(1, Math.floor(mediaSpend / minBudgetInfo.minDailyBudget));
+      const newDailyMediaSpend = mediaSpend / newDuration;
+      const startDate = new Date();
+      const endDate = new Date(startDate.getTime() + newDuration * 24 * 3600 * 1000);
+
+      const updated = db.updateCampaign(campaignId, {
+        duration_days: newDuration,
+        daily_budget: Math.round(newDailyMediaSpend),
+        start_at: startDate.toISOString(),
+        end_at: endDate.toISOString(),
+        status: 'PAYMENT_CONFIRMED',
+        queue_status: 'QUEUED',
+        error_details: null,
+        rejection_reason: null,
+        meta_status_message: `Duration adjusted to ${newDuration} days (₹${newDailyMediaSpend.toFixed(2)}/day media spend) with customer approval. Re-queued for Meta submission.`,
+      });
+
+      // Re-enqueue for background worker processing
+      CampaignQueueService.enqueue(campaignId);
+
+      return res.json({
+        success: true,
+        message: `Campaign duration adjusted to ${newDuration} days at ₹${newDailyMediaSpend.toFixed(2)}/day (meets Meta minimum floor). Re-submitted for review.`,
+        campaign: updated,
+      });
+    }
+
+    if (action === 'topup_budget') {
+      // Option 2: Customer tops up wallet to maintain original duration
+      const duration = campaign.duration_days || 14;
+      const requiredTotalMedia = Math.ceil(duration * minBudgetInfo.minDailyBudget);
+      const calculatedShortfall = Math.max(1, requiredTotalMedia - mediaSpend);
+      const shortfall = typeof topupAmount === 'number' && topupAmount > 0 ? topupAmount : calculatedShortfall;
+      const userBalance = db.getWalletBalance(req.user!.id);
+
+      if (userBalance < shortfall) {
+        return res.status(400).json({
+          error: `Insufficient wallet balance for top-up. Required: ₹${shortfall}, Available: ₹${userBalance.toFixed(2)}. Please add funds to your wallet.`,
+          requiredAmount: shortfall,
+          availableBalance: userBalance,
+        });
+      }
+
+      // Deduct shortfall from wallet
+      db.deductWallet(req.user!.id, shortfall, {
+        description: `Media Budget Top-up for Campaign ${campaign.id} (${duration} Days @ ₹${minBudgetInfo.minDailyBudget.toFixed(2)}/day)`,
+        campaignId,
+      });
+
+      const updated = db.updateCampaign(campaignId, {
+        total_budget: (campaign.total_budget || 0) + shortfall,
+        daily_budget: Math.round((mediaSpend + shortfall) / duration),
+        status: 'PAYMENT_CONFIRMED',
+        queue_status: 'QUEUED',
+        error_details: null,
+        rejection_reason: null,
+        meta_status_message: `Media budget topped up by ₹${shortfall}. Re-queued for Meta submission.`,
+      });
+
+      CampaignQueueService.enqueue(campaignId);
+
+      return res.json({
+        success: true,
+        message: `Top-up of ₹${shortfall} completed. Campaign re-queued for Meta submission with verified minimum budget.`,
+        campaign: updated,
+      });
+    }
+
+    if (action === 'refund_to_wallet') {
+      // Option 3: Full Refund to Customer Wallet
+      const payment = db.findPaymentByCampaignId(campaignId);
+      const refundAmount = payment?.amount || campaign.total_budget || 0;
+
+      if (refundAmount > 0) {
+        db.creditWallet(req.user!.id, refundAmount, {
+          description: `Full Refund for Cancelled Campaign ${campaign.id}`,
+          paymentId: campaignId,
+          type: 'CAMPAIGN_REFUND',
+        });
+      }
+
+      if (payment) {
+        db.updatePayment(payment.id, {
+          status: 'REFUNDED',
+          notes: `Full refund of ₹${refundAmount} credited to customer wallet upon request.`,
+        });
+      }
+
+      const updated = db.updateCampaign(campaignId, {
+        status: 'FAILED',
+        queue_status: 'COMPLETED',
+        rejection_reason: `Cancelled and refunded ₹${refundAmount} to wallet upon customer request.`,
+        error_details: `Refunded ₹${refundAmount} to wallet on ${new Date().toLocaleString()}`,
+        meta_status_message: `Campaign cancelled. ₹${refundAmount} refunded in full to customer wallet.`,
+      });
+
+      return res.json({
+        success: true,
+        message: `₹${refundAmount} refunded in full to your wallet balance.`,
+        campaign: updated,
+      });
+    }
+
+    return res.status(400).json({ error: 'Invalid adjustment action. Supported: adjust_duration, topup_budget, refund_to_wallet' });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || 'Failed to adjust campaign budget' });
+  }
+});
+
 // Authentic Live Meta Marketing API Performance Reports
 apiRouter.get(['/reports/performance', '/campaigns/performance/reports'], requireAuth, async (req: AuthenticatedRequest, res) => {
   try {
@@ -1302,6 +1430,23 @@ apiRouter.get('/meta/activation-status', async (_req, res) => {
     res.json(activation);
   } catch (err: any) {
     res.status(500).json({ error: err.message || 'Failed to retrieve Meta activation status' });
+  }
+});
+
+// Dynamic minimum daily budget floor from Meta Graph API
+apiRouter.get('/meta/minimum-budget', async (req, res) => {
+  try {
+    const currency = String(req.query.currency || 'INR');
+    const rawBilling = String(req.query.billingEvent || 'IMPRESSIONS');
+    const billingEvent: 'IMPRESSIONS' | 'LINK_CLICKS' | 'ACTIONS' =
+      rawBilling === 'LINK_CLICKS' || rawBilling === 'ACTIONS' ? rawBilling : 'IMPRESSIONS';
+    const objective = req.query.objective ? String(req.query.objective) : undefined;
+    const adAccountId = req.query.adAccountId ? String(req.query.adAccountId) : '1627260695520511';
+
+    const budgetInfo = await MetaService.getAdAccountMinimumBudget(adAccountId, currency, billingEvent, objective);
+    res.json(budgetInfo);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || 'Failed to retrieve Meta minimum budget' });
   }
 });
 

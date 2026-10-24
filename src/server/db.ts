@@ -79,7 +79,8 @@ export type CampaignStatus =
   | 'PAUSED'
   | 'COMPLETED'
   | 'REJECTED'
-  | 'FAILED';
+  | 'FAILED'
+  | 'BUDGET_ADJUSTMENT_REQUIRED';
 
 export interface CampaignTargeting {
   country: string;
@@ -113,6 +114,15 @@ export interface Campaign {
   daily_budget?: number;
   duration_days?: number;
   total_budget?: number;
+  budget_breakdown?: {
+    platform_fee: number;
+    media_spend: number;
+    daily_media_spend: number;
+    min_daily_media_spend: number;
+    currency: string;
+    recommended_duration_days?: number;
+    recommended_topup_amount?: number;
+  };
   start_at: string | null;
   end_at: string | null;
   status: CampaignStatus;

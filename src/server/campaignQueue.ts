@@ -218,6 +218,25 @@ export class CampaignQueueService {
           this.stats.completedCount++;
           db.log('QUEUE', 'INFO', `Campaign ${campaignId} successfully processed and registered on Meta (ID: ${submitRes.meta_campaign_id}).`);
         }
+      } else if (submitRes.status === 'BUDGET_ADJUSTMENT_REQUIRED') {
+        const errorMsg = submitRes.error || 'Meta daily budget floor adjustment required';
+        const pkg = db.findPackageById(campaign.package_id);
+        db.updateCampaign(campaignId, {
+          status: 'BUDGET_ADJUSTMENT_REQUIRED',
+          queue_status: 'COMPLETED',
+          error_details: errorMsg,
+          meta_status_message: errorMsg,
+          budget_breakdown: submitRes.budgetDetails ? {
+            platform_fee: pkg?.platform_fee || 200,
+            media_spend: submitRes.budgetDetails.mediaSpend,
+            daily_media_spend: submitRes.budgetDetails.dailyMediaSpend,
+            min_daily_media_spend: submitRes.budgetDetails.minDailyBudget,
+            currency: 'INR',
+            recommended_duration_days: submitRes.budgetDetails.recommendedDurationDays,
+            recommended_topup_amount: submitRes.budgetDetails.recommendedTopupAmount,
+          } : undefined,
+        });
+        db.log('QUEUE', 'WARN', `Campaign ${campaignId} requires customer budget/duration adjustment: ${errorMsg}`);
       } else {
         // Meta API returned error or rejection
         const errorMsg = submitRes.error || 'Meta campaign submission rejected';

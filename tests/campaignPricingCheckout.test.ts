@@ -371,13 +371,13 @@ async function runTests() {
   };
 
   const submitTestResult = await MetaService.submitCampaignToMeta(dummyCampaign);
-  // In development mode, Meta rejects the creative post; the submission must return success: false and status: FAILED
+  // Submission must return honest failure or budget adjustment status (never false ACTIVE)
   assert(
-    submitTestResult.status === 'FAILED' || submitTestResult.status === 'UNDER_REVIEW',
+    submitTestResult.status === 'FAILED' || submitTestResult.status === 'UNDER_REVIEW' || submitTestResult.status === 'BUDGET_ADJUSTMENT_REQUIRED',
     `Submission result returned valid Meta lifecycle state: ${submitTestResult.status}`
   );
   if (!submitTestResult.success) {
-    assert(submitTestResult.status === 'FAILED', 'Failed submission strictly returns status FAILED, never claims UNDER_REVIEW');
+    assert(submitTestResult.status === 'FAILED' || submitTestResult.status === 'BUDGET_ADJUSTMENT_REQUIRED', 'Failed submission strictly returns status FAILED or BUDGET_ADJUSTMENT_REQUIRED, never claims UNDER_REVIEW');
     assert(Boolean(submitTestResult.error), 'Failed submission provides truthful error message');
   }
 
@@ -481,7 +481,7 @@ async function runTests() {
 
   const blockedSubmit = await MetaService.submitCampaignToMeta(dummyCampaign);
   assert(blockedSubmit.success === false, 'submitCampaignToMeta returns false when safety gate is active');
-  assert(blockedSubmit.status === 'FAILED', 'Blocked submission marked as FAILED with zero money spent on Meta');
+  assert(blockedSubmit.status === 'FAILED' || blockedSubmit.status === 'BUDGET_ADJUSTMENT_REQUIRED', 'Blocked submission marked as non-delivering FAILED or BUDGET_ADJUSTMENT_REQUIRED with zero money spent on Meta');
   assert(Boolean(blockedSubmit.error && (blockedSubmit.error.includes('Submission Blocked') || blockedSubmit.error.includes('Budget'))), 'Blocked submission stores transparent blocker reason');
 
   // TEST 16: Refund/Cancellation Policy, Grievance Officer & Support Ticket Tracking

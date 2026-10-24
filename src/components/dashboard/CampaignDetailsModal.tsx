@@ -33,6 +33,8 @@ export const CampaignDetailsModal: React.FC<CampaignDetailsModalProps> = ({ camp
   const [loading, setLoading] = useState(true);
   const [submittingMeta, setSubmittingMeta] = useState(false);
   const [metaError, setMetaError] = useState<string | null>(null);
+  const [adjustingAction, setAdjustingAction] = useState<string | null>(null);
+  const [adjustMessage, setAdjustMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   const loadData = () => {
     if (!campaignId) return;
@@ -61,6 +63,22 @@ export const CampaignDetailsModal: React.FC<CampaignDetailsModalProps> = ({ camp
       setMetaError(err.message || 'Meta advertising permissions are not configured or approved for this application.');
     } finally {
       setSubmittingMeta(false);
+    }
+  };
+
+  const handleAdjustBudget = async (action: 'adjust_duration' | 'topup_budget' | 'refund_to_wallet', topupAmt?: number) => {
+    if (!data) return;
+    setAdjustingAction(action);
+    setAdjustMessage(null);
+    try {
+      const res = await api.adjustCampaignBudget(data.campaign.id, action, topupAmt);
+      setAdjustMessage({ type: 'success', text: res.message });
+      loadData();
+      if (onRefreshList) onRefreshList();
+    } catch (err: any) {
+      setAdjustMessage({ type: 'error', text: err.message || 'Failed to adjust budget' });
+    } finally {
+      setAdjustingAction(null);
     }
   };
 
@@ -117,39 +135,198 @@ export const CampaignDetailsModal: React.FC<CampaignDetailsModalProps> = ({ camp
               </div>
             )}
 
-            {/* Top Stats Overview */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-              <div className="rounded-xl border border-slate-800 bg-[#090D18] p-3.5">
-                <span className="block text-slate-500 text-[11px]">Campaign Objective</span>
-                <span className="font-bold text-white text-sm mt-0.5 block capitalize">{data.campaign.objective || data.package?.name || 'Traffic'}</span>
-                <span className="text-[11px] text-indigo-400 font-semibold">₹{data.campaign.daily_budget ? `${data.campaign.daily_budget}/day` : `₹${data.package?.price || data.campaign.total_budget || 200}`}</span>
-              </div>
+            {/* Budget & Breakdown Calculations */}
+            {(() => {
+              const totalBudget = data.campaign.total_budget || data.package?.price || 549;
+              const platformFee = data.campaign.budget_breakdown?.platform_fee ?? 200;
+              const mediaSpend = data.campaign.budget_breakdown?.media_spend ?? Math.max(0, totalBudget - platformFee);
+              const durationDays = data.campaign.duration_days || data.package?.duration_days || 14;
+              const dailyMediaSpend = mediaSpend / (durationDays || 1);
+              const minDailyBudget = data.campaign.budget_breakdown?.min_daily_media_spend || 95.46;
+              const recommendedDuration = Math.max(1, Math.floor(mediaSpend / minDailyBudget));
+              const recommendedDaily = mediaSpend / recommendedDuration;
+              const requiredTotalMedia = Math.ceil(durationDays * minDailyBudget);
+              const topupShortfall = Math.max(1, requiredTotalMedia - mediaSpend);
 
-              <div className="rounded-xl border border-slate-800 bg-[#090D18] p-3.5">
-                <span className="block text-slate-500 text-[11px]">Duration & Budget</span>
-                <span className="font-bold text-white text-sm mt-0.5 block">{data.campaign.duration_days || data.package?.duration_days || 5} Days</span>
-                <span className="text-[11px] text-slate-400">Total: ₹{data.campaign.total_budget || data.package?.price || 200}</span>
-              </div>
+              const isBudgetBlocked =
+                data.campaign.status === 'BUDGET_ADJUSTMENT_REQUIRED' ||
+                Boolean(
+                  (data.campaign.rejection_reason && data.campaign.rejection_reason.includes('Meta Budget Validation Blocked')) ||
+                  (data.campaign.error_details && data.campaign.error_details.includes('Meta Budget Validation Blocked')) ||
+                  (data.campaign.meta_status_message && data.campaign.meta_status_message.includes('Meta Budget Validation Blocked'))
+                );
 
-              <div className="rounded-xl border border-slate-800 bg-[#090D18] p-3.5">
-                <span className="block text-slate-500 text-[11px]">Placements</span>
-                <div className="flex items-center gap-1.5 mt-1 text-slate-200 font-semibold text-xs">
-                  <Facebook className="h-3.5 w-3.5 text-blue-400" />
-                  <Instagram className="h-3.5 w-3.5 text-pink-400" />
-                  <span>{data.campaign.placements?.length ? `${data.campaign.placements.length} Placements` : 'FB + IG Feed & Stories'}</span>
-                </div>
-              </div>
+              return (
+                <>
+                  {/* Top Stats Overview */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                    <div className="rounded-xl border border-slate-800 bg-[#090D18] p-3.5">
+                      <span className="block text-slate-500 text-[11px]">Campaign Objective</span>
+                      <span className="font-bold text-white text-sm mt-0.5 block capitalize">{data.campaign.objective || data.package?.name || 'Traffic'}</span>
+                      <span className="text-[11px] text-indigo-400 font-semibold">Net Media: ₹{mediaSpend} (₹{dailyMediaSpend.toFixed(2)}/day)</span>
+                    </div>
 
-              <div className="rounded-xl border border-slate-800 bg-[#090D18] p-3.5">
-                <span className="block text-slate-500 text-[11px]">Delivery & Mode</span>
-                <span className={`font-bold text-sm mt-0.5 block ${data.campaign.status === 'ACTIVE' ? 'text-emerald-400' : 'text-amber-400'}`}>
-                  {data.campaign.status}
-                </span>
-                <span className="text-[11px] text-slate-400">
-                  {data.campaign.meta_campaign_id ? 'Meta Draft Linked' : 'Safe Non-Delivering'}
-                </span>
-              </div>
-            </div>
+                    <div className="rounded-xl border border-slate-800 bg-[#090D18] p-3.5">
+                      <span className="block text-slate-500 text-[11px]">Duration & Total Authorized</span>
+                      <span className="font-bold text-white text-sm mt-0.5 block">{durationDays} Days</span>
+                      <span className="text-[11px] text-slate-400">Total: ₹{totalBudget} (₹{platformFee} fee + ₹{mediaSpend} ad)</span>
+                    </div>
+
+                    <div className="rounded-xl border border-slate-800 bg-[#090D18] p-3.5">
+                      <span className="block text-slate-500 text-[11px]">Placements</span>
+                      <div className="flex items-center gap-1.5 mt-1 text-slate-200 font-semibold text-xs">
+                        <Facebook className="h-3.5 w-3.5 text-blue-400" />
+                        <Instagram className="h-3.5 w-3.5 text-pink-400" />
+                        <span>{data.campaign.placements?.length ? `${data.campaign.placements.length} Placements` : 'FB + IG Feed & Stories'}</span>
+                      </div>
+                    </div>
+
+                    <div className="rounded-xl border border-slate-800 bg-[#090D18] p-3.5">
+                      <span className="block text-slate-500 text-[11px]">Delivery & Mode</span>
+                      <span className={`font-bold text-sm mt-0.5 block ${
+                        data.campaign.status === 'ACTIVE'
+                          ? 'text-emerald-400'
+                          : isBudgetBlocked
+                          ? 'text-amber-400'
+                          : data.campaign.status === 'FAILED'
+                          ? 'text-red-400'
+                          : 'text-indigo-400'
+                      }`}>
+                        {isBudgetBlocked ? 'Action Required' : data.campaign.status}
+                      </span>
+                      <span className="text-[11px] text-slate-400">
+                        {data.campaign.meta_campaign_id
+                          ? (data.campaign.status === 'ACTIVE' ? 'Live Delivering' : 'Meta Draft Linked')
+                          : isBudgetBlocked
+                          ? 'Awaiting Customer Choice'
+                          : 'Safe Non-Delivering'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Interactive Budget Adjustment Resolution Card */}
+                  {isBudgetBlocked && (
+                    <div className="rounded-2xl border border-amber-500/40 bg-gradient-to-b from-amber-950/40 to-slate-900/60 p-5 space-y-4 shadow-xl animate-in fade-in duration-300">
+                      <div className="flex items-center gap-2.5">
+                        <AlertCircle className="h-5 w-5 text-amber-400 shrink-0" />
+                        <div>
+                          <h4 className="font-bold text-sm text-amber-300">
+                            Meta Daily Budget Floor Adjustment Required
+                          </h4>
+                          <p className="text-[11px] text-slate-300 mt-0.5">
+                            Meta Marketing API requires a minimum daily ad spend of ₹{minDailyBudget.toFixed(2)}/day ($1.00 USD/day) for ad sets in INR currency.
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Transparent Budget Breakdown Table */}
+                      <div className="rounded-xl bg-black/50 border border-slate-800 p-4 divide-y divide-slate-800 text-xs">
+                        <div className="flex justify-between py-1.5">
+                          <span className="text-slate-400">Total Customer Authorized Amount:</span>
+                          <span className="font-bold text-white">₹{totalBudget}</span>
+                        </div>
+                        <div className="flex justify-between py-1.5">
+                          <span className="text-slate-400">SMAP Platform, Creative & AI Management Fee:</span>
+                          <span className="font-semibold text-slate-300">₹{platformFee}</span>
+                        </div>
+                        <div className="flex justify-between py-1.5">
+                          <span className="text-slate-400">Net Meta Ad Spend Allocation:</span>
+                          <span className="font-bold text-indigo-400">₹{mediaSpend}</span>
+                        </div>
+                        <div className="flex justify-between py-1.5">
+                          <span className="text-slate-400">Original Requested Duration:</span>
+                          <span className="text-slate-300">{durationDays} Days</span>
+                        </div>
+                        <div className="flex justify-between py-1.5">
+                          <span className="text-slate-400">Allocated Daily Media Spend:</span>
+                          <span className="font-bold text-amber-400">₹{dailyMediaSpend.toFixed(2)}/day (Meta requires ≥ ₹{minDailyBudget.toFixed(2)}/day)</span>
+                        </div>
+                        <div className="pt-2 text-[11px] text-slate-400 leading-relaxed italic">
+                          * Arithmetic Note: Gross display showed ₹39/day (₹549 ÷ 14 = ₹39.21, where 39 × 14 = ₹546 with ₹3 rounding remainder). The actual ad spend sent to Meta is ₹349 (₹24.93/day over 14 days), with ₹200 covering platform management and targeting orchestration.
+                        </div>
+                      </div>
+
+                      {adjustMessage && (
+                        <div className={`p-3 rounded-xl text-xs font-semibold ${
+                          adjustMessage.type === 'success' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30' : 'bg-red-500/10 text-red-400 border border-red-500/30'
+                        }`}>
+                          {adjustMessage.text}
+                        </div>
+                      )}
+
+                      {/* Interactive Choices */}
+                      <div className="space-y-2.5 pt-1">
+                        <span className="text-xs font-bold text-slate-200 block uppercase tracking-wider">
+                          Choose One of the 3 Safe Resolution Options:
+                        </span>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                          {/* Option 1: Adjust Duration */}
+                          <div className="rounded-xl border border-indigo-500/40 bg-indigo-950/20 p-4 flex flex-col justify-between space-y-3">
+                            <div>
+                              <div className="inline-block px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 text-[10px] font-bold uppercase tracking-wider mb-1">
+                                Recommended (₹0 Extra)
+                              </div>
+                              <h5 className="font-bold text-white text-xs">Option 1: Adjust to {recommendedDuration} Days</h5>
+                              <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">
+                                Runs your full ₹{mediaSpend} ad spend over {recommendedDuration} days at ₹{recommendedDaily.toFixed(2)}/day (exceeds Meta minimum). No extra payment required.
+                              </p>
+                            </div>
+                            <button
+                              onClick={() => handleAdjustBudget('adjust_duration')}
+                              disabled={adjustingAction !== null}
+                              className="w-full py-2 px-3 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs disabled:opacity-50 transition-all shadow-md shadow-indigo-600/20"
+                            >
+                              {adjustingAction === 'adjust_duration' ? 'Adjusting...' : `Adjust to ${recommendedDuration} Days (₹0)`}
+                            </button>
+                          </div>
+
+                          {/* Option 2: Top-Up Media Budget */}
+                          <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 flex flex-col justify-between space-y-3">
+                            <div>
+                              <div className="inline-block px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 text-[10px] font-bold uppercase tracking-wider mb-1">
+                                Keep All {durationDays} Days
+                              </div>
+                              <h5 className="font-bold text-white text-xs">Option 2: Top-Up Media Budget</h5>
+                              <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">
+                                Keep all {durationDays} days active by topping up ₹{topupShortfall} from your wallet to meet Meta's ₹{minDailyBudget.toFixed(2)}/day floor (Total media: ₹{requiredTotalMedia}).
+                              </p>
+                            </div>
+                            <button
+                              onClick={() => handleAdjustBudget('topup_budget', topupShortfall)}
+                              disabled={adjustingAction !== null}
+                              className="w-full py-2 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs disabled:opacity-50 transition-all border border-slate-700"
+                            >
+                              {adjustingAction === 'topup_budget' ? 'Deducting...' : `Top-Up ₹${topupShortfall} from Wallet`}
+                            </button>
+                          </div>
+
+                          {/* Option 3: Full Wallet Refund */}
+                          <div className="rounded-xl border border-red-500/20 bg-red-950/10 p-4 flex flex-col justify-between space-y-3">
+                            <div>
+                              <div className="inline-block px-2 py-0.5 rounded-full bg-red-500/20 text-red-300 text-[10px] font-bold uppercase tracking-wider mb-1">
+                                100% Wallet Refund
+                              </div>
+                              <h5 className="font-bold text-white text-xs">Option 3: Cancel & Full Refund</h5>
+                              <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">
+                                Immediately cancel this campaign and receive a 100% full refund of ₹{totalBudget} credited directly back to your SMAP wallet balance.
+                              </p>
+                            </div>
+                            <button
+                              onClick={() => handleAdjustBudget('refund_to_wallet')}
+                              disabled={adjustingAction !== null}
+                              className="w-full py-2 px-3 rounded-lg bg-red-900/40 hover:bg-red-800/60 text-red-200 font-bold text-xs disabled:opacity-50 transition-all border border-red-700/50"
+                            >
+                              {adjustingAction === 'refund_to_wallet' ? 'Refunding...' : `Refund ₹${totalBudget} to Wallet`}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </>
+              );
+            })()}
 
             {/* Official Meta Insights Section (Section 27) */}
             <div className="rounded-2xl border border-slate-800 bg-[#090D18] p-5">

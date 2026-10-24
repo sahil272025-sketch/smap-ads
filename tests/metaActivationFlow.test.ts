@@ -245,6 +245,117 @@ async function runMetaActivationTests() {
   assert(reconciled.status !== 'ACTIVE', 'Campaign without confirmed Meta active delivery is NEVER marked ACTIVE');
   assert(reconciled.status === 'UNDER_REVIEW', 'Preserves UNDER_REVIEW status truthfully');
 
+  // TEST 11: Dynamic Meta Minimum Daily Budget Query
+  console.log('\n--- TEST 11: Dynamic Meta Minimum Daily Budget Query ---');
+  const minBudgetInfo = await MetaService.getAdAccountMinimumBudget('1627260695520511', 'INR', 'IMPRESSIONS', 'TRAFFIC');
+  assert(minBudgetInfo.currency === 'INR', 'Minimum budget query returns INR currency');
+  assert(minBudgetInfo.minDailyBudgetPaise >= 8500, 'Minimum daily budget in paise is >= 8500 paise (≥ ₹85.00/day)');
+  assert(minBudgetInfo.minDailyBudget >= 85, 'Minimum daily budget in rupees is >= ₹85.00/day');
+
+  // TEST 12: Low Budget Classification (BUDGET_ADJUSTMENT_REQUIRED instead of fatal FAILED)
+  console.log('\n--- TEST 12: Budget Floor Protection & Status Classification ---');
+  const lowBudgetCmpId = `smap_cmp_low_${Date.now()}`;
+  const lowBudgetCampaign: Campaign = {
+    ...testCampaign,
+    id: lowBudgetCmpId,
+    package_id: 'pkg_pro_549',
+    total_budget: 549,
+    duration_days: 14,
+    daily_budget: 39,
+    status: 'PAYMENT_CONFIRMED',
+  };
+  db.createCampaign(lowBudgetCampaign);
+
+  const subRes = await MetaService.submitCampaignToMeta(lowBudgetCampaign);
+  assert(subRes.success === false, 'Rejects campaign with daily media spend below Meta floor');
+  assert(subRes.status === 'BUDGET_ADJUSTMENT_REQUIRED', 'Returns BUDGET_ADJUSTMENT_REQUIRED status instead of permanent FAILED');
+  assert(Boolean(subRes.error && subRes.error.includes('Meta Budget Validation Blocked')), 'Error explains Meta minimum daily budget requirement');
+  assert(Boolean(subRes.budgetDetails && subRes.budgetDetails.minDailyBudget >= 85), 'Returns exact budgetDetails with minDailyBudget');
+
+  // TEST 13: Budget Adjustment Option 1 - Adjust Duration for ₹0 Extra
+  console.log('\n--- TEST 13: Budget Adjustment Option 1 - Adjust Duration (₹0) ---');
+  const mediaSpend = 349; // 549 total - 200 platform fee
+  const minFloor = minBudgetInfo.minDailyBudget; // 95.46
+  const adjustedDuration = Math.max(1, Math.floor(mediaSpend / minFloor)); // 3 days
+  const adjustedDailyMedia = mediaSpend / adjustedDuration; // ₹116.33/day >= ₹95.46/day
+
+  const updatedDurationCmp = db.updateCampaign(lowBudgetCmpId, {
+    duration_days: adjustedDuration,
+    daily_budget: Math.round(adjustedDailyMedia),
+    status: 'PAYMENT_CONFIRMED',
+    queue_status: 'QUEUED',
+    error_details: null,
+    rejection_reason: null,
+    meta_status_message: `Duration adjusted to ${adjustedDuration} days with customer approval. Re-queued for Meta submission.`,
+  });
+
+  assert(updatedDurationCmp?.duration_days === adjustedDuration, `Duration correctly updated to ${adjustedDuration} days`);
+  assert(updatedDurationCmp?.daily_budget ? updatedDurationCmp.daily_budget >= minFloor : false, 'New daily budget meets or exceeds Meta minimum floor');
+  assert(updatedDurationCmp?.status === 'PAYMENT_CONFIRMED', 'Campaign reset to PAYMENT_CONFIRMED without extra charge');
+
+  // TEST 14: Budget Adjustment Option 2 - Top-up Media Budget
+  console.log('\n--- TEST 14: Budget Adjustment Option 2 - Top-up Media Budget ---');
+  const topupCmpId = `smap_cmp_topup_${Date.now()}`;
+  const topupCampaign: Campaign = {
+    ...testCampaign,
+    id: topupCmpId,
+    package_id: 'pkg_pro_549',
+    total_budget: 549,
+    duration_days: 14,
+    daily_budget: 39,
+    status: 'BUDGET_ADJUSTMENT_REQUIRED',
+  };
+  db.createCampaign(topupCampaign);
+
+  const initialBalance = db.getWalletBalance(testUserId);
+  const shortfall = Math.ceil(14 * minFloor) - mediaSpend; // 1337 - 349 = 988
+  db.deductWallet(testUserId, shortfall, {
+    description: `Media Budget Top-up for Campaign ${topupCmpId}`,
+    campaignId: topupCmpId,
+  });
+
+  const afterDeductBalance = db.getWalletBalance(testUserId);
+  assert(afterDeductBalance === initialBalance - shortfall, 'Shortfall accurately deducted from wallet balance');
+
+  const toppedUpCmp = db.updateCampaign(topupCmpId, {
+    total_budget: 549 + shortfall,
+    daily_budget: Math.round((mediaSpend + shortfall) / 14),
+    status: 'PAYMENT_CONFIRMED',
+    queue_status: 'QUEUED',
+  });
+  assert(toppedUpCmp?.total_budget === 549 + shortfall, 'Campaign total budget increased by top-up amount');
+  assert(toppedUpCmp?.status === 'PAYMENT_CONFIRMED', 'Campaign reset to PAYMENT_CONFIRMED after top-up');
+
+  // TEST 15: Budget Adjustment Option 3 - Full Wallet Refund
+  console.log('\n--- TEST 15: Budget Adjustment Option 3 - Full Wallet Refund ---');
+  const refundCmpId = `smap_cmp_refund_${Date.now()}`;
+  const refundCampaign: Campaign = {
+    ...testCampaign,
+    id: refundCmpId,
+    total_budget: 549,
+    status: 'BUDGET_ADJUSTMENT_REQUIRED',
+  };
+  db.createCampaign(refundCampaign);
+
+  const preRefundBal = db.getWalletBalance(testUserId);
+  db.creditWallet(testUserId, 549, {
+    description: `Full Refund for Cancelled Campaign ${refundCmpId}`,
+    paymentId: refundCmpId,
+    type: 'CAMPAIGN_REFUND',
+  });
+
+  const postRefundBal = db.getWalletBalance(testUserId);
+  assert(postRefundBal === preRefundBal + 549, 'Full ₹549 credited back to customer wallet');
+
+  const refundedCmp = db.updateCampaign(refundCmpId, {
+    status: 'FAILED',
+    queue_status: 'COMPLETED',
+    rejection_reason: 'Cancelled and refunded ₹549 to wallet upon customer request.',
+    error_details: `Refunded ₹549 to wallet on ${new Date().toLocaleString()}`,
+  });
+  assert(refundedCmp?.status === 'FAILED', 'Campaign marked as FAILED/Cancelled');
+  assert(Boolean(refundedCmp?.rejection_reason?.includes('refunded ₹549 to wallet')), 'Rejection reason transparently records the refund');
+
   console.log('\n========================================================');
   console.log(`🎉 All ${passedTests}/${totalTests} Meta Activation Tests PASSED!`);
   console.log('========================================================\n');

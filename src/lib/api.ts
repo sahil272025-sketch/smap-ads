@@ -315,6 +315,23 @@ class ApiClient {
     });
   }
 
+  public adjustCampaignBudget(
+    campaignId: string,
+    action: 'adjust_duration' | 'topup_budget' | 'refund_to_wallet',
+    topupAmount?: number
+  ) {
+    return this.request<{
+      success: boolean;
+      message: string;
+      campaign: Campaign;
+      requiredAmount?: number;
+      availableBalance?: number;
+    }>(`/campaigns/${campaignId}/adjust-budget`, {
+      method: 'POST',
+      body: JSON.stringify({ action, topupAmount }),
+    });
+  }
+
   public getPerformanceReports(forceRefresh = false) {
     const q = forceRefresh ? '?force=true' : '';
     return this.request<PerformanceReportsData>(`/reports/performance${q}`);
@@ -608,6 +625,20 @@ class ApiClient {
       method: 'POST',
       body: JSON.stringify(typeof campaignIdOrData === 'string' ? { campaignId: campaignIdOrData } : campaignIdOrData),
     });
+  }
+
+  public getMetaMinimumBudget(currency = 'INR', billingEvent = 'IMPRESSIONS', objective?: string, adAccountId = '1627260695520511') {
+    const params = new URLSearchParams({ currency, billingEvent, adAccountId });
+    if (objective) params.set('objective', objective);
+    return this.request<{
+      currency: string;
+      billingEvent: string;
+      objective?: string;
+      minDailyBudgetPaise: number;
+      minDailyBudget: number;
+      source: string;
+      note: string;
+    }>(`/meta/minimum-budget?${params.toString()}`);
   }
 
   // Support

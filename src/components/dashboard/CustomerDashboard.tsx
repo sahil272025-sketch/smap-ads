@@ -797,7 +797,9 @@ export const StatusBadge: React.FC<{ status: string }> = ({ status }) => {
     case 'SUBMITTING':
       return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">Submitting to Meta</span>;
     case 'FAILED':
-      return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20">Validation Required</span>;
+      return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20">Action Required</span>;
+    case 'BUDGET_ADJUSTMENT_REQUIRED':
+      return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-500/10 text-amber-500 dark:text-amber-400 border border-amber-500/30">Action Required: Budget Adjustment</span>;
     default:
       return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-500">{status}</span>;
   }

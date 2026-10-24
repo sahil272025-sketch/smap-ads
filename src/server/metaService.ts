@@ -1419,10 +1419,18 @@ export class MetaService {
     meta_adset_id?: string;
     meta_creative_id?: string;
     meta_ad_id?: string;
-    status: 'ACTIVE' | 'UNDER_REVIEW' | 'FAILED';
+    status: 'ACTIVE' | 'UNDER_REVIEW' | 'FAILED' | 'BUDGET_ADJUSTMENT_REQUIRED';
     notes?: string;
     error?: string;
     blockers?: string[];
+    budgetDetails?: {
+      mediaSpend: number;
+      durationDays: number;
+      dailyMediaSpend: number;
+      minDailyBudget: number;
+      recommendedDurationDays: number;
+      recommendedTopupAmount: number;
+    };
   }> {
     const config = this.getConfigStatus();
     const effectiveToken = connection?.access_token || this.getServerAccessToken();
@@ -1438,20 +1446,40 @@ export class MetaService {
 
     // Safety Gate Check: Keep real campaign submissions disabled until verified
     const gateCheck = this.canSubmitLiveCampaigns();
-    if (options?.dryRun) {
-      // Explicit safe dry-run mode requested: validate without launching live ad spend
-      const preFlight = await this.validateCampaignPreFlight(campaign, connection);
-      if (!preFlight.valid) {
-        db.log('META_API', 'WARN', `Campaign ${campaign.id} failed pre-flight validation: ${preFlight.errors.join('; ')}`);
-        return {
-          success: false,
-          dryRun: true,
-          status: 'FAILED',
-          error: `Pre-flight validation failed: ${preFlight.errors.join('; ')}`,
-          blockers: preFlight.errors,
-        };
-      }
 
+    // 1. Always run Pre-flight & Budget validation first
+    const preFlight = await this.validateCampaignPreFlight(campaign, connection);
+    if (!preFlight.valid) {
+      db.log('META_API', 'WARN', `Campaign ${campaign.id} failed pre-flight validation: ${preFlight.errors.join('; ')}`);
+      const isBudgetBlocked = !preFlight.details?.budgetValid;
+      const pkg = db.findPackageById(campaign.package_id);
+      const mediaSpend = pkg?.media_spend || (campaign.total_budget ? Math.round(campaign.total_budget * 0.6) : 349);
+      const durationDays = pkg ? pkg.duration_days : (campaign.duration_days || 14);
+      const dailyMediaSpend = mediaSpend / durationDays;
+      const minDailyBudget = preFlight.details?.minDailyBudget || 95.46;
+      const recommendedDuration = Math.max(1, Math.floor(mediaSpend / minDailyBudget));
+      const topupShortfall = Math.max(0, Math.ceil(durationDays * minDailyBudget - mediaSpend));
+
+      return {
+        success: false,
+        dryRun: Boolean(options?.dryRun || !gateCheck.allowed),
+        status: isBudgetBlocked ? 'BUDGET_ADJUSTMENT_REQUIRED' : 'FAILED',
+        error: isBudgetBlocked
+          ? `Meta Budget Validation Blocked: Allocated daily media budget is ₹${dailyMediaSpend.toFixed(2)}/day (total media allocation ₹${mediaSpend} over ${durationDays} days), which is below Meta's required minimum daily budget of ₹${minDailyBudget.toFixed(2)}/day for INR accounts (IMPRESSIONS).`
+          : `Pre-flight validation failed: ${preFlight.errors.join('; ')}`,
+        blockers: preFlight.errors,
+        budgetDetails: isBudgetBlocked ? {
+          mediaSpend,
+          durationDays,
+          dailyMediaSpend,
+          minDailyBudget,
+          recommendedDurationDays: recommendedDuration,
+          recommendedTopupAmount: topupShortfall,
+        } : undefined,
+      };
+    }
+
+    if (options?.dryRun) {
       db.log('META_API', 'INFO', `Campaign submission held safely in Dry-Run mode for campaign ${campaign.id}: ${gateCheck.reason}`);
       return {
         success: true,
@@ -1516,12 +1544,22 @@ export class MetaService {
       // Verify against Meta's actual minimum budget rule for the account and billing configuration
       const minBudgetInfo = await this.getAdAccountMinimumBudget(cleanAccountId, 'INR', 'IMPRESSIONS', campaign.objective);
       if (dailyBudgetPaise < minBudgetInfo.minDailyBudgetPaise) {
+        const recommendedDuration = Math.max(1, Math.floor(mediaSpend / minBudgetInfo.minDailyBudget));
+        const topupShortfall = Math.max(0, Math.ceil(durationDays * minBudgetInfo.minDailyBudget - mediaSpend));
         const errorMsg = `Meta Budget Validation Blocked: Allocated daily media budget is ₹${dailyMediaSpend.toFixed(2)}/day (total media allocation ₹${mediaSpend} over ${durationDays} days), which is below Meta's required minimum daily budget of ₹${minBudgetInfo.minDailyBudget.toFixed(2)}/day for ${minBudgetInfo.currency} accounts (${minBudgetInfo.billingEvent}). SMAP will never silently spend owner funds or overcharge customers without explicit approval.`;
         db.log('META_API', 'WARN', errorMsg);
         return {
           success: false,
-          status: 'FAILED',
+          status: 'BUDGET_ADJUSTMENT_REQUIRED',
           error: errorMsg,
+          budgetDetails: {
+            mediaSpend,
+            durationDays,
+            dailyMediaSpend,
+            minDailyBudget: minBudgetInfo.minDailyBudget,
+            recommendedDurationDays: recommendedDuration,
+            recommendedTopupAmount: topupShortfall,
+          },
         };
       }
 
@@ -1787,11 +1825,28 @@ export class MetaService {
 
       const metaAdId = adData.id;
 
+      // 9. Fetch and verify created ad object directly from Meta Graph API
+      let liveStatus = 'UNDER_REVIEW';
+      try {
+        const verifyUrl = `https://graph.facebook.com/${config.apiVersion}/${metaAdId}?fields=id,name,status,effective_status,adset_id&access_token=${effectiveToken}`;
+        const verifyRes = await fetch(verifyUrl);
+        const verifyData = await verifyRes.json();
+        if (verifyRes.ok && verifyData.id) {
+          db.log('META_API', 'INFO', `Verified created Meta Ad object ${metaAdId} (Status: ${verifyData.status}, Effective: ${verifyData.effective_status})`);
+          if (verifyData.effective_status === 'ACTIVE') {
+            liveStatus = 'ACTIVE';
+          }
+        }
+      } catch (e: any) {
+        db.log('META_API', 'WARN', `Non-blocking verification probe notice: ${e?.message}`);
+      }
+
       db.log('META_API', 'INFO', `Campaign successfully registered with Meta: ${metaCampaignId}`, {
         metaCampaignId,
         metaAdsetId,
         metaCreativeId,
         metaAdId,
+        liveStatus,
       });
 
       return {
@@ -1800,7 +1855,7 @@ export class MetaService {
         meta_adset_id: metaAdsetId,
         meta_creative_id: metaCreativeId,
         meta_ad_id: metaAdId,
-        status: 'UNDER_REVIEW',
+        status: liveStatus as any,
       };
     } catch (err: any) {
       db.log('META_API', 'ERROR', `Exception during Meta campaign creation: ${err?.message}`, { error: String(err) });
