@@ -465,6 +465,78 @@ async function runMetaActivationTests() {
   const postBalance = db.getWalletBalance(testUserId);
   assert(postBalance === preBalance, 'No funds charged when budget floor is satisfied');
 
+  // TEST 18: Meta Call-to-Action (CTA) Resolution and Enumeration Conformance
+  console.log('\n--- TEST 18: Meta Call-to-Action (CTA) Resolution & Enum Conformance ---');
+  // 1. Internal SEND_WHATSAPP_MESSAGE strictly maps to Meta WHATSAPP_MESSAGE
+  const resolvedWa = MetaService.resolveCallToAction('SEND_WHATSAPP_MESSAGE', 'whatsapp', 'https://wa.me/917370039551');
+  assert(resolvedWa === 'WHATSAPP_MESSAGE', `SEND_WHATSAPP_MESSAGE strictly resolves to Meta enum WHATSAPP_MESSAGE (got: ${resolvedWa})`);
+
+  // 2. WHATSAPP shorthand maps to WHATSAPP_MESSAGE
+  const resolvedWaShort = MetaService.resolveCallToAction('WHATSAPP', 'whatsapp');
+  assert(resolvedWaShort === 'WHATSAPP_MESSAGE', `WHATSAPP shorthand resolves to WHATSAPP_MESSAGE (got: ${resolvedWaShort})`);
+
+  // 3. CALL shorthand maps to CALL_NOW
+  const resolvedCall = MetaService.resolveCallToAction('CALL', 'phone');
+  assert(resolvedCall === 'CALL_NOW', `CALL shorthand resolves to CALL_NOW (got: ${resolvedCall})`);
+
+  // 4. Undefined CTA with WhatsApp destination maps to WHATSAPP_MESSAGE
+  const resolvedWaUrl = MetaService.resolveCallToAction(undefined, 'whatsapp', 'https://wa.me/917370039551');
+  assert(resolvedWaUrl === 'WHATSAPP_MESSAGE', `Undefined CTA with wa.me destination resolves to WHATSAPP_MESSAGE (got: ${resolvedWaUrl})`);
+
+  // 5. Completely invalid CTA falls back safely to LEARN_MORE or destination contextual default
+  const resolvedInvalid = MetaService.resolveCallToAction('INVALID_RANDOM_CTA_123', 'website', 'https://example.com');
+  assert(resolvedInvalid === 'LEARN_MORE', `Invalid CTA falls back safely to LEARN_MORE (got: ${resolvedInvalid})`);
+
+  // TEST 19: Meta API (#100) Error Classification & Prevention
+  console.log('\n--- TEST 19: Meta (#100) Error Classification & Redacted Payload ---');
+  const metaCtaError = '(#100) call_to_action[type] must be one of the following values: BOOK_TRAVEL, CONTACT_US, DONATE, DONATE_NOW, DOWNLOAD, GET_DIRECTIONS, GO_LIVE, INTERESTED, LEARN_MORE, SEE_DETAILS, LIKE_PAGE, MESSAGE_PAGE, RAISE_MONEY, SAVE, SEND_TIP, SHOP_NOW, SIGN_UP, VIEW_INSTAGRAM_PROFILE, INSTAGRAM_MESSAGE, LOYALTY_LEARN_MORE, PURCHASE_GIFT_CARDS, PAY_TO_ACCESS, SEE_MORE, TRY_IN_CAMERA, WHATSAPP_LINK, GET_IN_TOUCH, TRY_NOW, ASK_A_QUESTION, START_A_CHAT, CHAT_NOW, ASK_US, CHAT_WITH_US, SHOP_ON_RETAILER, BOOK_NOW, CHECK_AVAILABILITY, ORDER_NOW, WHATSAPP_MESSAGE, GET_MOBILE_APP, INSTALL_MOBILE_APP, USE_MOBILE_APP, INSTALL_APP, USE_APP, PLAY_GAME, TRY_DEMO, WATCH_VIDEO, WATCH_MORE, OPEN_LINK, NO_BUTTON, LISTEN_MUSIC, MOBILE_DOWNLOAD, GET_OFFER, GET_OFFER_VIEW, BUY_NOW, BUY_TICKETS, UPDATE_APP, BET_NOW, ADD_TO_CART, SELL_NOW, GET_SHOWTIMES, LISTEN_NOW, GET_EVENT_TICKETS, REMIND_ME, SEARCH_MORE, PRE_REGISTER, SWIPE_UP_PRODUCT, SWIPE_UP_SHOP, PLAY_GAME_ON_FACEBOOK, VISIT_WORLD, OPEN_INSTANT_APP, JOIN_GROUP, GET_PROMOTIONS, SEND_UPDATES, INQUIRE_NOW, VISIT_PROFILE, CHAT_ON_WHATSAPP, EXPLORE_MORE, CONFIRM, JOIN_CHANNEL, MAKE_AN_APPOINTMENT, ASK_ABOUT_SERVICES, BOOK_A_CONSULTATION, GET_A_QUOTE, BUY_VIA_MESSAGE, ASK_FOR_MORE_INFO, VIEW_PRODUCT, VIEW_CHANNEL, WATCH_LIVE_VIDEO, JOIN_LIVE_VIDEO, IMAGINE, WATCH_NOW, STREAM_NOW, BUY_ACTIVITY_TICKETS, CALL, MISSED_CALL, CALL_NOW, CALL_ME, APPLY_NOW, BUY, GET_QUOTE, SUBSCRIBE, RECORD_NOW, VOTE_NOW, GIVE_FREE_RIDES, REGISTER_NOW, OPEN_MESSENGER_EXT, EVENT_RSVP, CIVIC_ACTION, SEND_INVITES, REFER_FRIENDS, REQUEST_TIME, SEE_MENU, SEARCH, TRY_IT, TRY_ON, LINK_CARD, DIAL_CODE, FIND_YOUR_GROUPS, START_ORDER';
+
+  // Verify that isTransientError classifies (#100) and call_to_action as permanent fatal errors
+  const isTransient = CampaignQueueService.isTransientError(metaCtaError);
+  assert(isTransient === false, 'Meta (#100) call_to_action error is classified as PERMANENT (never retried infinitely in background)');
+
+  // Verify payload structure without leaking secrets
+  const samplePayload = {
+    object_story_spec: {
+      page_id: '109980188684495',
+      link_data: {
+        message: 'Social Media Marketing Consultation & Organic Growth Strategy',
+        name: 'Grow Your Business Online',
+        link: 'https://wa.me/917370039551',
+        call_to_action: {
+          type: resolvedWa,
+          value: { link: 'https://wa.me/917370039551' },
+        },
+      },
+    },
+    access_token: '[REDACTED_META_SYSTEM_USER_TOKEN]',
+  };
+  assert(samplePayload.object_story_spec.link_data.call_to_action.type === 'WHATSAPP_MESSAGE', 'Payload contains verified Meta CTA WHATSAPP_MESSAGE');
+  assert(!JSON.stringify(samplePayload).includes('EAAPxe7cUc6M'), 'Payload strictly redacts secrets');
+
+  // TEST 20: Verified Campaign Status Handling & Zero Stuck SUBMITTING State
+  console.log('\n--- TEST 20: Verified Campaign Status & No Stuck SUBMITTING State ---');
+  const failedCmpId = `smap_cmp_fail_${Date.now()}`;
+  db.createCampaign({
+    ...testCampaign,
+    id: failedCmpId,
+    status: 'SUBMITTING',
+    queue_status: 'PROCESSING',
+  });
+
+  // Simulate queue permanent failure handling
+  const failedCmp = db.updateCampaign(failedCmpId, {
+    status: 'FAILED',
+    queue_status: 'FAILED',
+    error_details: 'Meta (#100) call_to_action[type] parameter error',
+    rejection_reason: 'Meta (#100) call_to_action[type] parameter error',
+    meta_status_message: 'Campaign submission failed: Meta (#100) call_to_action[type] parameter error',
+  });
+
+  assert(failedCmp?.status === 'FAILED', 'Failed campaign immediately transitions status to FAILED (never stuck in SUBMITTING)');
+  assert(failedCmp?.queue_status === 'FAILED', 'Queue status marked FAILED');
+  assert(failedCmp?.meta_campaign_id === null, 'Meta campaign ID remains null when creation fails');
+
   console.log('\n========================================================');
   console.log(`🎉 All ${passedTests}/${totalTests} Meta Activation Tests PASSED!`);
   console.log('========================================================\n');

@@ -311,14 +311,20 @@ export class CampaignQueueService {
   public static isTransientError(error: string): boolean {
     const lower = (error || '').toLowerCase();
     
-    // Explicit permanent errors
+    // Explicit permanent errors (never retry, fail fast)
     if (
+      lower.includes('#100') ||
+      lower.includes('call_to_action') ||
+      lower.includes('invalid parameter') ||
+      lower.includes('unsupported') ||
+      lower.includes('development mode') ||
+      lower.includes('1885183') ||
       lower.includes('oauth') ||
       lower.includes('invalid access token') ||
       lower.includes('session has expired') ||
       lower.includes('permission') ||
       lower.includes('pages_manage_ads') ||
-      lower.includes('ad creative') && lower.includes('invalid') ||
+      (lower.includes('ad creative') && lower.includes('invalid')) ||
       lower.includes('policy') ||
       lower.includes('disapproved')
     ) {

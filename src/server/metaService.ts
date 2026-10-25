@@ -40,7 +40,86 @@ export interface MetaInsights {
   syncStatus?: 'LIVE_SYNCHRONIZED' | 'PENDING_DELIVERY' | 'NO_META_ID' | 'SYNC_ERROR' | string | null;
 }
 
+export const META_VALID_CTA_TYPES = new Set([
+  'BOOK_TRAVEL', 'CONTACT_US', 'DONATE', 'DONATE_NOW', 'DOWNLOAD', 'GET_DIRECTIONS',
+  'GO_LIVE', 'INTERESTED', 'LEARN_MORE', 'SEE_DETAILS', 'LIKE_PAGE', 'MESSAGE_PAGE',
+  'RAISE_MONEY', 'SAVE', 'SEND_TIP', 'SHOP_NOW', 'SIGN_UP', 'VIEW_INSTAGRAM_PROFILE',
+  'INSTAGRAM_MESSAGE', 'LOYALTY_LEARN_MORE', 'PURCHASE_GIFT_CARDS', 'PAY_TO_ACCESS',
+  'SEE_MORE', 'TRY_IN_CAMERA', 'WHATSAPP_LINK', 'GET_IN_TOUCH', 'TRY_NOW',
+  'ASK_A_QUESTION', 'START_A_CHAT', 'CHAT_NOW', 'ASK_US', 'CHAT_WITH_US',
+  'SHOP_ON_RETAILER', 'BOOK_NOW', 'CHECK_AVAILABILITY', 'ORDER_NOW', 'WHATSAPP_MESSAGE',
+  'GET_MOBILE_APP', 'INSTALL_MOBILE_APP', 'USE_MOBILE_APP', 'INSTALL_APP', 'USE_APP',
+  'PLAY_GAME', 'TRY_DEMO', 'WATCH_VIDEO', 'WATCH_MORE', 'OPEN_LINK', 'NO_BUTTON',
+  'LISTEN_MUSIC', 'MOBILE_DOWNLOAD', 'GET_OFFER', 'GET_OFFER_VIEW', 'BUY_NOW',
+  'BUY_TICKETS', 'UPDATE_APP', 'BET_NOW', 'ADD_TO_CART', 'SELL_NOW', 'GET_SHOWTIMES',
+  'LISTEN_NOW', 'GET_EVENT_TICKETS', 'REMIND_ME', 'SEARCH_MORE', 'PRE_REGISTER',
+  'SWIPE_UP_PRODUCT', 'SWIPE_UP_SHOP', 'PLAY_GAME_ON_FACEBOOK', 'VISIT_WORLD',
+  'OPEN_INSTANT_APP', 'JOIN_GROUP', 'GET_PROMOTIONS', 'SEND_UPDATES', 'INQUIRE_NOW',
+  'VISIT_PROFILE', 'CHAT_ON_WHATSAPP', 'EXPLORE_MORE', 'CONFIRM', 'JOIN_CHANNEL',
+  'MAKE_AN_APPOINTMENT', 'ASK_ABOUT_SERVICES', 'BOOK_A_CONSULTATION', 'GET_A_QUOTE',
+  'BUY_VIA_MESSAGE', 'ASK_FOR_MORE_INFO', 'VIEW_PRODUCT', 'VIEW_CHANNEL',
+  'WATCH_LIVE_VIDEO', 'JOIN_LIVE_VIDEO', 'IMAGINE', 'WATCH_NOW', 'STREAM_NOW',
+  'BUY_ACTIVITY_TICKETS', 'CALL', 'MISSED_CALL', 'CALL_NOW', 'CALL_ME', 'APPLY_NOW',
+  'BUY', 'GET_QUOTE', 'SUBSCRIBE', 'RECORD_NOW', 'VOTE_NOW', 'GIVE_FREE_RIDES',
+  'REGISTER_NOW', 'OPEN_MESSENGER_EXT', 'EVENT_RSVP', 'CIVIC_ACTION', 'SEND_INVITES',
+  'REFER_FRIENDS', 'REQUEST_TIME', 'SEE_MENU', 'SEARCH', 'TRY_IT', 'TRY_ON',
+  'LINK_CARD', 'DIAL_CODE', 'FIND_YOUR_GROUPS', 'START_ORDER'
+]);
+
 export class MetaService {
+  /**
+   * Validates and maps any incoming CTA label or legacy internal value to an official Meta Marketing API enum.
+   * Guarantees that invalid values like SEND_WHATSAPP_MESSAGE are never sent directly to Meta.
+   */
+  public static resolveCallToAction(
+    cta?: string,
+    destinationType?: string,
+    destinationUrl?: string
+  ): string {
+    if (!cta) {
+      if (destinationType === 'whatsapp' || destinationUrl?.includes('wa.me') || destinationUrl?.includes('whatsapp.com')) {
+        return 'WHATSAPP_MESSAGE';
+      }
+      if (destinationType === 'instagram' || destinationType === 'instagram_profile') {
+        return 'INSTAGRAM_MESSAGE';
+      }
+      if (destinationType === 'phone') {
+        return 'CALL_NOW';
+      }
+      return 'LEARN_MORE';
+    }
+
+    const raw = cta.trim().toUpperCase();
+
+    // Map internal / legacy values to Meta-supported enum
+    if (raw === 'SEND_WHATSAPP_MESSAGE' || raw === 'WHATSAPP' || raw === 'WHATSAPP_CHAT') {
+      return 'WHATSAPP_MESSAGE';
+    }
+    if (raw === 'INSTAGRAM_DIRECT') {
+      return 'INSTAGRAM_MESSAGE';
+    }
+    if (raw === 'CALL') {
+      return 'CALL_NOW';
+    }
+
+    // Direct match against Meta's supported CTA list
+    if (META_VALID_CTA_TYPES.has(raw)) {
+      return raw;
+    }
+
+    // Contextual fallback based on destination
+    if (destinationType === 'whatsapp' || destinationUrl?.includes('wa.me') || destinationUrl?.includes('whatsapp.com')) {
+      return 'WHATSAPP_MESSAGE';
+    }
+    if (destinationType === 'instagram' || destinationType === 'instagram_profile') {
+      return 'INSTAGRAM_MESSAGE';
+    }
+    if (destinationType === 'phone') {
+      return 'CALL_NOW';
+    }
+
+    return 'LEARN_MORE';
+  }
   public static getServerAccessToken(): string | null {
     const envToken = (process.env.META_ACCESS_TOKEN || process.env.META_SYSTEM_USER_TOKEN)?.trim();
     const fallbackToken = VERIFIED_META_ACCESS_TOKEN?.trim();
@@ -1314,23 +1393,23 @@ export class MetaService {
 
     // 3. Destination validation
     let destinationValid = true;
-    const cta = campaign.call_to_action || 'LEARN_MORE';
+    const resolvedCta = MetaService.resolveCallToAction(campaign.call_to_action, campaign.destination_type, campaign.destination_url);
     const destUrl = campaign.destination_url?.trim() || '';
     const phone = (campaign.phone_number || '').trim();
 
-    if (cta === 'CALL_NOW') {
+    if (resolvedCta === 'CALL_NOW') {
       const digits = (phone || destUrl).replace(/[^0-9]/g, '');
       if (digits.length < 10) {
         destinationValid = false;
         errors.push('Call Now campaigns require a valid contact phone number with at least 10 digits (e.g. +91 98765 43210)');
       }
-    } else if (cta === 'SEND_WHATSAPP_MESSAGE') {
+    } else if (resolvedCta === 'WHATSAPP_MESSAGE' || resolvedCta === 'CHAT_ON_WHATSAPP' || resolvedCta === 'WHATSAPP_LINK' || campaign.destination_type === 'whatsapp') {
       const digits = (phone || destUrl).replace(/[^0-9]/g, '');
       if (digits.length < 10) {
         destinationValid = false;
         errors.push('WhatsApp campaigns require a valid WhatsApp phone number with country code (e.g. 919876543210)');
       }
-    } else if (cta === 'INSTAGRAM_MESSAGE') {
+    } else if (resolvedCta === 'INSTAGRAM_MESSAGE') {
       // Instagram profile / message destination
       if (!destUrl) {
         warnings.push('No custom Instagram profile URL provided; using default SMAP Instagram identity.');
@@ -1754,13 +1833,15 @@ export class MetaService {
         storySpec.instagram_actor_id = targetInstagramId;
       }
 
+      const metaCtaType = MetaService.resolveCallToAction(campaign.call_to_action, campaign.destination_type, campaign.destination_url);
+
       if (campaign.creative_type === 'video' && videoId) {
         storySpec.video_data = {
           video_id: videoId,
           message: campaign.primary_text,
           title: campaign.headline,
           call_to_action: {
-            type: campaign.call_to_action || 'LEARN_MORE',
+            type: metaCtaType,
             value: { link: campaign.destination_url },
           },
         };
@@ -1771,7 +1852,7 @@ export class MetaService {
           description: campaign.description || '',
           link: campaign.destination_url,
           call_to_action: {
-            type: campaign.call_to_action || 'LEARN_MORE',
+            type: metaCtaType,
             value: { link: campaign.destination_url },
           },
         };
@@ -1794,7 +1875,7 @@ export class MetaService {
       });
       let creativeData = await creativeRes.json();
 
-      // Graceful fallback: If instagram_actor_id is not linked to this Facebook Page, retry with Facebook Page backing
+      // Graceful fallback 1: If instagram_actor_id is not linked to this Facebook Page, retry with Facebook Page backing
       if (!creativeRes.ok && creativeData.error?.message?.includes('instagram_actor_id') && storySpec.instagram_actor_id) {
         db.log('META_API', 'WARN', `Instagram account ${storySpec.instagram_actor_id} is not linked to Facebook Page ${targetPageId} in Meta Business Suite. Retrying ad creative with Facebook Page backing for Instagram placements.`);
         delete storySpec.instagram_actor_id;
@@ -1811,6 +1892,31 @@ export class MetaService {
         creativeData = await retryRes.json();
         if (retryRes.ok && creativeData.id) {
           db.log('META_API', 'INFO', `Ad Creative created successfully using Facebook Page backing (Creative ID: ${creativeData.id}).`);
+        }
+      }
+
+      // Graceful fallback 2: If Meta rejects WHATSAPP_MESSAGE because Page has no linked WhatsApp Business Account, fallback to CONTACT_US with wa.me destination link
+      if (!creativeRes.ok && (creativeData.error?.message?.includes('WhatsApp') || creativeData.error?.message?.includes('whatsapp') || creativeData.error?.message?.includes('call_to_action')) && (metaCtaType === 'WHATSAPP_MESSAGE' || metaCtaType === 'CHAT_ON_WHATSAPP' || metaCtaType === 'WHATSAPP_LINK')) {
+        db.log('META_API', 'WARN', `Meta creative rejected WhatsApp CTA "${metaCtaType}": ${creativeData.error?.message}. Retrying with CONTACT_US destination link to ${campaign.destination_url}`);
+        if (storySpec.link_data?.call_to_action) {
+          storySpec.link_data.call_to_action.type = 'CONTACT_US';
+        }
+        if (storySpec.video_data?.call_to_action) {
+          storySpec.video_data.call_to_action.type = 'CONTACT_US';
+        }
+        const retryCtaParams = new URLSearchParams({
+          name: `SMAP Creative - ${campaign.business_name} - ${(campaign.headline || 'Creative').substring(0, 20)}`,
+          object_story_spec: JSON.stringify(storySpec),
+          access_token: effectiveToken,
+        });
+        const retryCtaRes = await fetch(creativeUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: retryCtaParams.toString(),
+        });
+        creativeData = await retryCtaRes.json();
+        if (retryCtaRes.ok && creativeData.id) {
+          db.log('META_API', 'INFO', `Ad Creative created successfully using CONTACT_US fallback with wa.me destination (Creative ID: ${creativeData.id}).`);
         }
       }
 

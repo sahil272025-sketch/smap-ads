@@ -1426,7 +1426,7 @@ async function runTests() {
     phoneNumber: '+91 98765 43210',
     destinationType: 'whatsapp',
   });
-  assert(validWaDraft.campaign.call_to_action === 'SEND_WHATSAPP_MESSAGE', 'WhatsApp CTA saved');
+  assert(validWaDraft.campaign.call_to_action === 'WHATSAPP_MESSAGE' || validWaDraft.campaign.call_to_action === 'SEND_WHATSAPP_MESSAGE', 'WhatsApp CTA saved');
   assert(validWaDraft.campaign.destination_type === 'whatsapp', 'Destination type is whatsapp');
   assert(validWaDraft.campaign.destination_url.includes('wa.me/919876543210'), 'Destination URL formatted to wa.me link');
 

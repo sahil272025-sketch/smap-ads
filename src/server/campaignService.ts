@@ -43,7 +43,8 @@ export class CampaignService {
     }
     const primaryText = (data.primaryText?.trim()) || description || headline;
     const creativeUrl = data.creativeUrl || '/smap_hero_visual_1790756029679.jpg';
-    const callToAction = data.callToAction || 'LEARN_MORE';
+    const rawCta = data.callToAction || 'LEARN_MORE';
+    const callToAction = MetaService.resolveCallToAction(rawCta, data.destinationType, data.destinationUrl);
 
     const rawPhoneNumber = (data.phoneNumber || data.phone_number || data.phone)?.trim();
     let phoneNumber = rawPhoneNumber || undefined;
@@ -62,7 +63,7 @@ export class CampaignService {
       }
     }
 
-    let destinationType: 'website' | 'whatsapp' | 'facebook_page' | 'instagram_profile' | 'instagram' | 'phone' = data.destinationType || (callToAction === 'CALL_NOW' ? 'phone' : (callToAction === 'SEND_WHATSAPP_MESSAGE' ? 'whatsapp' : (callToAction === 'INSTAGRAM_MESSAGE' ? 'instagram' : 'website')));
+    let destinationType: 'website' | 'whatsapp' | 'facebook_page' | 'instagram_profile' | 'instagram' | 'phone' = data.destinationType || (callToAction === 'CALL_NOW' ? 'phone' : ((callToAction === 'WHATSAPP_MESSAGE' || callToAction === 'SEND_WHATSAPP_MESSAGE') ? 'whatsapp' : (callToAction === 'INSTAGRAM_MESSAGE' ? 'instagram' : 'website')));
     let destinationUrl = (data.destinationUrl?.trim()) || '';
 
     if (callToAction === 'CALL_NOW') {
@@ -70,7 +71,7 @@ export class CampaignService {
       if (!destinationUrl) {
         destinationUrl = `tel:${phoneNumber}`;
       }
-    } else if (callToAction === 'SEND_WHATSAPP_MESSAGE' || destinationType === 'whatsapp') {
+    } else if (callToAction === 'WHATSAPP_MESSAGE' || callToAction === 'SEND_WHATSAPP_MESSAGE' || destinationType === 'whatsapp') {
       destinationType = 'whatsapp';
       const cleanPhone = (destinationUrl || phoneNumber || '').replace(/[^0-9]/g, '');
       if (cleanPhone.length < 10) {
@@ -422,7 +423,8 @@ export class CampaignService {
     }
     const primaryText = (data.primaryText?.trim()) || description || headline;
     const creativeUrl = data.creativeUrl || '/smap_hero_visual_1790756029679.jpg';
-    const callToAction = data.callToAction || 'LEARN_MORE';
+    const rawCta = data.callToAction || 'LEARN_MORE';
+    const callToAction = MetaService.resolveCallToAction(rawCta, data.destinationType, data.destinationUrl);
 
     const rawPhoneNumber = (data.phoneNumber || data.phone_number || data.phone)?.trim();
     let phoneNumber = rawPhoneNumber || undefined;
@@ -441,7 +443,7 @@ export class CampaignService {
       }
     }
 
-    let destinationType: 'website' | 'whatsapp' | 'facebook_page' | 'instagram_profile' | 'instagram' | 'phone' = data.destinationType || (callToAction === 'CALL_NOW' ? 'phone' : (callToAction === 'SEND_WHATSAPP_MESSAGE' ? 'whatsapp' : (callToAction === 'INSTAGRAM_MESSAGE' ? 'instagram' : 'website')));
+    let destinationType: 'website' | 'whatsapp' | 'facebook_page' | 'instagram_profile' | 'instagram' | 'phone' = data.destinationType || (callToAction === 'CALL_NOW' ? 'phone' : ((callToAction === 'WHATSAPP_MESSAGE' || callToAction === 'SEND_WHATSAPP_MESSAGE') ? 'whatsapp' : (callToAction === 'INSTAGRAM_MESSAGE' ? 'instagram' : 'website')));
     let destinationUrl = (data.destinationUrl?.trim()) || '';
 
     if (callToAction === 'CALL_NOW') {
@@ -449,7 +451,7 @@ export class CampaignService {
       if (!destinationUrl) {
         destinationUrl = `tel:${phoneNumber}`;
       }
-    } else if (callToAction === 'SEND_WHATSAPP_MESSAGE' || destinationType === 'whatsapp') {
+    } else if (callToAction === 'WHATSAPP_MESSAGE' || callToAction === 'SEND_WHATSAPP_MESSAGE' || destinationType === 'whatsapp') {
       destinationType = 'whatsapp';
       const cleanPhone = (destinationUrl || phoneNumber || '').replace(/[^0-9]/g, '');
       if (cleanPhone.length < 10) {

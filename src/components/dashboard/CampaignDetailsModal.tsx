@@ -211,6 +211,12 @@ export const CampaignDetailsModal: React.FC<CampaignDetailsModalProps> = ({ camp
                           ? 'Awaiting Customer Choice'
                           : data.campaign.status === 'UNDER_REVIEW'
                           ? 'Under Meta Review (Dry-Run)'
+                          : data.campaign.status === 'FAILED'
+                          ? 'Submission Failed'
+                          : data.campaign.status === 'SUBMITTING'
+                          ? 'Submitting to Meta'
+                          : data.campaign.status === 'QUEUED'
+                          ? 'Queued in Worker'
                           : 'Safe Non-Delivering'}
                       </span>
                     </div>

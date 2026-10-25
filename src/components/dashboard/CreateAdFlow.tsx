@@ -222,7 +222,7 @@ const CTA_OPTIONS: CTAOption[] = [
   { value: 'BOOK_NOW', label: 'Book Now', category: 'url', badge: 'Appointment / Booking', objectives: ['LEADS', 'TRAFFIC', 'SALES'] },
   { value: 'GET_OFFER', label: 'Get Offer', category: 'url', badge: 'Promotion / Deal', objectives: ['SALES', 'LEADS', 'TRAFFIC'] },
   { value: 'CALL_NOW', label: 'Call Now', category: 'phone', badge: 'Direct Phone Call', objectives: ['LEADS', 'TRAFFIC', 'SALES'] },
-  { value: 'SEND_WHATSAPP_MESSAGE', label: 'WhatsApp Message', category: 'whatsapp', badge: 'WhatsApp Chat', objectives: ['ENGAGEMENT', 'TRAFFIC', 'LEADS', 'SALES'] },
+  { value: 'WHATSAPP_MESSAGE', label: 'WhatsApp Message', category: 'whatsapp', badge: 'WhatsApp Chat', objectives: ['ENGAGEMENT', 'TRAFFIC', 'LEADS', 'SALES'] },
   { value: 'INSTAGRAM_MESSAGE', label: 'Send Message / Instagram Direct', category: 'instagram', badge: 'Instagram Direct Message', objectives: ['ENGAGEMENT', 'TRAFFIC', 'LEADS'] },
 ];
 
@@ -993,10 +993,12 @@ export const CreateAdFlow: React.FC<CreateAdFlowProps> = ({
       const finalPrimaryText = finalDescription || finalHeadline;
       const finalBusinessName = businessName.trim() || user?.name || 'SMAP Verified Merchant';
       const finalCreativeUrl = creativeUrl || '/smap_hero_visual_1790756029679.jpg';
-      const finalCallToAction = callToAction || 'LEARN_MORE';
+      const finalCallToAction = (callToAction === 'SEND_WHATSAPP_MESSAGE' || callToAction === 'WHATSAPP')
+        ? 'WHATSAPP_MESSAGE'
+        : (callToAction || 'LEARN_MORE');
 
-      const currentCta = CTA_OPTIONS.find((c) => c.value === finalCallToAction);
-      const ctaCategory = currentCta?.category || 'url';
+      const currentCta = CTA_OPTIONS.find((c) => c.value === finalCallToAction || (c.value === 'WHATSAPP_MESSAGE' && finalCallToAction === 'SEND_WHATSAPP_MESSAGE'));
+      const ctaCategory = currentCta?.category || (finalCallToAction === 'WHATSAPP_MESSAGE' ? 'whatsapp' : 'url');
       let finalDestType: 'website' | 'whatsapp' | 'phone' | 'instagram' = 'website';
       let finalDestUrl = destinationUrl.trim();
 
@@ -1574,7 +1576,7 @@ export const CreateAdFlow: React.FC<CreateAdFlowProps> = ({
                   </optgroup>
                   <optgroup label="Phone Call & Chat CTAs">
                     <option value="CALL_NOW">Call Now (Direct Inbound Phone Call)</option>
-                    <option value="SEND_WHATSAPP_MESSAGE">WhatsApp Message (WhatsApp Business Chat)</option>
+                    <option value="WHATSAPP_MESSAGE">WhatsApp Message (WhatsApp Business Chat)</option>
                     <option value="INSTAGRAM_MESSAGE">Send Message / Instagram Direct (Direct IG Message)</option>
                   </optgroup>
                 </select>
@@ -1617,7 +1619,7 @@ export const CreateAdFlow: React.FC<CreateAdFlowProps> = ({
               )}
 
               {/* Case B: WhatsApp Message CTA -> WhatsApp Business Phone Number Required */}
-              {callToAction === 'SEND_WHATSAPP_MESSAGE' && (
+              {(callToAction === 'WHATSAPP_MESSAGE' || callToAction === 'SEND_WHATSAPP_MESSAGE') && (
                 <div className="space-y-1.5">
                   <div className="flex items-center gap-1.5">
                     <MessageCircle className="h-4 w-4 text-emerald-500" />
