@@ -886,7 +886,13 @@ apiRouter.post('/campaigns/:id/adjust-budget', requireAuth, async (req: Authenti
     }
 
     const pkg = db.findPackageById(campaign.package_id);
-    const mediaSpend = pkg?.media_spend || (campaign.total_budget ? Math.round(campaign.total_budget * 0.6) : 349);
+    const platformFee = pkg?.platform_fee ?? campaign.budget_breakdown?.platform_fee ?? 200;
+    const totalBudget = campaign.total_budget || pkg?.price || 549;
+    const mediaSpend = (pkg?.price && totalBudget === pkg.price && pkg.media_spend)
+      ? pkg.media_spend
+      : (campaign.budget_breakdown?.media_spend && campaign.budget_breakdown.media_spend + platformFee === totalBudget)
+      ? campaign.budget_breakdown.media_spend
+      : Math.max(0, totalBudget - platformFee);
     const minBudgetInfo = await MetaService.getAdAccountMinimumBudget('1627260695520511', 'INR', 'IMPRESSIONS', campaign.objective);
 
     if (action === 'adjust_duration') {
@@ -905,6 +911,15 @@ apiRouter.post('/campaigns/:id/adjust-budget', requireAuth, async (req: Authenti
         queue_status: 'QUEUED',
         error_details: null,
         rejection_reason: null,
+        budget_breakdown: {
+          platform_fee: platformFee,
+          media_spend: mediaSpend,
+          daily_media_spend: newDailyMediaSpend,
+          min_daily_media_spend: minBudgetInfo.minDailyBudget,
+          currency: 'INR',
+          recommended_duration_days: newDuration,
+          recommended_topup_amount: 0,
+        },
         meta_status_message: `Duration adjusted to ${newDuration} days (₹${newDailyMediaSpend.toFixed(2)}/day media spend) with customer approval. Re-queued for Meta submission.`,
       });
 
@@ -920,9 +935,9 @@ apiRouter.post('/campaigns/:id/adjust-budget', requireAuth, async (req: Authenti
 
     if (action === 'topup_budget') {
       // Option 2: Customer tops up wallet to maintain original duration
-      const duration = campaign.duration_days || 14;
+      const duration = campaign.duration_days || pkg?.duration_days || 14;
       const requiredTotalMedia = Math.ceil(duration * minBudgetInfo.minDailyBudget);
-      const calculatedShortfall = Math.max(1, requiredTotalMedia - mediaSpend);
+      const calculatedShortfall = Math.max(0, requiredTotalMedia - mediaSpend);
       const shortfall = typeof topupAmount === 'number' && topupAmount > 0 ? topupAmount : calculatedShortfall;
       const userBalance = db.getWalletBalance(req.user!.id);
 
@@ -940,13 +955,26 @@ apiRouter.post('/campaigns/:id/adjust-budget', requireAuth, async (req: Authenti
         campaignId,
       });
 
+      const newTotalBudget = (campaign.total_budget || totalBudget) + shortfall;
+      const newMediaSpend = mediaSpend + shortfall;
+      const newDailyMediaSpend = newMediaSpend / duration;
+
       const updated = db.updateCampaign(campaignId, {
-        total_budget: (campaign.total_budget || 0) + shortfall,
-        daily_budget: Math.round((mediaSpend + shortfall) / duration),
+        total_budget: newTotalBudget,
+        daily_budget: Math.round(newDailyMediaSpend),
         status: 'PAYMENT_CONFIRMED',
         queue_status: 'QUEUED',
         error_details: null,
         rejection_reason: null,
+        budget_breakdown: {
+          platform_fee: platformFee,
+          media_spend: newMediaSpend,
+          daily_media_spend: newDailyMediaSpend,
+          min_daily_media_spend: minBudgetInfo.minDailyBudget,
+          currency: 'INR',
+          recommended_duration_days: duration,
+          recommended_topup_amount: 0,
+        },
         meta_status_message: `Media budget topped up by ₹${shortfall}. Re-queued for Meta submission.`,
       });
 

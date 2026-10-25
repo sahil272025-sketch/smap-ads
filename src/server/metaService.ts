@@ -1373,8 +1373,16 @@ export class MetaService {
 
     // 6. Budget check against Meta minimum rules
     const pkg = db.findPackageById(campaign.package_id);
-    const mediaSpend = pkg?.media_spend || (campaign.total_budget ? Math.round(campaign.total_budget * 0.5) : 100);
-    const durationDays = pkg ? pkg.duration_days : (campaign.duration_days || 5);
+    const platformFee = pkg?.platform_fee ?? campaign.budget_breakdown?.platform_fee ?? 200;
+    const totalBudget = campaign.total_budget || pkg?.price || 549;
+    // Guarantee fee + media spend strictly equals total authorized budget
+    const mediaSpend = (pkg?.price && totalBudget === pkg.price && pkg.media_spend)
+      ? pkg.media_spend
+      : (campaign.budget_breakdown?.media_spend && campaign.budget_breakdown.media_spend + platformFee === totalBudget)
+      ? campaign.budget_breakdown.media_spend
+      : Math.max(0, totalBudget - platformFee);
+    // Prioritize user-adjusted duration over package default duration
+    const durationDays = campaign.duration_days || pkg?.duration_days || 14;
     const dailyMediaSpend = mediaSpend / durationDays;
     const dailyBudgetPaise = Math.round(dailyMediaSpend * 100);
 
@@ -1453,8 +1461,14 @@ export class MetaService {
       db.log('META_API', 'WARN', `Campaign ${campaign.id} failed pre-flight validation: ${preFlight.errors.join('; ')}`);
       const isBudgetBlocked = !preFlight.details?.budgetValid;
       const pkg = db.findPackageById(campaign.package_id);
-      const mediaSpend = pkg?.media_spend || (campaign.total_budget ? Math.round(campaign.total_budget * 0.6) : 349);
-      const durationDays = pkg ? pkg.duration_days : (campaign.duration_days || 14);
+      const platformFee = pkg?.platform_fee ?? campaign.budget_breakdown?.platform_fee ?? 200;
+      const totalBudget = campaign.total_budget || pkg?.price || 549;
+      const mediaSpend = (pkg?.price && totalBudget === pkg.price && pkg.media_spend)
+        ? pkg.media_spend
+        : (campaign.budget_breakdown?.media_spend && campaign.budget_breakdown.media_spend + platformFee === totalBudget)
+        ? campaign.budget_breakdown.media_spend
+        : Math.max(0, totalBudget - platformFee);
+      const durationDays = campaign.duration_days || pkg?.duration_days || 14;
       const dailyMediaSpend = mediaSpend / durationDays;
       const minDailyBudget = preFlight.details?.minDailyBudget || 95.46;
       const recommendedDuration = Math.max(1, Math.floor(mediaSpend / minDailyBudget));
@@ -1481,12 +1495,32 @@ export class MetaService {
 
     if (options?.dryRun) {
       db.log('META_API', 'INFO', `Campaign submission held safely in Dry-Run mode for campaign ${campaign.id}: ${gateCheck.reason}`);
+      const pkg = db.findPackageById(campaign.package_id);
+      const platformFee = pkg?.platform_fee ?? campaign.budget_breakdown?.platform_fee ?? 200;
+      const totalBudget = campaign.total_budget || pkg?.price || 549;
+      const mediaSpend = (pkg?.price && totalBudget === pkg.price && pkg.media_spend)
+        ? pkg.media_spend
+        : (campaign.budget_breakdown?.media_spend && campaign.budget_breakdown.media_spend + platformFee === totalBudget)
+        ? campaign.budget_breakdown.media_spend
+        : Math.max(0, totalBudget - platformFee);
+      const durationDays = campaign.duration_days || pkg?.duration_days || 14;
+      const dailyMediaSpend = mediaSpend / durationDays;
+      const minDailyBudget = preFlight.details?.minDailyBudget || 95.46;
+
       return {
         success: true,
         dryRun: true,
         status: 'UNDER_REVIEW',
         notes: 'Pre-flight validation passed in Safe Dry-Run Mode. Campaign configuration, creative, targeting, and budget are verified. Live Meta ad delivery remains safely held until production activation prerequisites are verified.',
         blockers: [gateCheck.reason],
+        budgetDetails: {
+          mediaSpend,
+          durationDays,
+          dailyMediaSpend,
+          minDailyBudget,
+          recommendedDurationDays: Math.max(1, Math.floor(mediaSpend / minDailyBudget)),
+          recommendedTopupAmount: Math.max(0, Math.ceil(durationDays * minDailyBudget - mediaSpend)),
+        },
       };
     }
 
@@ -1536,8 +1570,14 @@ export class MetaService {
 
       // 2. Transparent Budget Check & Allocation (Never silently inflate daily budget or spend owner's money)
       const pkg = db.findPackageById(campaign.package_id);
-      const mediaSpend = pkg?.media_spend || (campaign.total_budget ? Math.round(campaign.total_budget * 0.5) : 100);
-      const durationDays = pkg ? pkg.duration_days : (campaign.duration_days || 5);
+      const platformFee = pkg?.platform_fee ?? campaign.budget_breakdown?.platform_fee ?? 200;
+      const totalBudget = campaign.total_budget || pkg?.price || 549;
+      const mediaSpend = (pkg?.price && totalBudget === pkg.price && pkg.media_spend)
+        ? pkg.media_spend
+        : (campaign.budget_breakdown?.media_spend && campaign.budget_breakdown.media_spend + platformFee === totalBudget)
+        ? campaign.budget_breakdown.media_spend
+        : Math.max(0, totalBudget - platformFee);
+      const durationDays = campaign.duration_days || pkg?.duration_days || 14;
       const dailyMediaSpend = mediaSpend / durationDays;
       const dailyBudgetPaise = Math.round(dailyMediaSpend * 100);
 

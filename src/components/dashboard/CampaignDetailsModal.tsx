@@ -137,24 +137,34 @@ export const CampaignDetailsModal: React.FC<CampaignDetailsModalProps> = ({ camp
 
             {/* Budget & Breakdown Calculations */}
             {(() => {
-              const totalBudget = data.campaign.total_budget || data.package?.price || 549;
-              const platformFee = data.campaign.budget_breakdown?.platform_fee ?? 200;
-              const mediaSpend = data.campaign.budget_breakdown?.media_spend ?? Math.max(0, totalBudget - platformFee);
+              const pkgPrice = data.package?.price || 549;
+              const totalBudget = data.campaign.total_budget || pkgPrice;
+              const platformFee = data.campaign.budget_breakdown?.platform_fee ?? data.package?.platform_fee ?? 200;
+              // Reconciled net media spend: strictly Platform Fee + Net Media Spend === Total Budget
+              const mediaSpend = (data.campaign.budget_breakdown?.media_spend && (data.campaign.budget_breakdown.media_spend + platformFee === totalBudget))
+                ? data.campaign.budget_breakdown.media_spend
+                : (pkgPrice && totalBudget === pkgPrice && data.package?.media_spend)
+                ? data.package.media_spend
+                : Math.max(0, totalBudget - platformFee);
               const durationDays = data.campaign.duration_days || data.package?.duration_days || 14;
               const dailyMediaSpend = mediaSpend / (durationDays || 1);
               const minDailyBudget = data.campaign.budget_breakdown?.min_daily_media_spend || 95.46;
               const recommendedDuration = Math.max(1, Math.floor(mediaSpend / minDailyBudget));
               const recommendedDaily = mediaSpend / recommendedDuration;
               const requiredTotalMedia = Math.ceil(durationDays * minDailyBudget);
-              const topupShortfall = Math.max(1, requiredTotalMedia - mediaSpend);
+              const topupShortfall = Math.max(0, requiredTotalMedia - mediaSpend);
 
               const isBudgetBlocked =
-                data.campaign.status === 'BUDGET_ADJUSTMENT_REQUIRED' ||
-                Boolean(
-                  (data.campaign.rejection_reason && data.campaign.rejection_reason.includes('Meta Budget Validation Blocked')) ||
-                  (data.campaign.error_details && data.campaign.error_details.includes('Meta Budget Validation Blocked')) ||
-                  (data.campaign.meta_status_message && data.campaign.meta_status_message.includes('Meta Budget Validation Blocked'))
-                );
+                (data.campaign.status === 'BUDGET_ADJUSTMENT_REQUIRED' ||
+                  Boolean(
+                    (data.campaign.rejection_reason && data.campaign.rejection_reason.includes('Meta Budget Validation Blocked')) ||
+                    (data.campaign.error_details && data.campaign.error_details.includes('Meta Budget Validation Blocked')) ||
+                    (data.campaign.meta_status_message && data.campaign.meta_status_message.includes('Meta Budget Validation Blocked'))
+                  )) &&
+                dailyMediaSpend < minDailyBudget &&
+                data.campaign.status !== 'ACTIVE' &&
+                data.campaign.status !== 'COMPLETED' &&
+                data.campaign.status !== 'UNDER_REVIEW';
 
               return (
                 <>
@@ -199,6 +209,8 @@ export const CampaignDetailsModal: React.FC<CampaignDetailsModalProps> = ({ camp
                           ? (data.campaign.status === 'ACTIVE' ? 'Live Delivering' : 'Meta Draft Linked')
                           : isBudgetBlocked
                           ? 'Awaiting Customer Choice'
+                          : data.campaign.status === 'UNDER_REVIEW'
+                          ? 'Under Meta Review (Dry-Run)'
                           : 'Safe Non-Delivering'}
                       </span>
                     </div>
@@ -234,7 +246,7 @@ export const CampaignDetailsModal: React.FC<CampaignDetailsModalProps> = ({ camp
                           <span className="font-bold text-indigo-400">₹{mediaSpend}</span>
                         </div>
                         <div className="flex justify-between py-1.5">
-                          <span className="text-slate-400">Original Requested Duration:</span>
+                          <span className="text-slate-400">Requested Duration:</span>
                           <span className="text-slate-300">{durationDays} Days</span>
                         </div>
                         <div className="flex justify-between py-1.5">
@@ -242,7 +254,7 @@ export const CampaignDetailsModal: React.FC<CampaignDetailsModalProps> = ({ camp
                           <span className="font-bold text-amber-400">₹{dailyMediaSpend.toFixed(2)}/day (Meta requires ≥ ₹{minDailyBudget.toFixed(2)}/day)</span>
                         </div>
                         <div className="pt-2 text-[11px] text-slate-400 leading-relaxed italic">
-                          * Arithmetic Note: Gross display showed ₹39/day (₹549 ÷ 14 = ₹39.21, where 39 × 14 = ₹546 with ₹3 rounding remainder). The actual ad spend sent to Meta is ₹349 (₹24.93/day over 14 days), with ₹200 covering platform management and targeting orchestration.
+                          * Arithmetic Reconciliation: Total customer authorized ₹{totalBudget} = ₹{platformFee} SMAP platform fee + ₹{mediaSpend} net Meta ad spend allocation (₹{dailyMediaSpend.toFixed(2)}/day over {durationDays} days).
                         </div>
                       </div>
 
@@ -282,24 +294,38 @@ export const CampaignDetailsModal: React.FC<CampaignDetailsModalProps> = ({ camp
                           </div>
 
                           {/* Option 2: Top-Up Media Budget */}
-                          <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 flex flex-col justify-between space-y-3">
-                            <div>
-                              <div className="inline-block px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 text-[10px] font-bold uppercase tracking-wider mb-1">
-                                Keep All {durationDays} Days
+                          {topupShortfall > 0 ? (
+                            <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 flex flex-col justify-between space-y-3">
+                              <div>
+                                <div className="inline-block px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 text-[10px] font-bold uppercase tracking-wider mb-1">
+                                  Keep All {durationDays} Days
+                                </div>
+                                <h5 className="font-bold text-white text-xs">Option 2: Top-Up Media Budget</h5>
+                                <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">
+                                  Keep all {durationDays} days active by topping up ₹{topupShortfall} from your wallet to meet Meta's ₹{minDailyBudget.toFixed(2)}/day floor (Total media: ₹{requiredTotalMedia}).
+                                </p>
                               </div>
-                              <h5 className="font-bold text-white text-xs">Option 2: Top-Up Media Budget</h5>
-                              <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">
-                                Keep all {durationDays} days active by topping up ₹{topupShortfall} from your wallet to meet Meta's ₹{minDailyBudget.toFixed(2)}/day floor (Total media: ₹{requiredTotalMedia}).
-                              </p>
+                              <button
+                                onClick={() => handleAdjustBudget('topup_budget', topupShortfall)}
+                                disabled={adjustingAction !== null}
+                                className="w-full py-2 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs disabled:opacity-50 transition-all border border-slate-700"
+                              >
+                                {adjustingAction === 'topup_budget' ? 'Deducting...' : `Top-Up ₹${topupShortfall} from Wallet`}
+                              </button>
                             </div>
-                            <button
-                              onClick={() => handleAdjustBudget('topup_budget', topupShortfall)}
-                              disabled={adjustingAction !== null}
-                              className="w-full py-2 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs disabled:opacity-50 transition-all border border-slate-700"
-                            >
-                              {adjustingAction === 'topup_budget' ? 'Deducting...' : `Top-Up ₹${topupShortfall} from Wallet`}
-                            </button>
-                          </div>
+                          ) : (
+                            <div className="rounded-xl border border-slate-800/60 bg-slate-900/30 p-4 flex flex-col justify-between space-y-3 opacity-70">
+                              <div>
+                                <div className="inline-block px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-bold uppercase tracking-wider mb-1">
+                                  Floor Satisfied
+                                </div>
+                                <h5 className="font-bold text-white text-xs">Option 2: Daily Budget Meets Floor</h5>
+                                <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">
+                                  Current media allocation of ₹{dailyMediaSpend.toFixed(2)}/day meets or exceeds Meta's minimum of ₹{minDailyBudget.toFixed(2)}/day. No top-up needed.
+                                </p>
+                              </div>
+                            </div>
+                          )}
 
                           {/* Option 3: Full Wallet Refund */}
                           <div className="rounded-xl border border-red-500/20 bg-red-950/10 p-4 flex flex-col justify-between space-y-3">
@@ -465,6 +491,22 @@ export const CampaignDetailsModal: React.FC<CampaignDetailsModalProps> = ({ camp
                         </div>
                       </div>
                     );
+                  }
+
+                  // If budget blocker message is stale and daily spend meets Meta floor, suppress stale warning
+                  const pkgPrice = data.package?.price || 549;
+                  const totalBudget = data.campaign.total_budget || pkgPrice;
+                  const platformFee = data.campaign.budget_breakdown?.platform_fee ?? data.package?.platform_fee ?? 200;
+                  const mediaSpend = (data.campaign.budget_breakdown?.media_spend && (data.campaign.budget_breakdown.media_spend + platformFee === totalBudget))
+                    ? data.campaign.budget_breakdown.media_spend
+                    : (pkgPrice && totalBudget === pkgPrice && data.package?.media_spend)
+                    ? data.package.media_spend
+                    : Math.max(0, totalBudget - platformFee);
+                  const durationDays = data.campaign.duration_days || data.package?.duration_days || 14;
+                  const dailyMediaSpend = mediaSpend / (durationDays || 1);
+                  const minDailyBudget = data.campaign.budget_breakdown?.min_daily_media_spend || 95.46;
+                  if (msg.includes('Meta Budget Validation Blocked') && (dailyMediaSpend >= minDailyBudget || data.campaign.status === 'UNDER_REVIEW' || data.campaign.status === 'ACTIVE')) {
+                    return null;
                   }
 
                   return (

@@ -31,6 +31,8 @@ export interface Package {
   name: string;
   price: number;
   duration_days: number;
+  platform_fee?: number;
+  media_spend?: number;
   platforms: string[];
   features: string[];
   active: boolean;

@@ -1,0 +1,5 @@
+{
+  "summary":  "Deployment shell script that extracts smap_budget_fix.zip, runs automated test suites, and verifies compilation for the Render production deployment.",
+  "updatedAt":  "2026-10-25T08:49:54.674544595Z",
+  "userFacing":  true
+}

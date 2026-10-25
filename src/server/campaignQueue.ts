@@ -187,6 +187,8 @@ export class CampaignQueueService {
       if (submitRes.success) {
         if (submitRes.dryRun) {
           // Dry-run mode: Pre-flight validation passed safely, campaign held pending Meta live activation
+          const pkg = db.findPackageById(campaign.package_id);
+          const platformFee = pkg?.platform_fee ?? campaign.budget_breakdown?.platform_fee ?? 200;
           db.updateCampaign(campaignId, {
             status: 'UNDER_REVIEW',
             queue_status: 'COMPLETED',
@@ -197,6 +199,15 @@ export class CampaignQueueService {
             meta_status_message: submitRes.notes || 'Pre-flight validation passed (Safe Dry-Run Mode). Campaign held safely pending Meta Live Activation. ₹0 spent on Meta.',
             error_details: null,
             rejection_reason: null,
+            budget_breakdown: submitRes.budgetDetails ? {
+              platform_fee: platformFee,
+              media_spend: submitRes.budgetDetails.mediaSpend,
+              daily_media_spend: submitRes.budgetDetails.dailyMediaSpend,
+              min_daily_media_spend: submitRes.budgetDetails.minDailyBudget,
+              currency: 'INR',
+              recommended_duration_days: submitRes.budgetDetails.recommendedDurationDays,
+              recommended_topup_amount: submitRes.budgetDetails.recommendedTopupAmount,
+            } : undefined,
           });
 
           this.stats.completedCount++;
