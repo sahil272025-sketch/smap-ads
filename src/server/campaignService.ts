@@ -43,6 +43,23 @@ export class CampaignService {
     }
     const primaryText = (data.primaryText?.trim()) || description || headline;
     const creativeUrl = data.creativeUrl || '/smap_hero_visual_1790756029679.jpg';
+
+    // Policy check: Strictly prohibit inauthentic engagement & fake metrics (Meta Advertising Standards 4.2)
+    const combinedCopy = `${headline} ${description} ${primaryText}`.toLowerCase();
+    const INAUTHENTIC_PATTERNS = [
+      /\b(buy|get|fast|cheap|real)\s+(followers|likes|views|subscribers|comments)\b/i,
+      /\b(\d+k?|\d+\s*k)\s+(followers|likes|views|subscribers)\b/i,
+      /\bfollowers\s*=\s*₹/i,
+      /\blikes\s*=\s*₹/i,
+      /\bviews\s*=\s*₹/i,
+      /\bsubscribers\s*=\s*₹/i,
+      /\b(increase|boost)\s+(followers|likes|views|subscribers)\b/i,
+      /\b(sell|selling)\s+(followers|likes|views|subscribers)\b/i,
+    ];
+    if (INAUTHENTIC_PATTERNS.some(p => p.test(combinedCopy))) {
+      throw new Error('Meta Advertising Policy Violation (Inauthentic Behavior 4.2): Ads promoting the sale or purchase of followers, likes, views, subscribers, or artificial engagement are strictly prohibited. SMAP operates exclusively as a legitimate customer advertising platform.');
+    }
+
     const rawCta = data.callToAction || 'LEARN_MORE';
     const callToAction = MetaService.resolveCallToAction(rawCta, data.destinationType, data.destinationUrl);
 
@@ -423,6 +440,23 @@ export class CampaignService {
     }
     const primaryText = (data.primaryText?.trim()) || description || headline;
     const creativeUrl = data.creativeUrl || '/smap_hero_visual_1790756029679.jpg';
+
+    // Policy check: Strictly prohibit inauthentic engagement & fake metrics (Meta Advertising Standards 4.2)
+    const combinedCopy = `${headline} ${description} ${primaryText}`.toLowerCase();
+    const INAUTHENTIC_PATTERNS = [
+      /\b(buy|get|fast|cheap|real)\s+(followers|likes|views|subscribers|comments)\b/i,
+      /\b(\d+k?|\d+\s*k)\s+(followers|likes|views|subscribers)\b/i,
+      /\bfollowers\s*=\s*₹/i,
+      /\blikes\s*=\s*₹/i,
+      /\bviews\s*=\s*₹/i,
+      /\bsubscribers\s*=\s*₹/i,
+      /\b(increase|boost)\s+(followers|likes|views|subscribers)\b/i,
+      /\b(sell|selling)\s+(followers|likes|views|subscribers)\b/i,
+    ];
+    if (INAUTHENTIC_PATTERNS.some(p => p.test(combinedCopy))) {
+      throw new Error('Meta Advertising Policy Violation (Inauthentic Behavior 4.2): Ads promoting the sale or purchase of followers, likes, views, subscribers, or artificial engagement are strictly prohibited. SMAP operates exclusively as a legitimate customer advertising platform.');
+    }
+
     const rawCta = data.callToAction || 'LEARN_MORE';
     const callToAction = MetaService.resolveCallToAction(rawCta, data.destinationType, data.destinationUrl);
 

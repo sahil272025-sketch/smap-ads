@@ -37,8 +37,12 @@ if (!process.env.GOOGLE_CLIENT_ID || process.env.GOOGLE_CLIENT_ID.trim().length 
 }
 
 // Ensure verified META_ACCESS_TOKEN is configured in process.env for all services
-if (!process.env.META_ACCESS_TOKEN && VERIFIED_META_ACCESS_TOKEN) {
-  process.env.META_ACCESS_TOKEN = VERIFIED_META_ACCESS_TOKEN;
+if (!process.env.META_ACCESS_TOKEN) {
+  if (process.env.META_SYSTEM_USER_TOKEN && process.env.META_SYSTEM_USER_TOKEN.trim().length > 0) {
+    process.env.META_ACCESS_TOKEN = process.env.META_SYSTEM_USER_TOKEN.trim();
+  } else if (VERIFIED_META_ACCESS_TOKEN) {
+    process.env.META_ACCESS_TOKEN = VERIFIED_META_ACCESS_TOKEN;
+  }
 }
 
 // Verify and ensure Google OAuth redirect URI is configured
@@ -92,7 +96,15 @@ app.get('/robots.txt', (_req, res) => {
 
 // Lightweight public health check endpoint
 app.get('/health', (_req, res) => {
-  res.status(200).json({ status: 'ok', service: 'SMAP', timestamp: new Date().toISOString() });
+  res.status(200).json({
+    status: 'ok',
+    service: 'SMAP Advertising Platform',
+    version: '1.2.0-ads-only',
+    buildDate: '2026-10-26T10:35:00Z',
+    workerActive: true,
+    liveSubmissionsEnabled: process.env.META_LIVE_SUBMISSIONS_ENABLED === 'true',
+    timestamp: new Date().toISOString(),
+  });
 });
 
 // Explicit download endpoint for patch and export archives

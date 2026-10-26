@@ -620,6 +620,10 @@ class ApiClient {
     return this.request<MetaActivationStatus>('/meta/activation-status');
   }
 
+  public getAdminDiagnostics() {
+    return this.request<any>('/admin/diagnostics');
+  }
+
   public validateCampaignPreFlight(campaignIdOrData: string | any) {
     return this.request<CampaignPreFlightResult>('/meta/validate-campaign', {
       method: 'POST',

@@ -142,8 +142,8 @@ const OBJECTIVES: ObjectiveOption[] = [
     key: 'ENGAGEMENT',
     title: 'Engagement',
     metaOutcome: 'OUTCOME_ENGAGEMENT',
-    description: 'Get more post likes, video views, comments, shares, or direct inquiries.',
-    bestFor: 'Video views, social proof, community growth, post interactions',
+    description: 'Drive genuine ad interactions, comments, shares, or direct customer conversations for your business.',
+    bestFor: 'Ad interactions, customer conversations, brand community, post discussions',
     icon: <Sparkles className="h-6 w-6 text-amber-500" />,
   },
   {
@@ -938,6 +938,19 @@ export const CreateAdFlow: React.FC<CreateAdFlowProps> = ({
     }
   };
 
+  // Meta Advertising Policy 4.2 Inauthentic Engagement Guard
+  const combinedCopy = `${headline} ${description} ${primaryText}`.toLowerCase();
+  const hasInauthenticCopy = [
+    /\b(buy|get|fast|cheap|real)\s+(followers|likes|views|subscribers|comments)\b/i,
+    /\b(\d+k?|\d+\s*k)\s+(followers|likes|views|subscribers)\b/i,
+    /\bfollowers\s*=\s*₹/i,
+    /\blikes\s*=\s*₹/i,
+    /\bviews\s*=\s*₹/i,
+    /\bsubscribers\s*=\s*₹/i,
+    /\b(increase|boost)\s+(followers|likes|views|subscribers)\b/i,
+    /\b(sell|selling)\s+(followers|likes|views|subscribers)\b/i,
+  ].some((p) => p.test(combinedCopy));
+
   // Step Validation
   const canProceedStep = (s: number): boolean => {
     switch (s) {
@@ -945,6 +958,7 @@ export const CreateAdFlow: React.FC<CreateAdFlowProps> = ({
         return !!objective;
       case 2: {
         if (isUploading) return false;
+        if (hasInauthenticCopy) return false;
         if (!headline.trim() || headline.trim().length > 100) return false;
         if (!description.trim() || description.trim().length > 400) return false;
 

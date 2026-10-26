@@ -1802,3 +1802,53 @@ apiRouter.put('/admin/tickets/:id/status', requireAdmin, (req, res) => {
   const updated = SupportService.updateStatus(req.params.id, req.body.status);
   res.json({ ticket: updated });
 });
+
+// Secure Read-Only Admin Diagnostic Endpoint
+apiRouter.get('/admin/diagnostics', requireAdmin, async (_req, res) => {
+  try {
+    const queueStats = CampaignQueueService.getQueueStats();
+    const token = MetaService.getServerAccessToken();
+    const activation = await MetaService.getActivationStatus();
+    const recentLogs = db.getLogs(50).filter(l => l.category === 'META_API' || l.category === 'QUEUE');
+
+    res.json({
+      timestamp: new Date().toISOString(),
+      service: 'SMAP Advertising Platform',
+      version: '1.2.0-ads-only',
+      environment: process.env.NODE_ENV || 'production',
+      metaEnvironmentPresence: {
+        META_APP_ID: Boolean(process.env.META_APP_ID && process.env.META_APP_ID.trim().length > 0),
+        META_APP_SECRET: Boolean(process.env.META_APP_SECRET && process.env.META_APP_SECRET.trim().length > 0),
+        META_ACCESS_TOKEN: Boolean(process.env.META_ACCESS_TOKEN && process.env.META_ACCESS_TOKEN.trim().length > 0),
+        META_SYSTEM_USER_TOKEN: Boolean(process.env.META_SYSTEM_USER_TOKEN && process.env.META_SYSTEM_USER_TOKEN.trim().length > 0),
+        META_LIVE_SUBMISSIONS_ENABLED: process.env.META_LIVE_SUBMISSIONS_ENABLED === 'true',
+        META_API_VERSION: process.env.META_API_VERSION || 'v21.0',
+        META_REDIRECT_URI: Boolean(process.env.META_REDIRECT_URI),
+        APP_URL: Boolean(process.env.APP_URL),
+        activeTokenConfigured: Boolean(token),
+      },
+      metaApp: activation.metaApp,
+      assets: activation.assets,
+      permissions: activation.permissions,
+      safetyGate: {
+        liveSubmissionsEnabled: activation.liveSubmissionsEnabled,
+        allPrerequisitesMet: activation.allPrerequisitesMet,
+        blockers: activation.blockers,
+        actionableSteps: activation.actionableSteps,
+      },
+      workerHealth: {
+        running: true,
+        stats: queueStats,
+      },
+      recentSafeLogs: recentLogs.slice(0, 10).map(l => ({
+        created_at: l.created_at,
+        category: l.category,
+        level: l.level,
+        message: l.message,
+      })),
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || 'Diagnostic query failed' });
+  }
+});
+

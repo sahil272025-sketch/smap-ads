@@ -1047,11 +1047,28 @@ export const AdminDashboard: React.FC = () => {
                   <span className="text-slate-400">Meta Graph API Version:</span>
                   <span className="font-mono text-white">{metaStatus?.apiVersion || 'v21.0'}</span>
                 </div>
-                <div className="flex justify-between pt-1">
+                <div className="flex justify-between border-b border-slate-800 pb-2.5">
                   <span className="text-slate-400">Live Ad Spending Guard:</span>
                   <span className={`font-mono font-bold ${metaActivation?.liveSubmissionsEnabled ? 'text-emerald-400' : 'text-amber-400'}`}>
                     {metaActivation?.liveSubmissionsEnabled ? 'ENABLED (LIVE SPEND ACTIVE)' : 'SAFELY DISABLED (META_LIVE_SUBMISSIONS_ENABLED=false)'}
                   </span>
+                </div>
+                <div className="flex justify-between border-b border-slate-800 pb-2.5">
+                  <span className="text-slate-400">Background Worker:</span>
+                  <span className="font-mono text-emerald-400 font-semibold">
+                    Running (Crash-Safe Recovery & Sweeper Active)
+                  </span>
+                </div>
+                <div className="flex justify-between pt-1">
+                  <span className="text-slate-400">Public Health & Build Info:</span>
+                  <a
+                    href="/health"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="font-mono text-indigo-400 hover:text-indigo-300 underline inline-flex items-center gap-1"
+                  >
+                    /health <ExternalLink className="h-3 w-3" />
+                  </a>
                 </div>
               </div>
 

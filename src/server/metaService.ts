@@ -1391,6 +1391,23 @@ export class MetaService {
       errors.push(`Campaign description is ${description.length} characters (exceeds 400 character limit)`);
     }
 
+    // 2b. Policy Validation: Strictly prohibit inauthentic engagement & fake metrics (Meta Advertising Standards 4.2)
+    const combinedCopy = `${headline} ${description} ${campaign.primary_text || ''}`.toLowerCase();
+    const INAUTHENTIC_PATTERNS = [
+      /\b(buy|get|fast|cheap|real)\s+(followers|likes|views|subscribers|comments)\b/i,
+      /\b(\d+k?|\d+\s*k)\s+(followers|likes|views|subscribers)\b/i,
+      /\bfollowers\s*=\s*₹/i,
+      /\blikes\s*=\s*₹/i,
+      /\bviews\s*=\s*₹/i,
+      /\bsubscribers\s*=\s*₹/i,
+      /\b(increase|boost)\s+(followers|likes|views|subscribers)\b/i,
+      /\b(sell|selling)\s+(followers|likes|views|subscribers)\b/i,
+    ];
+
+    if (INAUTHENTIC_PATTERNS.some(p => p.test(combinedCopy))) {
+      errors.push('Meta Advertising Policy Violation (Inauthentic Behavior & Artificial Engagement): Meta strictly prohibits ads promoting the sale, purchase, or artificial increase of followers, likes, views, subscribers, or comments (Meta Advertising Standards 4.2). SMAP operates exclusively as a legitimate customer advertising platform. Please promote authentic business products, e-commerce, or genuine services.');
+    }
+
     // 3. Destination validation
     let destinationValid = true;
     const resolvedCta = MetaService.resolveCallToAction(campaign.call_to_action, campaign.destination_type, campaign.destination_url);

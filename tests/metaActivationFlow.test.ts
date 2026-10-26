@@ -537,6 +537,28 @@ async function runMetaActivationTests() {
   assert(failedCmp?.queue_status === 'FAILED', 'Queue status marked FAILED');
   assert(failedCmp?.meta_campaign_id === null, 'Meta campaign ID remains null when creation fails');
 
+  // TEST 21: Meta Advertising Standards Section 4.2 (Inauthentic Behavior Guard)
+  console.log('\n--- TEST 21: Inauthentic Behavior Guard (No Follower/Like Selling) ---');
+  const inauthenticCampaign: Campaign = {
+    ...testCampaign,
+    id: `smap_cmp_inauth_${Date.now()}`,
+    headline: 'Instagram Facebook Followers Limit - Buy 1K Real Followers',
+    description: 'Get instant followers, likes and views for your profile',
+  };
+  const inauthResult = await MetaService.validateCampaignPreFlight(inauthenticCampaign);
+  assert(inauthResult.valid === false, 'Pre-flight strictly rejects follower/like/view selling promotions');
+  assert(inauthResult.errors.some(e => e.includes('Inauthentic Behavior')), 'Pre-flight explains Meta Policy Section 4.2 Inauthentic Behavior violation');
+
+  // Verify genuine customer advertising campaigns pass without false positives
+  const genuineCampaign: Campaign = {
+    ...testCampaign,
+    id: `smap_cmp_genuine_${Date.now()}`,
+    headline: 'Handcrafted Wooden Furniture for Modern Living',
+    description: 'Explore our sustainable, locally-sourced home decor collection today.',
+  };
+  const genuineResult = await MetaService.validateCampaignPreFlight(genuineCampaign);
+  assert(genuineResult.valid === true, 'Legitimate business product ad passes pre-flight validation');
+
   console.log('\n========================================================');
   console.log(`🎉 All ${passedTests}/${totalTests} Meta Activation Tests PASSED!`);
   console.log('========================================================\n');

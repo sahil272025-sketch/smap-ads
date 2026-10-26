@@ -473,13 +473,12 @@ export const CampaignDetailsModal: React.FC<CampaignDetailsModalProps> = ({ camp
                   </div>
                 </div>
 
-                {/* Meta Status, Rejection or Safety Guard Banner */}
-                {Boolean(
-                  data.campaign.rejection_reason ||
-                  data.campaign.error_details ||
-                  data.campaign.meta_status_message
-                ) && (() => {
-                  const msg = data.campaign.rejection_reason || data.campaign.meta_status_message || data.campaign.error_details || '';
+                {/* Meta Status, Rejection, Progress or Safety Guard Banner */}
+                {(() => {
+                  const hasFailure = Boolean(data.campaign.rejection_reason || data.campaign.error_details || data.campaign.status === 'FAILED');
+                  const msg = data.campaign.rejection_reason || data.campaign.error_details || data.campaign.meta_status_message || '';
+                  if (!msg) return null;
+
                   const isSafeHold = msg.includes('Dry-Run') || msg.includes('safely disabled') || msg.includes('safety gate') || msg.includes('held safely') || msg.includes('non-delivering');
 
                   if (isSafeHold) {
@@ -494,6 +493,24 @@ export const CampaignDetailsModal: React.FC<CampaignDetailsModalProps> = ({ camp
                         </p>
                         <div className="text-[10px] text-amber-400 font-mono pt-0.5">
                           Safety Status: ₹0 Meta ad spend · Assets validated · Awaiting owner live production activation
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  // If submission is currently queued or submitting in background (NOT failed)
+                  if (!hasFailure && (data.campaign.status === 'QUEUED' || data.campaign.status === 'SUBMITTING')) {
+                    return (
+                      <div className="rounded-xl border border-indigo-500/30 bg-indigo-950/40 p-3.5 text-xs text-indigo-200 space-y-1.5">
+                        <div className="flex items-center gap-2 font-bold text-indigo-300">
+                          <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-indigo-400 border-t-transparent shrink-0" />
+                          <span>Meta Submission in Progress:</span>
+                        </div>
+                        <p className="text-[11px] leading-relaxed text-indigo-100">
+                          {msg}
+                        </p>
+                        <div className="text-[10px] text-indigo-400 font-mono pt-0.5">
+                          Background Worker Active · Meta API creation pending
                         </div>
                       </div>
                     );
@@ -515,17 +532,32 @@ export const CampaignDetailsModal: React.FC<CampaignDetailsModalProps> = ({ camp
                     return null;
                   }
 
-                  return (
-                    <div className="rounded-xl border border-red-500/30 bg-red-950/40 p-3.5 text-xs text-red-300 space-y-1">
-                      <div className="flex items-center gap-2 font-bold text-red-400">
-                        <AlertCircle className="h-4 w-4 shrink-0" />
-                        <span>Meta Validation Notice:</span>
+                  // Real Failure Notice (Development Mode, Invalid Parameters, etc.)
+                  if (hasFailure) {
+                    const isDevModeBlocker = msg.includes('1885183') || msg.includes('Development Mode') || msg.includes('App Review');
+                    return (
+                      <div className={`rounded-xl border p-3.5 text-xs space-y-1.5 ${
+                        isDevModeBlocker 
+                          ? 'border-amber-500/40 bg-amber-950/40 text-amber-200' 
+                          : 'border-red-500/30 bg-red-950/40 text-red-300'
+                      }`}>
+                        <div className={`flex items-center gap-2 font-bold ${isDevModeBlocker ? 'text-amber-400' : 'text-red-400'}`}>
+                          <AlertCircle className="h-4 w-4 shrink-0" />
+                          <span>{isDevModeBlocker ? 'Meta App Review & Development Mode Action Required:' : 'Meta Validation Notice:'}</span>
+                        </div>
+                        <p className="text-[11px] leading-relaxed">
+                          {msg}
+                        </p>
+                        {isDevModeBlocker && (
+                          <div className="pt-1 border-t border-amber-500/20 text-[10px] text-amber-300/90 leading-normal">
+                            Customer funds are preserved. Live ad delivery to the general public requires Meta Developer App Review approval for <strong>ads_management</strong> and <strong>pages_manage_ads</strong> permissions.
+                          </div>
+                        )}
                       </div>
-                      <p className="text-[11px] leading-relaxed">
-                        {msg}
-                      </p>
-                    </div>
-                  );
+                    );
+                  }
+
+                  return null;
                 })()}
 
                 {/* Meta Identifiers */}
