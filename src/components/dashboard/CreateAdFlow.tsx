@@ -951,35 +951,102 @@ export const CreateAdFlow: React.FC<CreateAdFlowProps> = ({
     /\b(sell|selling)\s+(followers|likes|views|subscribers)\b/i,
   ].some((p) => p.test(combinedCopy));
 
+  // Step 2 Detailed Validation Issues
+  const getStep2ValidationIssues = (): { id: string; message: string }[] => {
+    const issues: { id: string; message: string }[] = [];
+
+    if (isUploading) {
+      issues.push({
+        id: 'uploading',
+        message: language === 'hi'
+          ? 'मीडिया अपलोड हो रहा है, कृपया अपलोड पूरा होने तक प्रतीक्षा करें।'
+          : 'Media upload in progress. Please wait until upload completes.',
+      });
+    }
+
+    if (hasInauthenticCopy) {
+      issues.push({
+        id: 'inauthentic_copy',
+        message: language === 'hi'
+          ? 'मेटा विज्ञापन नीति 4.2 (अविश्वसनीय व्यवहार): फॉलोअर्स, लाइक्स, व्यूज या सब्सक्राइबर्स खरीदने/बेचने वाले प्रचार मेटा द्वारा सख्त वर्जित हैं। कृपया वास्तविक उत्पाद या व्यावसायिक सेवा का प्रचार करें।'
+          : 'Meta Advertising Policy 4.2 (Inauthentic Behavior): Promotions offering to buy or sell followers, likes, views, or subscribers are prohibited by Meta. Please replace with authentic business products or services.',
+      });
+    }
+
+    const h = headline.trim();
+    if (!h) {
+      issues.push({
+        id: 'headline_empty',
+        message: language === 'hi' ? 'अभियान का शीर्षक (Headline) आवश्यक है।' : 'Headline is required (1-100 characters).',
+      });
+    } else if (h.length > 100) {
+      issues.push({
+        id: 'headline_length',
+        message: language === 'hi' ? `शीर्षक 100 वर्णों से अधिक नहीं हो सकता (वर्तमान: ${h.length})।` : `Headline exceeds 100 characters limit (currently: ${h.length}).`,
+      });
+    }
+
+    const d = description.trim();
+    if (!d) {
+      issues.push({
+        id: 'desc_empty',
+        message: language === 'hi' ? 'विज्ञापन विवरण (Description) आवश्यक है।' : 'Description is required (1-400 characters).',
+      });
+    } else if (d.length > 400) {
+      issues.push({
+        id: 'desc_length',
+        message: language === 'hi' ? `विवरण 400 वर्णों से अधिक नहीं हो सकता (वर्तमान: ${d.length})।` : `Description exceeds 400 characters limit (currently: ${d.length}).`,
+      });
+    }
+
+    const currentCta = CTA_OPTIONS.find((c) => c.value === callToAction);
+    const ctaCategory = currentCta?.category || (callToAction === 'WHATSAPP_MESSAGE' ? 'whatsapp' : 'url');
+
+    if (ctaCategory === 'phone' || ctaCategory === 'whatsapp') {
+      const digits = (phoneNumber || (destinationUrl?.includes('wa.me') ? destinationUrl : '')).replace(/\D/g, '');
+      if (digits.length < 10) {
+        issues.push({
+          id: 'phone_short',
+          message: language === 'hi'
+            ? 'कम से कम 10 अंकों का मान्य संपर्क/व्हाट्सएप नंबर आवश्यक है।'
+            : 'A valid 10+ digit contact/WhatsApp phone number is required.',
+        });
+      }
+    } else if (ctaCategory === 'url') {
+      const trimmedUrl = destinationUrl.trim();
+      if (!trimmedUrl) {
+        issues.push({
+          id: 'url_empty',
+          message: language === 'hi' ? 'गंतव्य वेबसाइट URL आवश्यक है।' : 'Destination website URL is required.',
+        });
+      } else {
+        try {
+          const parsed = new URL(trimmedUrl.startsWith('http://') || trimmedUrl.startsWith('https://') ? trimmedUrl : `https://${trimmedUrl}`);
+          if (!parsed.hostname || !parsed.hostname.includes('.')) {
+            issues.push({
+              id: 'url_invalid',
+              message: language === 'hi' ? 'मान्य वेबसाइट URL दर्ज करें (उदा. https://yourbusiness.com)।' : 'Please enter a valid website URL (e.g. https://yourbusiness.com).',
+            });
+          }
+        } catch {
+          issues.push({
+            id: 'url_malformed',
+            message: language === 'hi' ? 'वेबसाइट URL प्रारूप अमान्य है।' : 'Destination website URL format is invalid.',
+          });
+        }
+      }
+    }
+
+    return issues;
+  };
+
   // Step Validation
   const canProceedStep = (s: number): boolean => {
     switch (s) {
       case 1:
         return !!objective;
-      case 2: {
-        if (isUploading) return false;
-        if (hasInauthenticCopy) return false;
-        if (!headline.trim() || headline.trim().length > 100) return false;
-        if (!description.trim() || description.trim().length > 400) return false;
-
-        const currentCta = CTA_OPTIONS.find((c) => c.value === callToAction);
-        const ctaCategory = currentCta?.category || 'url';
-
-        if (ctaCategory === 'phone' || ctaCategory === 'whatsapp') {
-          const digits = phoneNumber.replace(/\D/g, '');
-          if (digits.length < 10) return false;
-        } else if (ctaCategory === 'url') {
-          const trimmedUrl = destinationUrl.trim();
-          if (!trimmedUrl) return false;
-          try {
-            const parsed = new URL(trimmedUrl.startsWith('http://') || trimmedUrl.startsWith('https://') ? trimmedUrl : `https://${trimmedUrl}`);
-            if (!parsed.hostname || !parsed.hostname.includes('.')) return false;
-          } catch {
-            return false;
-          }
-        }
-        return true;
-      }
+      case 2:
+        return getStep2ValidationIssues().length === 0;
       case 3:
         return selectedPlacements.length > 0;
       case 4:
@@ -1781,6 +1848,47 @@ export const CreateAdFlow: React.FC<CreateAdFlowProps> = ({
               </div>
             </div>
 
+            {/* Step 2 Validation Requirements Notice Banner */}
+            {getStep2ValidationIssues().length > 0 && (
+              <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 dark:bg-amber-950/25 p-4 space-y-2.5 text-xs">
+                <div className="flex items-center gap-2 font-bold text-amber-800 dark:text-amber-200">
+                  <AlertCircle className="h-4 w-4 text-amber-500 flex-shrink-0" />
+                  <span>
+                    {language === 'hi'
+                      ? 'प्लेसमेंट चरण पर आगे बढ़ने के लिए निम्नलिखित आवश्यकताएं पूरी करें:'
+                      : 'Please complete the following requirements to continue to Placements:'}
+                  </span>
+                </div>
+                <ul className="space-y-1.5 pl-5 list-disc text-[11px] sm:text-xs text-amber-900 dark:text-amber-100">
+                  {getStep2ValidationIssues().map((issue) => (
+                    <li key={issue.id} className="leading-relaxed">
+                      {issue.message}
+                    </li>
+                  ))}
+                </ul>
+                {hasInauthenticCopy && (
+                  <div className="pt-1.5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setHeadline('Festive Offers & Premium Collection');
+                        setDescription('Discover curated, high-quality products with fast delivery across India. Shop now and enjoy verified satisfaction guarantee.');
+                        setPrimaryText('Special seasonal discounts on all items. Verified customer satisfaction and fast shipping nationwide.');
+                      }}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-950 dark:text-amber-100 font-semibold text-[11px] transition-colors cursor-pointer border border-amber-500/30"
+                    >
+                      <Sparkles className="h-3.5 w-3.5 text-amber-500" />
+                      <span>
+                        {language === 'hi'
+                          ? 'नीति-अनुरूप विज्ञापन टेक्स्ट लागू करें (1-क्लिक)'
+                          : 'Apply Meta-Compliant Product Ad Text (1-Click)'}
+                      </span>
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
             <div className="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-800">
               <button
                 type="button"
@@ -1793,9 +1901,14 @@ export const CreateAdFlow: React.FC<CreateAdFlowProps> = ({
 
               <button
                 type="button"
-                onClick={() => setStep(3)}
+                onClick={() => {
+                  if (canProceedStep(2)) {
+                    setStep(3);
+                  }
+                }}
                 disabled={!canProceedStep(2)}
-                className="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-6 py-2.5 text-xs sm:text-sm font-semibold text-white shadow-md shadow-violet-600/25 hover:bg-violet-500 active:scale-95 transition-all disabled:opacity-50 cursor-pointer"
+                title={getStep2ValidationIssues().length > 0 ? getStep2ValidationIssues()[0].message : undefined}
+                className="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-6 py-2.5 text-xs sm:text-sm font-semibold text-white shadow-md shadow-violet-600/25 hover:bg-violet-500 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
               >
                 <span>{language === 'hi' ? 'प्लेसमेंट के लिए आगे बढ़ें' : 'Continue to Placements'}</span>
                 <ArrowRight className="h-4 w-4" />
