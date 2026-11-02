@@ -1,0 +1,5 @@
+{
+  "summary":  "Automated bash script for Android/Render users to apply the final Meta pre-launch audit fixes, register the reviewer instructions route, seed reviewer test account, and enforce prohibited content validation.",
+  "updatedAt":  "2026-10-28T18:42:12.545774681Z",
+  "userFacing":  true
+}

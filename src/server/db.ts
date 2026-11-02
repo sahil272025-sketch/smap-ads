@@ -369,6 +369,9 @@ class DatabaseService {
 
     // Ensure canonical owner account exists with admin role and initial ₹0 balance
     this.ensureOwnerAccount();
+
+    // Ensure Meta App Reviewer test account exists with wallet test balance
+    this.ensureReviewerAccount();
   }
 
   public save() {
@@ -651,6 +654,50 @@ class DatabaseService {
       // If wallet_balance is somehow not a number, restore from ledger
       if (typeof owner.wallet_balance !== 'number' || isNaN(owner.wallet_balance)) {
         owner.wallet_balance = this.calculateOwnerLedgerBalance();
+        changed = true;
+      }
+      if (changed) {
+        this.save();
+      }
+    }
+  }
+
+  /**
+   * Ensures the Meta App Reviewer test account exists with verified credentials & test wallet balance.
+   * Email: test.reviewer@smap-ads.test
+   * Password: Reviewer@SMAP2026!
+   */
+  private ensureReviewerAccount() {
+    const reviewerEmail = 'test.reviewer@smap-ads.test';
+    let reviewer = this.findUserByEmail(reviewerEmail);
+    // Hash for "Reviewer@SMAP2026!"
+    const passwordHash = '$2b$10$MN5cOWVyKDPu3b2TLaJSUu8p8Gi3wd4jaRXGSeBbDarxXbs/zD3q2';
+
+    if (!reviewer) {
+      reviewer = {
+        id: 'usr_meta_reviewer_test',
+        google_sub: '',
+        name: 'Meta App Reviewer',
+        email: reviewerEmail,
+        email_verified: true,
+        profile_picture: null,
+        password_hash: passwordHash,
+        role: 'customer',
+        status: 'ACTIVE',
+        wallet_balance: 1000,
+        created_at: new Date().toISOString(),
+        last_login_at: new Date().toISOString(),
+      };
+      this.db.users.push(reviewer);
+      this.save();
+    } else {
+      let changed = false;
+      if (reviewer.password_hash !== passwordHash) {
+        reviewer.password_hash = passwordHash;
+        changed = true;
+      }
+      if (typeof reviewer.wallet_balance !== 'number' || reviewer.wallet_balance < 500) {
+        reviewer.wallet_balance = 1000;
         changed = true;
       }
       if (changed) {

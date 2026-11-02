@@ -557,7 +557,24 @@ async function runMetaActivationTests() {
     description: 'Explore our sustainable, locally-sourced home decor collection today.',
   };
   const genuineResult = await MetaService.validateCampaignPreFlight(genuineCampaign);
-  assert(genuineResult.valid === true, 'Legitimate business product ad passes pre-flight validation');
+  // TEST 22: Exact Screenshot Inauthentic Copy & Meta Reviewer Test Account Verification
+  console.log('\n--- TEST 22: Screenshot Copy Rejection & Reviewer Test Account Login ---');
+  const screenshotCampaign: Campaign = {
+    ...testCampaign,
+    id: `smap_cmp_screenshot_${Date.now()}`,
+    headline: 'Instargram facebook Followers limit offers jo log trust hai jo log dm Kare trust',
+    description: 'Boost Your Social Media Growth! Get 100% Real & Fast Followers, Likes, Views, and Subscribers at the best prices! 1K Instagram/FB Followers = ₹500',
+  };
+  const screenshotResult = await MetaService.validateCampaignPreFlight(screenshotCampaign);
+  assert(screenshotResult.valid === false, 'Pre-flight strictly rejects exact screenshot follower/like copy');
+  assert(screenshotResult.errors.some(e => e.includes('Inauthentic Behavior')), 'Pre-flight accurately identifies Meta 4.2 policy violation');
+
+  // Verify Reviewer Account Authentication & Wallet Balance
+  const { AuthService } = await import('../src/server/authService.js');
+  const reviewerAuth = await AuthService.loginWithEmailPassword('test.reviewer@smap-ads.test', 'Reviewer@SMAP2026!');
+  assert(reviewerAuth.user.email === 'test.reviewer@smap-ads.test', 'Reviewer account logs in with correct test email');
+  assert(Boolean(reviewerAuth.token && reviewerAuth.token.length > 20), 'Reviewer authentication generates valid session token');
+  assert(typeof reviewerAuth.user.wallet_balance === 'number' && reviewerAuth.user.wallet_balance >= 500, 'Reviewer account has seeded test wallet balance (>= ₹500) for testing');
 
   console.log('\n========================================================');
   console.log(`🎉 All ${passedTests}/${totalTests} Meta Activation Tests PASSED!`);

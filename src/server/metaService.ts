@@ -1394,14 +1394,18 @@ export class MetaService {
     // 2b. Policy Validation: Strictly prohibit inauthentic engagement & fake metrics (Meta Advertising Standards 4.2)
     const combinedCopy = `${headline} ${description} ${campaign.primary_text || ''}`.toLowerCase();
     const INAUTHENTIC_PATTERNS = [
-      /\b(buy|get|fast|cheap|real)\s+(followers|likes|views|subscribers|comments)\b/i,
-      /\b(\d+k?|\d+\s*k)\s+(followers|likes|views|subscribers)\b/i,
-      /\bfollowers\s*=\s*₹/i,
-      /\blikes\s*=\s*₹/i,
-      /\bviews\s*=\s*₹/i,
-      /\bsubscribers\s*=\s*₹/i,
-      /\b(increase|boost)\s+(followers|likes|views|subscribers)\b/i,
-      /\b(sell|selling)\s+(followers|likes|views|subscribers)\b/i,
+      /\b(buy|get|fast|cheap|real)\s+(followers?|likes?|views?|subscribers?|comments?)\b/i,
+      /\b(\d+k?|\d+\s*k)\s*(ig|fb|instagram|facebook|youtube|yt)?\s*(followers?|likes?|views?|subs?|subscribers?)\b/i,
+      /\bfollowers?\s*(=|:|-|₹|\$)\s*₹?\d+/i,
+      /\blikes?\s*(=|:|-|₹|\$)\s*₹?\d+/i,
+      /\bviews?\s*(=|:|-|₹|\$)\s*₹?\d+/i,
+      /\bsubscribers?\s*(=|:|-|₹|\$)\s*₹?\d+/i,
+      /\b(increase|boost|grow)\s*(your)?\s*(followers?|likes?|views?|subscribers?)\b/i,
+      /\b(sell|selling|provide|providing)\s+(followers?|likes?|views?|subscribers?)\b/i,
+      /\bfollowers?\s*(offer|deal|pack|plan|limit|rate|price|dm|sale|service)/i,
+      /\b(dm|message|contact)\s*(for|me|us)?\s*(followers?|likes?|views?|subscribers?)/i,
+      /\b(instagram|facebook|ig|fb|youtube|yt)\s+(followers?|likes?|views?|subscribers?)\b/i,
+      /\b(100%|guarantee|guaranteed|real|active)\s*(ig|fb)?\s*(followers?|likes?|views?|subscribers?)/i,
     ];
 
     if (INAUTHENTIC_PATTERNS.some(p => p.test(combinedCopy))) {

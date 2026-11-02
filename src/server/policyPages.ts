@@ -1,4 +1,4 @@
-export type PolicyKey = 'about' | 'privacy' | 'terms' | 'refund' | 'pricing' | 'contact' | 'data-deletion';
+export type PolicyKey = 'about' | 'privacy' | 'terms' | 'refund' | 'pricing' | 'contact' | 'data-deletion' | 'reviewer-instructions';
 
 interface PageMetadata {
   title: string;
@@ -49,6 +49,12 @@ const META_DATA: Record<PolicyKey, PageMetadata> = {
     description: 'Clear step-by-step instructions for SMAP Ads users to request deletion of their personal data and disconnect Facebook and Instagram accounts in compliance with Meta Platform Terms and DPDP Act 2023.',
     heading: 'User Data Deletion Instructions',
     subtitle: 'Meta Platform Compliance & User Privacy Rights (DPDP Act 2023)',
+  },
+  'reviewer-instructions': {
+    title: 'Meta App Review & Reviewer Instructions - SMAP Advertising Platform',
+    description: 'Official Meta App Review technical documentation for App 1109938584974243. Detailed use cases for ads_management, pages_manage_ads, ads_read, pages_read_engagement, and pages_show_list, with testing walkthrough and policy compliance declarations.',
+    heading: 'Meta App Reviewer Instructions & Technical Walkthrough',
+    subtitle: 'App ID: 1109938584974243 • Meta Marketing API Integration • Platform Policies & Compliance',
   },
 };
 
@@ -484,6 +490,157 @@ export function renderPolicyHtml(key: PolicyKey): string {
         </div>
       </section>
     `;
+  } else if (key === 'reviewer-instructions') {
+    bodyContent = `
+      <section class="space-y-8 text-slate-700 text-sm leading-relaxed">
+        <!-- Section 1: Overview -->
+        <div class="rounded-xl border border-blue-200 bg-blue-50/50 p-5 space-y-2">
+          <span class="text-xs font-bold uppercase tracking-wider text-blue-700">App Reviewer Briefing</span>
+          <h2 class="text-lg font-bold text-slate-900">Application Identity & Marketing API Integration</h2>
+          <p class="text-xs text-slate-600 leading-relaxed">
+            <strong>SMAP (Sahil Marketing Ads Powerful)</strong> is a self-service digital advertising management web application built for small businesses, retail merchants, and direct-to-consumer entrepreneurs in India to create, target, budget, and manage compliant paid ad campaigns across <strong>Facebook and Instagram</strong>.
+          </p>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 text-xs">
+            <div class="p-2.5 rounded-lg bg-white border border-blue-100">
+              <span class="text-slate-400 block font-medium">Meta Developer App ID:</span>
+              <span class="font-mono font-bold text-slate-900">1109938584974243</span>
+            </div>
+            <div class="p-2.5 rounded-lg bg-white border border-blue-100">
+              <span class="text-slate-400 block font-medium">Associated Business Portfolio:</span>
+              <span class="font-mono font-bold text-slate-900">986055813750158 (Sahil Kumar)</span>
+            </div>
+            <div class="p-2.5 rounded-lg bg-white border border-blue-100">
+              <span class="text-slate-400 block font-medium">Target Platforms:</span>
+              <span class="font-bold text-slate-900">Facebook Feed, Instagram Feed, Reels & Stories</span>
+            </div>
+            <div class="p-2.5 rounded-lg bg-white border border-blue-100">
+              <span class="text-slate-400 block font-medium">Primary Currency:</span>
+              <span class="font-bold text-slate-900">INR (Indian Rupee)</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 2: Permissions Justification -->
+        <div class="space-y-4">
+          <h2 class="text-lg font-bold text-slate-900">1. Permissions Requested & Technical Justification</h2>
+          <p class="text-xs text-slate-500">
+            SMAP only requests permissions strictly required to execute core campaign creation, management, and reporting:
+          </p>
+          <div class="space-y-3">
+            <div class="p-4 rounded-xl border border-slate-200 bg-white space-y-1">
+              <div class="flex items-center justify-between">
+                <span class="font-mono font-bold text-sm text-purple-700">ads_management</span>
+                <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-100 text-purple-800">Advanced Access Requested</span>
+              </div>
+              <p class="text-xs text-slate-600">
+                <strong>Why needed:</strong> Enables the app to create campaigns (<code class="bg-slate-100 px-1 py-0.5 rounded">POST /act_{id}/campaigns</code>), create ad sets with verified daily budgets (<code class="bg-slate-100 px-1 py-0.5 rounded">POST /act_{id}/adsets</code>), upload media creatives (<code class="bg-slate-100 px-1 py-0.5 rounded">POST /act_{id}/adimages</code>), and create ads. It also enables automated lifecycle pausing when fixed-duration packages expire.
+              </p>
+            </div>
+
+            <div class="p-4 rounded-xl border border-slate-200 bg-white space-y-1">
+              <div class="flex items-center justify-between">
+                <span class="font-mono font-bold text-sm text-purple-700">pages_manage_ads</span>
+                <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-100 text-purple-800">Advanced Access Requested</span>
+              </div>
+              <p class="text-xs text-slate-600">
+                <strong>Why needed:</strong> Meta Marketing API requires page advertising permission (<code class="bg-slate-100 px-1 py-0.5 rounded">page_id</code> inside <code class="bg-slate-100 px-1 py-0.5 rounded">object_story_spec</code>) to associate an ad creative with a Facebook Page identity when creating ad creatives on Instagram and Facebook feeds.
+              </p>
+            </div>
+
+            <div class="p-4 rounded-xl border border-slate-200 bg-white space-y-1">
+              <div class="flex items-center justify-between">
+                <span class="font-mono font-bold text-sm text-purple-700">ads_read</span>
+                <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-100 text-purple-800">Advanced Access Requested</span>
+              </div>
+              <p class="text-xs text-slate-600">
+                <strong>Why needed:</strong> Used to read delivery status, effective status, review results, and live performance metrics (<code class="bg-slate-100 px-1 py-0.5 rounded">GET /{ad_id}/insights</code>) including reach, impressions, clicks, CPC, and CTR to report truthful metrics to the merchant in their dashboard.
+              </p>
+            </div>
+
+            <div class="p-4 rounded-xl border border-slate-200 bg-white space-y-1">
+              <div class="flex items-center justify-between">
+                <span class="font-mono font-bold text-sm text-purple-700">pages_show_list</span>
+                <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-100 text-purple-800">Advanced Access Requested</span>
+              </div>
+              <p class="text-xs text-slate-600">
+                <strong>Why needed:</strong> Used during customer onboarding to query the user's managed Facebook Pages (<code class="bg-slate-100 px-1 py-0.5 rounded">GET /me/accounts</code>) so they can select which business Page will represent their ads.
+              </p>
+            </div>
+
+            <div class="p-4 rounded-xl border border-slate-200 bg-white space-y-1">
+              <div class="flex items-center justify-between">
+                <span class="font-mono font-bold text-sm text-purple-700">pages_read_engagement</span>
+                <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-100 text-purple-800">Advanced Access Requested</span>
+              </div>
+              <p class="text-xs text-slate-600">
+                <strong>Why needed:</strong> Reads user engagement, comments, and interactions on the published ad posts for customer reporting and review.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 3: Reviewer Test Flow -->
+        <div class="space-y-4">
+          <h2 class="text-lg font-bold text-slate-900">2. Step-by-Step Test Walkthrough for Meta Reviewers</h2>
+          <div class="p-4 rounded-xl border border-emerald-200 bg-emerald-50/50 space-y-3 text-xs">
+            <span class="font-bold text-emerald-800 block">Reviewer Test Environment:</span>
+            <div class="space-y-1 text-slate-700">
+              <p>• <strong>App URL:</strong> <a href="https://smap-ads.onrender.com" class="text-emerald-700 font-bold underline" target="_blank">https://smap-ads.onrender.com</a></p>
+              <p>• <strong>Test Account Email:</strong> <span class="font-mono bg-white px-1.5 py-0.5 rounded border border-emerald-200">test.reviewer@smap-ads.test</span></p>
+              <p>• <strong>Test Account Password:</strong> <span class="font-mono bg-white px-1.5 py-0.5 rounded border border-emerald-200">MetaReviewer2026!</span></p>
+              <p>• <strong>Alternative Authentication:</strong> Google One-Tap / OAuth sign-in with your test Google account.</p>
+            </div>
+          </div>
+
+          <div class="space-y-2 text-xs">
+            <span class="font-bold text-slate-800 block">Testing Sequence:</span>
+            <ol class="list-decimal pl-5 space-y-2 text-slate-600">
+              <li><strong>Sign In:</strong> Navigate to <a href="/login" class="text-purple-600 underline">/login</a> and sign in with the reviewer credentials or Google login.</li>
+              <li><strong>Create Campaign:</strong> Click <strong>"Create Ad"</strong> from the top navigation.</li>
+              <li><strong>Select Objective:</strong> Choose <strong>TRAFFIC</strong> (Website Visits) or <strong>ENGAGEMENT</strong> (Customer Conversations).</li>
+              <li><strong>Configure Creative:</strong> Input headline, description, call-to-action (e.g. Website or WhatsApp), and upload an image/video asset. Note that automated pre-flight checks enforce Meta character limits and format rules.</li>
+              <li><strong>Targeting & Placements:</strong> Select placements (Facebook Feed, Instagram Feed, Reels, Stories) and target age/locations.</li>
+              <li><strong>Review & Checkout:</strong> Review transparent budget breakdown (e.g. 5-day package at ₹95.60/day meeting Meta minimum floor) and confirm.</li>
+              <li><strong>Inspect Dashboard Telemetry:</strong> Observe real-time status transitions, verified Meta IDs, and performance metrics.</li>
+            </ol>
+          </div>
+        </div>
+
+        <!-- Section 4: Strict Meta Policy 4.2 Declaration -->
+        <div class="rounded-xl border border-purple-200 bg-purple-50/40 p-5 space-y-3">
+          <span class="text-xs font-bold uppercase tracking-wider text-purple-700">Meta Advertising Standards Compliance</span>
+          <h2 class="text-base font-bold text-slate-900">3. Strict Anti-Inauthentic Behavior Policy (Section 4.2)</h2>
+          <p class="text-xs text-slate-600 leading-relaxed">
+            SMAP is strictly and exclusively an authentic customer advertising platform. <strong>SMAP does NOT sell, provide, broker, or promote followers, likes, views, subscribers, or artificial engagement.</strong>
+          </p>
+          <ul class="list-disc pl-5 text-xs text-slate-600 space-y-1">
+            <li><strong>Automated Pre-Flight Guard:</strong> All ad copy and creative submissions pass through an automated server-side pre-flight filter that rejects phrases offering to buy, sell, or artificially boost followers, likes, or views.</li>
+            <li><strong>No Fake Metric Guarantees:</strong> Our Terms of Service and digital advertising policies explicitly state that impressions and engagement are determined solely by Meta's real-time auction and user interest.</li>
+            <li><strong>Zero Artificial Accounts:</strong> No botting, scraping, click-farming, or fake account infrastructure is permitted or supported.</li>
+          </ul>
+        </div>
+
+        <!-- Section 5: Data Deletion & Privacy Compliance -->
+        <div class="space-y-3">
+          <h2 class="text-lg font-bold text-slate-900">4. Privacy Policy, Data Handling & Deletion</h2>
+          <p class="text-xs text-slate-600 leading-relaxed">
+            In compliance with Meta Platform Terms, Developer Policies, and the Digital Personal Data Protection Act 2023 (DPDP Act):
+          </p>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+            <div class="p-3 rounded-lg border border-slate-200 bg-white">
+              <span class="font-bold text-slate-800 block mb-1">Privacy Policy</span>
+              <p class="text-slate-500 mb-2">Comprehensive disclosures on data collection, processing, and retention.</p>
+              <a href="/privacy" class="text-purple-600 font-bold hover:underline" target="_blank">View Privacy Policy →</a>
+            </div>
+            <div class="p-3 rounded-lg border border-slate-200 bg-white">
+              <span class="font-bold text-slate-800 block mb-1">Data Deletion Callback</span>
+              <p class="text-slate-500 mb-2">Automated endpoint and self-service manual instructions to purge user data.</p>
+              <a href="/data-deletion" class="text-purple-600 font-bold hover:underline" target="_blank">View Data Deletion Page →</a>
+            </div>
+          </div>
+        </div>
+      </section>
+    `;
   }
 
   return `<!doctype html>
@@ -692,6 +849,20 @@ export function registerPolicyRoutes(app: any): void {
         });
       }
       sendHtmlWithHeaders(res, renderPolicyHtml('data-deletion'));
+    }
+  );
+
+  app.get(
+    [
+      '/reviewer-instructions',
+      '/reviewer-instructions/',
+      '/meta-reviewer',
+      '/meta-reviewer/',
+      '/app-review',
+      '/app-review/',
+    ],
+    (_req: any, res: any) => {
+      sendHtmlWithHeaders(res, renderPolicyHtml('reviewer-instructions'));
     }
   );
 
